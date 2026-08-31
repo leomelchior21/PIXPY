@@ -5,7 +5,7 @@ jump_power = 12
 gravity = 8
 obstacle_speed = 5
 obstacle_count = 3
-player_size = 32
+player_size = 42
 lives = 3`
 
 export const starterConfig: DinoConfig = {
@@ -14,7 +14,7 @@ export const starterConfig: DinoConfig = {
   gravity: 8,
   obstacle_speed: 5,
   obstacle_count: 3,
-  player_size: 32,
+  player_size: 42,
   lives: 3,
 }
 
@@ -22,26 +22,26 @@ export const dinoMissions: Mission[] = [
   {
     id: 'super-speed',
     number: '01',
-    title: 'Super Speed',
-    instruction: 'Make your runner seriously fast.',
+    title: 'Basics',
+    instruction: 'Change player_speed and make the runner move faster.',
     reward: 80,
-    check: (config) => config.player_speed >= 15,
+    check: (config) => config.player_speed >= 10,
   },
   {
     id: 'moon-mode',
     number: '02',
-    title: 'Moon Mode',
-    instruction: 'Turn gravity down and float.',
+    title: 'Jump Higher',
+    instruction: 'Raise jump_power to clear taller spikes.',
     reward: 90,
-    check: (config) => config.gravity <= 3,
+    check: (config) => config.jump_power >= 20,
   },
   {
     id: 'giant-mode',
     number: '03',
-    title: 'Giant Mode',
-    instruction: 'Make the runner impossible to miss.',
+    title: 'Moving Hazards',
+    instruction: 'Make obstacles move faster.',
     reward: 100,
-    check: (config) => config.player_size >= 80,
+    check: (config) => config.obstacle_speed >= 10,
   },
   {
     id: 'chaos-mode',
@@ -54,8 +54,8 @@ export const dinoMissions: Mission[] = [
   {
     id: 'survivor-mode',
     number: '05',
-    title: 'Survivor Mode',
-    instruction: 'Give yourself a ridiculous number of lives.',
+    title: 'Final Boss',
+    instruction: 'Give yourself enough lives for the final run.',
     reward: 120,
     check: (config) => config.lives >= 20,
   },

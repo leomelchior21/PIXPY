@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { starterConfig } from '../data/dinoLab'
 import { validateDinoConfig } from './dinoValidation'
 
-describe('Dino Lab safety', () => {
+describe('Runner Lab safety', () => {
   it('caps extreme values without removing the experiment', () => {
     const result = validateDinoConfig({
       ...starterConfig,

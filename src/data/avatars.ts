@@ -1,12 +1,12 @@
 import type { Avatar } from '../types'
 
 export const avatars: Avatar[] = [
-  { id: 'nova', name: 'Nova', skin: '#8f573b', hair: '#201b2f', outfit: '#5ce1b9', accent: '#f7d95c', accessory: 'headphones' },
-  { id: 'byte', name: 'Byte', skin: '#d99b72', hair: '#532e48', outfit: '#7e72ff', accent: '#65e6ff', accessory: 'visor' },
-  { id: 'echo', name: 'Echo', skin: '#f0bd91', hair: '#c55b45', outfit: '#ff6b71', accent: '#f8df66', accessory: 'cap' },
-  { id: 'flux', name: 'Flux', skin: '#6d422e', hair: '#e1d5c7', outfit: '#ff9f43', accent: '#74efca', accessory: 'glasses' },
-  { id: 'moss', name: 'Moss', skin: '#c7835b', hair: '#163c39', outfit: '#72d28a', accent: '#fff0a4', accessory: 'headphones' },
-  { id: 'orbit', name: 'Orbit', skin: '#f1c6a5', hair: '#2f315c', outfit: '#4ca7ff', accent: '#ff73ba', accessory: 'visor' },
+  { id: 'nova', skin: '#dff9ff', hair: '#002b3c', outfit: '#08bde8', accent: '#75e6ff', accessory: 'headphones' },
+  { id: 'byte', skin: '#9feaff', hair: '#00394f', outfit: '#006fa8', accent: '#e9fcff', accessory: 'visor' },
+  { id: 'echo', skin: '#dff9ff', hair: '#007ca8', outfit: '#04b9e6', accent: '#77e6ff', accessory: 'cap' },
+  { id: 'flux', skin: '#84d9ef', hair: '#001d2a', outfit: '#0b91c3', accent: '#dff9ff', accessory: 'glasses' },
+  { id: 'moss', skin: '#b8effa', hair: '#004a61', outfit: '#00b6df', accent: '#e9fcff', accessory: 'headphones' },
+  { id: 'orbit', skin: '#e9fcff', hair: '#006b91', outfit: '#087fae', accent: '#72ddf7', accessory: 'visor' },
 ]
 
 export function getAvatar(id: string | null | undefined): Avatar {

@@ -1,6 +1,5 @@
-import { Award, LogOut, Pencil, ShieldCheck, Sparkles, Zap } from 'lucide-react'
+import { Award, Flag, LogOut, Pencil, ShieldCheck, Sparkles, Zap } from 'lucide-react'
 import { PixelAvatar } from '../components/PixelAvatar'
-import { avatars } from '../data/avatars'
 import type { StudentProfile } from '../types'
 
 interface ProfileScreenProps {
@@ -13,12 +12,11 @@ const badgeCatalog = [
   { id: 'first-run', title: 'First Signal', note: 'Ran Python for the first time', icon: Zap },
   { id: 'experimenter', title: 'Experimenter', note: 'Tried three different modes', icon: Sparkles },
   { id: 'chaos-engineer', title: 'Chaos Engineer', note: 'Created an extreme configuration', icon: Award },
-  { id: 'lab-survivor', title: 'Lab Survivor', note: 'Completed every Dino Lab mission', icon: ShieldCheck },
+  { id: 'lab-survivor', title: 'Lab Survivor', note: 'Completed every Runner Lab mission', icon: ShieldCheck },
+  { id: 'runner-challenge', title: 'Century Runner', note: 'Cleared the Slice 01 final challenge', icon: Flag },
 ]
 
 export function ProfileScreen({ profile, onChangeAvatar, onLogout }: ProfileScreenProps) {
-  const avatar = avatars.find((item) => item.id === profile.avatarId) ?? avatars[0]
-
   return (
     <main className="app-page profile-screen">
       <section className="profile-hero">
@@ -26,7 +24,7 @@ export function ProfileScreen({ profile, onChangeAvatar, onLogout }: ProfileScre
         <div>
           <p className="kicker">PLAYER PROFILE</p>
           <h1>{profile.displayName}</h1>
-          <p>{avatar.name} operator · Level {Math.max(1, Math.floor(profile.xp / 300) + 1)}</p>
+          <p>Level {Math.max(1, Math.floor(profile.xp / 300) + 1)}</p>
           <button className="ghost-button" onClick={onChangeAvatar}><Pencil size={15} /> Change avatar</button>
         </div>
         <div className="profile-xp"><strong>{profile.xp}</strong><span>TOTAL XP</span></div>

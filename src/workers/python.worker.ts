@@ -43,10 +43,10 @@ _pixpy_allowed = (
 )
 for _pixpy_node in ast.walk(_pixpy_tree):
     if not isinstance(_pixpy_node, _pixpy_allowed):
-        raise ValueError("Dino Lab only needs number assignments for now.")
+        raise ValueError("Runner Lab only needs number assignments for now.")
 
 _pixpy_scope = {}
-exec(compile(_pixpy_tree, "dino_lab.py", "exec"), {"__builtins__": {}}, _pixpy_scope)
+exec(compile(_pixpy_tree, "runner_lab.py", "exec"), {"__builtins__": {}}, _pixpy_scope)
 _pixpy_keys = ["player_speed", "jump_power", "gravity", "obstacle_speed", "obstacle_count", "player_size", "lives"]
 _pixpy_result = {}
 for _pixpy_key in _pixpy_keys:

@@ -14,7 +14,8 @@ interface HudProps {
 
 export function Hud({ profile, route, soundOn, onToggleSound, onNavigate }: HudProps) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const progress = Math.min(100, profile.completedMissions.length * 20)
+  const xpGoal = 500
+  const progress = Math.min(100, (profile.xp / xpGoal) * 100)
 
   return (
     <header className="hud">
@@ -30,7 +31,7 @@ export function Hud({ profile, route, soundOn, onToggleSound, onNavigate }: HudP
             <div className="hud__xp-track" aria-label={`${progress}% journey progress`}>
               <i style={{ width: `${Math.max(progress, 8)}%` }} />
             </div>
-            <b>{profile.xp} XP</b>
+            <b>{profile.xp} / {xpGoal} XP</b>
           </div>
         </div>
       </div>

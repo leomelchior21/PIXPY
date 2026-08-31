@@ -2,7 +2,6 @@ export type AppRoute = 'login' | 'avatar' | 'home' | 'journey' | 'ranking' | 'pr
 
 export interface Avatar {
   id: string
-  name: string
   skin: string
   hair: string
   outfit: string

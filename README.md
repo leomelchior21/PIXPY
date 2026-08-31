@@ -1,6 +1,6 @@
 # PixPy
 
-PixPy is a game-like Python playground for a small middle-school classroom. The first vertical slice lets students hack an original pixel runner, observe immediate consequences, and discover variables through play.
+PixPy is a game-like Python playground for a small middle-school classroom. The first vertical slice, Runner Lab, lets students hack an original pixel runner, observe immediate consequences, and discover variables through play.
 
 ## Run locally
 
@@ -27,6 +27,6 @@ npm run build
 - React + TypeScript + Vite
 - CodeMirror for a focused, touch-friendly Python editor
 - Pyodide loaded on demand for genuine in-browser Python execution
-- Canvas for the Dino Lab game layer
+- Canvas for the Runner Lab game layer
 - Supabase RPCs with deny-by-default RLS for student identification and progress
 - Local-first saves for classroom network resilience

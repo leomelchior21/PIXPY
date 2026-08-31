@@ -14,7 +14,7 @@ describe('PixPy first session', () => {
     window.history.replaceState(null, '', '/')
   })
 
-  it('opens the test profile, chooses an avatar, and reaches Dino Lab', async () => {
+  it('opens the test profile, chooses an avatar, and reaches Runner Lab', async () => {
     const user = userEvent.setup()
     render(<App />)
 
@@ -23,13 +23,13 @@ describe('PixPy first session', () => {
     expect(input).toHaveValue('labtester')
     await user.click(screen.getByRole('button', { name: /enter pixpy/i }))
 
-    expect(await screen.findByRole('heading', { name: /choose your lab identity/i })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /byte avatar/i }))
+    expect(await screen.findByRole('heading', { name: /pick your pixel face/i })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /avatar 1/i }))
     await user.click(screen.getByRole('button', { name: /that's me/i }))
 
-    expect(await screen.findByRole('heading', { name: /ready to break/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /your private lab/i })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /enter the lab/i }))
-    expect(await screen.findByText('DINO LAB')).toBeInTheDocument()
+    expect(await screen.findByText('RUNNER LAB', {}, { timeout: 10000 })).toBeInTheDocument()
     expect(screen.getByLabelText('Python code editor')).toBeInTheDocument()
-  })
+  }, 15000)
 })

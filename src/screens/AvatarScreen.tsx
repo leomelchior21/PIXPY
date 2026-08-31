@@ -17,22 +17,21 @@ export function AvatarScreen({ displayName, initialAvatar, onComplete }: AvatarS
     <main className="avatar-screen">
       <header className="simple-header"><Brand compact /><span>PLAYER SETUP // 01</span></header>
       <section className="avatar-intro">
-        <p className="kicker">WELCOME, {displayName.toUpperCase()}</p>
-        <h1>Choose your lab identity.</h1>
-        <p>This player will travel with you through every experiment.</p>
+        <p className="kicker">PRIVATE PROFILE // {displayName.toUpperCase()}</p>
+        <h1>Pick your pixel face.</h1>
+        <p>Your operator icon travels with you through the whole experiment.</p>
       </section>
       <section className="avatar-grid" aria-label="Choose an avatar">
-        {avatars.map((avatar) => (
+        {avatars.map((avatar, index) => (
           <button
             key={avatar.id}
             className={`avatar-card ${selected === avatar.id ? 'is-selected' : ''}`}
             onClick={() => setSelected(avatar.id)}
             aria-pressed={selected === avatar.id}
+            aria-label={`Avatar ${index + 1}`}
           >
             {selected === avatar.id && <span className="avatar-card__check"><Check size={15} /></span>}
             <PixelAvatar avatarId={avatar.id} size="large" selected={selected === avatar.id} />
-            <strong>{avatar.name}</strong>
-            <small>{avatar.accessory ?? 'lab gear'}</small>
           </button>
         ))}
       </section>

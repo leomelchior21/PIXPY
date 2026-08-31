@@ -1,4 +1,4 @@
-import { ArrowRight, Atom, BadgeCheck, Braces, LockKeyhole, Trophy, Zap } from 'lucide-react'
+import { ArrowRight, Atom, BadgeCheck, Trophy } from 'lucide-react'
 import { PixelAvatar } from '../components/PixelAvatar'
 import type { AppRoute, StudentProfile } from '../types'
 
@@ -16,8 +16,8 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
       <section className="page-heading home-heading">
         <div>
           <p className="kicker">LAB NETWORK // ONLINE</p>
-          <h1>Ready to break<br />something, <em>{profile.displayName}</em>?</h1>
-          <p>Your experiment is waiting. Change one value and see what happens.</p>
+          <h1>Your private lab<br />is open, <em>{profile.displayName}</em>.</h1>
+          <p>One experience. Five strange missions. Every number changes the world.</p>
         </div>
         <div className="home-level">
           <PixelAvatar avatarId={profile.avatarId} size="large" />
@@ -37,11 +37,11 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
           <div className="continue-card__content">
             <div><span className="status-dot" /> AVAILABLE NOW</div>
             <small>EXPERIENCE 01</small>
-            <h2>Dino Lab</h2>
-            <p>Hack a runner game with real Python variables. Make it fast, floaty, giant, or completely chaotic.</p>
+            <h2>Runner Lab</h2>
+            <p>Hack a tiny runner with real Python variables. Make them fast, floaty, giant, or completely chaotic.</p>
             <div className="progress-line"><i style={{ width: `${Math.max(5, progress)}%` }} /></div>
             <div className="continue-card__meta"><span>{completed}/5 missions</span><span>{progress}% complete</span></div>
-            <button className="primary-button" onClick={() => onNavigate('dino-lab')}>
+            <button className={`primary-button ${completed ? 'continue-experiment-button' : ''}`} onClick={() => onNavigate('dino-lab')}>
               {completed ? 'CONTINUE EXPERIMENT' : 'ENTER THE LAB'} <ArrowRight size={18} />
             </button>
           </div>
@@ -66,11 +66,6 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
         </div>
       </section>
 
-      <section className="coming-strip">
-        <div><span><Braces size={18} /></span><small>NEXT SIGNAL</small><strong>Game Maker</strong><em>Strings</em></div>
-        <div><span><Zap size={18} /></span><small>LOCKED</small><strong>Terminal Zero</strong><em>print()</em></div>
-        <div><span><LockKeyhole size={18} /></span><small>LOCKED</small><strong>Security Gate</strong><em>if</em></div>
-      </section>
     </main>
   )
 }

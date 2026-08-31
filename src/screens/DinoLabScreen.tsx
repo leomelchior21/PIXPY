@@ -1,14 +1,12 @@
-import { python } from '@codemirror/lang-python'
-import CodeMirror from '@uiw/react-codemirror'
-import { ArrowLeft, Check, ChevronRight, Lightbulb, LoaderCircle, Play, RotateCcw, Save, Sparkles, X, Zap } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, Flag, Lightbulb, LoaderCircle, Play, RotateCcw, Save, Sparkles, X, Zap } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { DinoGame } from '../components/DinoGame'
 import { Toast } from '../components/Toast'
-import { dinoMissions, starterCode, starterConfig } from '../data/dinoLab'
+import { dinoMissions, starterConfig } from '../data/dinoLab'
 import { pythonRunner } from '../lib/pythonRunner'
 import { saveCloudProgress } from '../lib/supabase'
 import { loadDinoCode, loadDinoConfig, resetDinoStorage, saveDinoCode, saveDinoConfig } from '../lib/storage'
-import type { DinoConfig, StudentProfile } from '../types'
+import type { DinoConfig, DinoConfigKey, StudentProfile } from '../types'
 
 interface DinoLabScreenProps {
   profile: StudentProfile
@@ -18,9 +16,28 @@ interface DinoLabScreenProps {
 
 type RuntimeState = 'booting' | 'ready' | 'unavailable'
 
-export function DinoLabScreen({ profile, onBack, onUpdateProfile }: DinoLabScreenProps) {
-  const [code, setCode] = useState(loadDinoCode)
+const variableRows: Array<{
+  key: DinoConfigKey
+  label: string
+  min: number
+  max: number
+  step: number
+  missionId?: string
+}> = [
+  { key: 'player_speed', label: 'Player speed', min: 1, max: 50, step: 1, missionId: 'super-speed' },
+  { key: 'jump_power', label: 'Jump power', min: 1, max: 120, step: 1, missionId: 'moon-mode' },
+  { key: 'gravity', label: 'Gravity', min: 0, max: 30, step: 1 },
+  { key: 'obstacle_speed', label: 'Obstacle speed', min: 1, max: 40, step: 1, missionId: 'giant-mode' },
+  { key: 'obstacle_count', label: 'Obstacle count', min: 0, max: 18, step: 1, missionId: 'chaos-mode' },
+  { key: 'lives', label: 'Lives', min: 1, max: 30, step: 1, missionId: 'survivor-mode' },
+]
+
+const codeRows = [...variableRows, { key: 'player_size' as DinoConfigKey, label: 'Player size', min: 16, max: 120, step: 2 }]
+
+export function DinoLabScreen({ profile, onUpdateProfile }: DinoLabScreenProps) {
+  const [code, setCode] = useState(() => formatConfigCode(readConfigFromCode(loadDinoCode(), loadDinoConfig())))
   const [config, setConfig] = useState<DinoConfig>(loadDinoConfig)
+  const [draftConfig, setDraftConfig] = useState<DinoConfig>(() => readConfigFromCode(loadDinoCode(), loadDinoConfig()))
   const [runPulse, setRunPulse] = useState(0)
   const [runningCode, setRunningCode] = useState(false)
   const [runtimeState, setRuntimeState] = useState<RuntimeState>(pythonRunner.getState())
@@ -52,9 +69,44 @@ export function DinoLabScreen({ profile, onBack, onUpdateProfile }: DinoLabScree
     return () => window.clearTimeout(timeout)
   }, [toast])
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault()
+        void runCode()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  })
+
   const mission = dinoMissions[selectedMission]
-  const completedCount = profile.completedMissions.length
+  const completedCount = dinoMissions.filter((item) => profile.completedMissions.includes(item.id)).length
+  const challengeUnlocked = completedCount === dinoMissions.length
+  const challengeComplete = profile.badges.includes('runner-challenge')
   const missionHints = useMemo(() => getMissionHints(mission.id), [mission.id])
+  const missionTarget = challengeUnlocked ? null : getMissionTarget(mission.id)
+  const missionNumberLabel = challengeUnlocked ? 'FINAL CHALLENGE' : `MISSION ${mission.number}`
+  const missionName = challengeUnlocked
+    ? challengeComplete ? 'SLICE 01 COMPLETE' : 'CENTURY RUN'
+    : mission.title.toUpperCase()
+  const missionInstruction = challengeUnlocked
+    ? challengeComplete ? 'You finished the first pizza slice.' : 'Reach 100 points in the runner to complete Slice 01.'
+    : mission.instruction
+  const missionCardComplete = challengeUnlocked ? challengeComplete : profile.completedMissions.includes(mission.id)
+
+  const completeChallenge = () => {
+    if (!challengeUnlocked || challengeComplete) return
+    const nextProfile: StudentProfile = {
+      ...profile,
+      xp: profile.xp + 200,
+      badges: [...profile.badges, 'runner-challenge'],
+      lastActiveAt: new Date().toISOString(),
+    }
+    onUpdateProfile(nextProfile)
+    void saveCloudProgress(nextProfile, code, config).catch(() => undefined)
+    setToast({ message: 'Century Run cleared! Slice 01 complete. +200 XP', tone: 'success' })
+  }
 
   const runCode = async () => {
     if (runningCode) return
@@ -62,9 +114,12 @@ export function DinoLabScreen({ profile, onBack, onUpdateProfile }: DinoLabScree
     setToast(null)
     try {
       const result = await pythonRunner.run(code)
+      const nextCode = formatConfigCode(result.config)
+      setCode(nextCode)
       setConfig(result.config)
+      setDraftConfig(result.config)
       saveDinoConfig(result.config)
-      saveDinoCode(code)
+      saveDinoCode(nextCode)
       setRunPulse((value) => value + 1)
       setSaved(true)
 
@@ -86,7 +141,7 @@ export function DinoLabScreen({ profile, onBack, onUpdateProfile }: DinoLabScree
         lastActiveAt: new Date().toISOString(),
       }
       onUpdateProfile(nextProfile)
-      void saveCloudProgress(nextProfile, code, result.config).catch(() => undefined)
+      void saveCloudProgress(nextProfile, nextCode, result.config).catch(() => undefined)
 
       if (newlyCompleted.length) {
         const reward = newlyCompleted.reduce((total, item) => total + item.reward, 0)
@@ -119,93 +174,133 @@ export function DinoLabScreen({ profile, onBack, onUpdateProfile }: DinoLabScree
   }
 
   const reset = () => {
-    setCode(starterCode)
+    const nextCode = formatConfigCode(starterConfig)
+    setCode(nextCode)
     setConfig(starterConfig)
+    setDraftConfig(starterConfig)
     resetDinoStorage()
     setRunPulse((value) => value + 1)
     setShowReset(false)
-    setToast({ message: 'Dino Lab reset to its original signal.', tone: 'neutral' })
+    setToast({ message: 'Runner Lab reset to its original signal.', tone: 'neutral' })
+  }
+
+  const updateDraftVariable = (key: DinoConfigKey, rawValue: string) => {
+    const row = variableRows.find((item) => item.key === key)
+    const numericValue = Number(rawValue)
+    if (!row || !Number.isFinite(numericValue)) return
+    const nextConfig: DinoConfig = { ...draftConfig, [key]: clamp(numericValue, row.min, row.max) }
+    setDraftConfig(nextConfig)
+    setCode(formatConfigCode(nextConfig))
+  }
+
+  const stepDraftVariable = (key: DinoConfigKey, direction: 1 | -1) => {
+    const row = variableRows.find((item) => item.key === key)
+    if (!row) return
+    const nextValue = clamp(draftConfig[key] + row.step * direction, row.min, row.max)
+    const nextConfig: DinoConfig = { ...draftConfig, [key]: nextValue }
+    setDraftConfig(nextConfig)
+    setCode(formatConfigCode(nextConfig))
   }
 
   return (
     <main className="dino-lab-screen">
-      <div className="lab-toolbar">
-        <button className="back-button" onClick={onBack}><ArrowLeft size={18} /> Back</button>
-        <div className="lab-toolbar__title"><span>EXPERIENCE 01</span><strong>DINO LAB</strong><em>Variables</em></div>
-        <div className={`runtime-status runtime-status--${runtimeState}`}><i /> {runtimeState === 'ready' ? 'PYTHON READY' : runtimeState === 'booting' ? 'WAKING PYTHON...' : 'PYTHON OFFLINE'}</div>
-        <button className="hint-button" onClick={revealHint}><Lightbulb size={17} /> HINT <span>{Math.min(3, hintLevel + 1)}/3</span></button>
-      </div>
-
       <section className="lab-workspace">
         <div className="world-panel">
-          <div className="panel-label"><span>01</span><div><small>LIVE OUTPUT</small><strong>THE WORLD</strong></div><i>CLICK OR SPACE TO JUMP</i></div>
-          <DinoGame config={config} runPulse={runPulse} />
-          <div className="mission-dock">
-            <div className="mission-dock__title"><span>MISSIONS</span><small>{completedCount}/{dinoMissions.length} CLEARED</small></div>
-            <div className="mission-tabs">
-              {dinoMissions.map((item, index) => {
-                const complete = profile.completedMissions.includes(item.id)
+          <div className="world-panel__label">
+            <div>
+              <small>LIVE OUTPUT</small>
+              <strong>THE WORLD</strong>
+            </div>
+          </div>
+          <DinoGame
+            config={config}
+            runPulse={runPulse}
+            challengeActive={challengeUnlocked && !challengeComplete}
+            onChallengeComplete={completeChallenge}
+          />
+        </div>
+
+        <div className="lab-side">
+          <section className={`mission-card ${missionCardComplete ? 'is-complete' : ''}`}>
+            <span className="mission-card__icon"><Flag size={34} fill="currentColor" /></span>
+            <div className="mission-card__copy">
+              <span className="mission-card__lab-name">RUNNER LAB</span>
+              <small>{missionNumberLabel}</small>
+              <strong>{missionName}</strong>
+              <p>{missionInstruction}</p>
+            </div>
+            <button className="mission-card__hint" onClick={revealHint}>
+              <Lightbulb size={18} />
+              HINT
+              <span>{Math.min(3, hintLevel + 1)}/3</span>
+            </button>
+          </section>
+
+          <div className="code-panel">
+            <div className="code-panel__bar">
+              <div><span className="python-mark">PY</span><strong>PYTHON</strong></div>
+              <span><Save size={14} /> {saved ? 'runner_lab.py' : 'saving...'}</span>
+            </div>
+            <div className="variable-console" role="group" aria-label="Python code editor">
+              {variableRows.map((row, index) => {
+                const complete = row.missionId ? profile.completedMissions.includes(row.missionId) : false
+                const target = missionTarget === row.key
                 return (
-                  <button
-                    key={item.id}
-                    className={`${selectedMission === index ? 'is-active' : ''} ${complete ? 'is-complete' : ''}`}
-                    onClick={() => { setSelectedMission(index); setShowHint(false); setHintLevel(0) }}
-                  >
-                    <span>{complete ? <Check size={13} /> : item.number}</span>
-                    <strong>{item.title}</strong>
-                  </button>
+                  <div key={row.key} className={`variable-row ${target ? 'is-target' : ''} ${complete ? 'is-complete' : ''}`}>
+                    <span className="variable-row__line">{index + 1}</span>
+                    <label className="variable-row__name" htmlFor={`variable-${row.key}`}>{row.key}</label>
+                    <span className="variable-row__equals">=</span>
+                    <div className="variable-value">
+                      <input
+                        id={`variable-${row.key}`}
+                        type="number"
+                        min={row.min}
+                        max={row.max}
+                        step={row.step}
+                        value={draftConfig[row.key]}
+                        onChange={(event) => updateDraftVariable(row.key, event.target.value)}
+                        aria-label={`${row.label} value`}
+                      />
+                      <div className="variable-stepper">
+                        <button type="button" onClick={() => stepDraftVariable(row.key, 1)} aria-label={`Increase ${row.label}`}><ChevronUp size={17} /></button>
+                        <button type="button" onClick={() => stepDraftVariable(row.key, -1)} aria-label={`Decrease ${row.label}`}><ChevronDown size={17} /></button>
+                      </div>
+                    </div>
+                    {complete && <Check className="variable-row__check" size={18} />}
+                  </div>
                 )
               })}
             </div>
-            <div className="mission-brief">
-              <div><small>CURRENT MISSION // {mission.number}</small><strong>{mission.title}</strong><p>{mission.instruction}</p></div>
-              <span>+{mission.reward} XP</span>
-              {profile.completedMissions.includes(mission.id) && <b><Check size={14} /> CLEARED</b>}
+            <div className="code-actions">
+              <button className="reset-button" onClick={() => setShowReset(true)}><RotateCcw size={17} /> RESET</button>
+              <button className="run-button" onClick={runCode} disabled={runningCode || runtimeState === 'unavailable'}>
+                {runningCode ? <LoaderCircle className="spin" size={22} /> : <Play size={23} fill="currentColor" />}
+                {runningCode ? 'RUNNING WORLD...' : 'RUN WORLD'}
+                <kbd>CTRL + ENTER</kbd>
+              </button>
             </div>
+            <div className="code-message"><Zap size={18} /><span>Run the world to see how your changes affect the game.</span></div>
           </div>
-        </div>
-
-        <div className="code-panel">
-          <div className="panel-label panel-label--code"><span>02</span><div><small>PYTHON CONTROL</small><strong>THE CODE</strong></div><i className={saved ? 'is-saved' : ''}><Save size={13} /> {saved ? 'SAVED' : 'SAVING'}</i></div>
-          <div className="code-message"><Zap size={15} /><span>Change a number. Then run it and watch the world react.</span></div>
-          <div className="editor-shell">
-            <div className="editor-tab"><span className="python-mark">PY</span> dino_lab.py <i>●</i></div>
-            <CodeMirror
-              value={code}
-              height="100%"
-              theme="dark"
-              extensions={[python()]}
-              onChange={setCode}
-              basicSetup={{
-                foldGutter: false,
-                dropCursor: false,
-                allowMultipleSelections: false,
-                indentOnInput: false,
-                bracketMatching: true,
-                closeBrackets: false,
-                autocompletion: false,
-                rectangularSelection: false,
-                crosshairCursor: false,
-                highlightActiveLine: true,
-                highlightSelectionMatches: false,
-                closeBracketsKeymap: false,
-                searchKeymap: false,
-                foldKeymap: false,
-                completionKeymap: false,
-              }}
-              aria-label="Python code editor"
-            />
-          </div>
-          <div className="code-actions">
-            <button className="reset-button" onClick={() => setShowReset(true)}><RotateCcw size={16} /> RESET</button>
-            <button className="run-button" onClick={runCode} disabled={runningCode || runtimeState === 'unavailable'}>
-              {runningCode ? <LoaderCircle className="spin" size={20} /> : <Play size={20} fill="currentColor" />}
-              {runningCode ? 'RUNNING PYTHON...' : 'RUN IT'}
-            </button>
-          </div>
-          <div className="code-footer"><span>REAL PYTHON · SAFE MODE</span><span>Changes run inside your browser</span></div>
         </div>
       </section>
+
+      <nav className="mission-stepbar" aria-label={`${completedCount} of ${dinoMissions.length} missions complete`}>
+        {dinoMissions.map((item, index) => {
+          const complete = profile.completedMissions.includes(item.id)
+          return (
+            <button
+              key={item.id}
+              className={`${selectedMission === index ? 'is-active' : ''} ${complete ? 'is-complete' : ''}`}
+              onClick={() => { setSelectedMission(index); setShowHint(false); setHintLevel(0) }}
+              aria-label={`${item.number} ${item.title}${complete ? ', complete' : ''}`}
+            >
+              <span>{item.number}</span>
+              <strong>{item.title}</strong>
+              {complete && <Check size={22} />}
+            </button>
+          )
+        })}
+      </nav>
 
       {showHint && (
         <aside className="hint-popover" role="dialog" aria-label="Progressive hint">
@@ -214,7 +309,7 @@ export function DinoLabScreen({ profile, onBack, onUpdateProfile }: DinoLabScree
           <small>HINT {hintLevel + 1} OF 3</small>
           <strong>{mission.title}</strong>
           <p>{missionHints[hintLevel]}</p>
-          {hintLevel < 2 && <button className="hint-next" onClick={() => setHintLevel((level) => level + 1)}>ONE MORE CLUE <ChevronRight size={15} /></button>}
+          {hintLevel < 2 && <button className="hint-next" onClick={() => setHintLevel((level) => level + 1)}>ONE MORE CLUE</button>}
           <div>{[0, 1, 2].map((level) => <i key={level} className={level <= hintLevel ? 'is-active' : ''} />)}</div>
         </aside>
       )}
@@ -250,11 +345,40 @@ export function DinoLabScreen({ profile, onBack, onUpdateProfile }: DinoLabScree
   )
 }
 
+function getMissionTarget(missionId: string): DinoConfigKey | null {
+  const targets: Record<string, DinoConfigKey> = {
+    'super-speed': 'player_speed',
+    'moon-mode': 'jump_power',
+    'giant-mode': 'obstacle_speed',
+    'chaos-mode': 'obstacle_count',
+    'survivor-mode': 'lives',
+  }
+  return targets[missionId] ?? null
+}
+
+function readConfigFromCode(code: string, fallback: DinoConfig): DinoConfig {
+  return codeRows.reduce<DinoConfig>((nextConfig, row) => {
+    const pattern = new RegExp(`^\\s*${row.key}\\s*=\\s*(-?\\d+(?:\\.\\d+)?)`, 'm')
+    const match = code.match(pattern)
+    if (!match) return nextConfig
+    const value = Number(match[1])
+    return Number.isFinite(value) ? { ...nextConfig, [row.key]: clamp(value, row.min, row.max) } : nextConfig
+  }, { ...fallback })
+}
+
+function formatConfigCode(config: DinoConfig): string {
+  return codeRows.map((row) => `${row.key} = ${config[row.key]}`).join('\n')
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
+
 function getMissionHints(missionId: string): string[] {
   const hints: Record<string, string[]> = {
-    'super-speed': ['Which value sounds like it controls movement speed?', 'Look at player_speed near the top.', 'Try setting player_speed to 15 or more.'],
-    'moon-mode': ['Which force pulls the runner back to the track?', 'Look at the line that starts with gravity.', 'Try setting gravity below 4.'],
-    'giant-mode': ['Find the value that controls how large the player looks.', 'The line is called player_size.', 'Try setting player_size to 80 or more.'],
+    'super-speed': ['Which value sounds like it controls movement speed?', 'Look at player_speed near the top.', 'Try setting player_speed to 10 or more.'],
+    'moon-mode': ['Which value sounds like it controls the jump?', 'Look at the line that starts with jump_power.', 'Try setting jump_power to 20 or more.'],
+    'giant-mode': ['Which value could make hazards move?', 'Look for obstacle_speed.', 'Try setting obstacle_speed to 10 or more.'],
     'chaos-mode': ['How could you ask the game for more obstacles?', 'Look for obstacle_count.', 'Try setting obstacle_count to 10 or more.'],
     'survivor-mode': ['What would help you survive many collisions?', 'The lives variable is near the bottom.', 'Try setting lives to 20 or more.'],
   }

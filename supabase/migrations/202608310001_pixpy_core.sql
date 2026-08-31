@@ -76,7 +76,7 @@ create index if not exists student_sessions_expiry_idx on private.student_sessio
 create index if not exists progress_student_idx on public.student_experience_progress(student_id);
 
 insert into public.experiences (slug, title, concept, sort_order)
-values ('dino-lab', 'Dino Lab', 'Variables', 1)
+values ('dino-lab', 'Runner Lab', 'Variables', 1)
 on conflict (slug) do update set title = excluded.title, concept = excluded.concept, sort_order = excluded.sort_order;
 
 insert into public.badges (slug, name, description, icon)
@@ -84,7 +84,7 @@ values
   ('first-run', 'First Signal', 'Ran Python for the first time', 'zap'),
   ('experimenter', 'Experimenter', 'Tried several different modes', 'sparkles'),
   ('chaos-engineer', 'Chaos Engineer', 'Created an extreme configuration', 'award'),
-  ('lab-survivor', 'Lab Survivor', 'Completed every Dino Lab mission', 'shield')
+  ('lab-survivor', 'Lab Survivor', 'Completed every Runner Lab mission', 'shield')
 on conflict (slug) do update set name = excluded.name, description = excluded.description, icon = excluded.icon;
 
 alter table public.classes enable row level security;

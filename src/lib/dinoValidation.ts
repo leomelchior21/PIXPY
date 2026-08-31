@@ -2,13 +2,13 @@ import { configKeys, starterConfig } from '../data/dinoLab'
 import type { DinoConfig, PythonRunResult } from '../types'
 
 const safeRanges: Record<keyof DinoConfig, [number, number]> = {
-  player_speed: [1, 30],
-  jump_power: [2, 30],
-  gravity: [0, 24],
-  obstacle_speed: [1, 25],
+  player_speed: [1, 50],
+  jump_power: [1, 120],
+  gravity: [0, 30],
+  obstacle_speed: [1, 40],
   obstacle_count: [0, 18],
   player_size: [16, 120],
-  lives: [1, 99],
+  lives: [1, 30],
 }
 
 export function validateDinoConfig(raw: Partial<Record<keyof DinoConfig, unknown>>): PythonRunResult {
