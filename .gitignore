@@ -1,0 +1,11 @@
+node_modules
+dist
+.env.local
+.env.*.local
+supabase/roster.seed.local.sql
+Turmas*.pdf
+*.log
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
