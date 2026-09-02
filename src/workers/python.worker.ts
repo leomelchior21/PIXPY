@@ -5,6 +5,7 @@ interface RunMessage {
   type: 'run'
   id: number
   code: string
+  inputs: string[]
 }
 
 interface PyodideRuntime {
@@ -29,34 +30,57 @@ void getRuntime()
 
 self.onmessage = async (event: MessageEvent<RunMessage>) => {
   if (event.data.type !== 'run') return
-  const { id, code } = event.data
+  const { id, code, inputs } = event.data
 
   const wrapped = `
-import ast, json
+import ast, contextlib, io, json
 
 _pixpy_source = ${JSON.stringify(code)}
+_pixpy_inputs = iter(json.loads(${JSON.stringify(JSON.stringify(inputs))}))
 _pixpy_tree = ast.parse(_pixpy_source, mode="exec")
-_pixpy_allowed = (
-    ast.Module, ast.Assign, ast.Name, ast.Store, ast.Constant,
-    ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp,
-    ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow,
+_pixpy_forbidden = (
+    ast.Import, ast.ImportFrom, ast.Attribute, ast.Subscript, ast.Lambda,
+    ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.For, ast.AsyncFor,
+    ast.While, ast.With, ast.AsyncWith, ast.Try, ast.Raise, ast.Delete,
+    ast.Global, ast.Nonlocal, ast.Await, ast.Yield, ast.YieldFrom,
 )
 for _pixpy_node in ast.walk(_pixpy_tree):
-    if not isinstance(_pixpy_node, _pixpy_allowed):
-        raise ValueError("Runner Lab only needs number assignments for now.")
+    if isinstance(_pixpy_node, _pixpy_forbidden):
+        raise ValueError("This playground only needs small input, math, and print programs.")
+    if isinstance(_pixpy_node, ast.Call):
+        if not isinstance(_pixpy_node.func, ast.Name) or _pixpy_node.func.id not in {"print", "input", "int", "float", "str", "round", "abs"}:
+            raise ValueError("That function is not available in this playground yet.")
 
-_pixpy_scope = {}
-exec(compile(_pixpy_tree, "runner_lab.py", "exec"), {"__builtins__": {}}, _pixpy_scope)
-_pixpy_keys = ["player_speed", "jump_power", "gravity", "obstacle_speed", "obstacle_count", "player_size", "lives"]
-_pixpy_result = {}
-for _pixpy_key in _pixpy_keys:
-    if _pixpy_key not in _pixpy_scope:
-        raise NameError(f"{_pixpy_key} is missing")
-    _pixpy_value = _pixpy_scope[_pixpy_key]
-    if isinstance(_pixpy_value, bool) or not isinstance(_pixpy_value, (int, float)):
-        raise TypeError(f"{_pixpy_key} needs a number")
-    _pixpy_result[_pixpy_key] = _pixpy_value
-json.dumps(_pixpy_result)
+def _pixpy_input(prompt=""):
+    if prompt:
+        print(prompt, end="")
+    try:
+        return next(_pixpy_inputs)
+    except StopIteration:
+        raise ValueError("This code asked for more input.")
+
+_pixpy_safe = {
+    "print": print,
+    "input": _pixpy_input,
+    "int": int,
+    "float": float,
+    "str": str,
+    "round": round,
+    "abs": abs,
+}
+_pixpy_scope = {"__builtins__": _pixpy_safe}
+_pixpy_output = io.StringIO()
+with contextlib.redirect_stdout(_pixpy_output):
+    exec(compile(_pixpy_tree, "pixpy_playground.py", "exec"), _pixpy_scope, _pixpy_scope)
+
+_pixpy_variables = {}
+for _pixpy_key, _pixpy_value in _pixpy_scope.items():
+    if _pixpy_key.startswith("_"):
+        continue
+    if _pixpy_value is None or isinstance(_pixpy_value, (str, int, float, bool)):
+        _pixpy_variables[_pixpy_key] = _pixpy_value
+
+json.dumps({"stdout": _pixpy_output.getvalue().rstrip(), "variables": _pixpy_variables})
 `
 
   try {

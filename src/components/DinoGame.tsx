@@ -16,9 +16,9 @@ interface DinoGameProps {
   onChallengeComplete?: () => void
 }
 
-const WORLD_WIDTH = 900
-const WORLD_HEIGHT = 500
-const GROUND_Y = 395
+const WORLD_WIDTH = 1000
+const WORLD_HEIGHT = 556
+const GROUND_Y = 445
 
 export function DinoGame({ config, runPulse, challengeActive = false, onChallengeComplete }: DinoGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -138,7 +138,7 @@ export function DinoGame({ config, runPulse, challengeActive = false, onChalleng
           }
 
           const playerLeft = 125
-          const playerRight = playerLeft + config.player_size * 0.82
+          const playerRight = playerLeft + config.player_size * 1.2
           const playerBottom = playerYRef.current + config.player_size
           const obstacleTop = GROUND_Y - obstacle.height
           const collided = playerRight > obstacle.x && playerLeft < obstacle.x + obstacle.width && playerBottom > obstacleTop + 6
@@ -268,41 +268,61 @@ function drawRunner(
   running: boolean,
   invincible: boolean,
 ) {
-  const unit = size / 10
+  const unit = size / 12
   context.save()
   context.translate(x, y)
   if (invincible && Math.floor(time / 90) % 2 === 0) context.globalAlpha = 0.28
   const runningFrame = running && Math.floor(time / 105) % 2 === 0
 
-  // Compact pixel runner: heavy outline, cyan suit, and a little lab cap.
-  context.fillStyle = '#00141f'
-  context.fillRect(unit * 2, unit, unit * 6, unit * 4)
-  context.fillRect(unit, unit * 2, unit * 8, unit * 3)
-  context.fillStyle = '#e6fbff'
-  context.fillRect(unit * 3, unit * 2, unit * 4, unit * 3)
-  context.fillStyle = '#18c9f4'
-  context.fillRect(unit * 2, 0, unit * 6, unit)
-  context.fillRect(unit * 7, unit, unit * 2, unit)
-  context.fillStyle = '#00141f'
-  context.fillRect(unit * 6, unit * 3, unit, unit)
-  context.fillRect(unit * 4, unit * 5, unit * 2, unit)
+  // Pixel T-Rex: long tail, heavy feet, short arms, jaw, teeth, and a bright eye.
+  const outline = '#07151a'
+  const skin = '#79dc58'
+  const highlight = '#b8f34a'
+  context.fillStyle = outline
+  context.beginPath()
+  context.moveTo(0, unit * 7)
+  context.lineTo(unit * 5, unit * 4)
+  context.lineTo(unit * 7, unit * 9)
+  context.closePath()
+  context.fill()
+  context.fillRect(unit * 4, unit * 3, unit * 8, unit * 7)
+  context.fillRect(unit * 9, 0, unit * 8, unit * 6)
+  context.fillRect(unit * 12, unit * 5, unit * 4, unit * 2)
 
-  context.fillStyle = '#00aee8'
-  context.fillRect(unit * 2, unit * 6, unit * 6, unit * 3)
-  context.fillStyle = '#dff9ff'
-  context.fillRect(unit * 4, unit * 7, unit * 2, unit)
+  context.fillStyle = skin
+  context.beginPath()
+  context.moveTo(unit, unit * 7)
+  context.lineTo(unit * 5, unit * 5)
+  context.lineTo(unit * 6, unit * 8)
+  context.closePath()
+  context.fill()
+  context.fillRect(unit * 5, unit * 4, unit * 6, unit * 5)
+  context.fillRect(unit * 10, unit, unit * 6, unit * 4)
+  context.fillStyle = highlight
+  context.fillRect(unit * 6, unit * 5, unit * 3, unit * 3)
 
-  context.fillStyle = '#00141f'
+  context.fillStyle = '#f7fbff'
+  context.fillRect(unit * 13, unit, unit, unit)
+  context.fillStyle = outline
+  context.fillRect(unit * 13.35, unit * 1.15, unit * .55, unit * .55)
+  context.fillRect(unit * 13, unit * 4, unit * 4, unit)
+  context.fillStyle = '#fff7d8'
+  context.fillRect(unit * 14, unit * 4, unit * .7, unit * .75)
+  context.fillRect(unit * 16, unit * 4, unit * .7, unit * .75)
+
+  context.fillStyle = outline
+  context.fillRect(unit * 9, unit * 7, unit * 4, unit)
+  context.fillRect(unit * 12, unit * 7, unit, unit * 2)
   if (runningFrame) {
-    context.fillRect(unit, unit * 6, unit * 2, unit)
-    context.fillRect(unit * 7, unit * 8, unit * 2, unit)
-    context.fillRect(unit * 2, unit * 9, unit * 2, unit)
-    context.fillRect(unit * 6, unit * 9, unit * 3, unit)
+    context.fillRect(unit * 5, unit * 9, unit * 2, unit * 3)
+    context.fillRect(unit * 5, unit * 11, unit * 4, unit)
+    context.fillRect(unit * 9, unit * 8, unit * 2, unit * 3)
+    context.fillRect(unit * 9, unit * 10, unit * 4, unit)
   } else {
-    context.fillRect(unit, unit * 8, unit * 2, unit)
-    context.fillRect(unit * 7, unit * 6, unit * 2, unit)
-    context.fillRect(unit * 2, unit * 9, unit * 3, unit)
-    context.fillRect(unit * 6, unit * 9, unit * 2, unit)
+    context.fillRect(unit * 5, unit * 8, unit * 2, unit * 3)
+    context.fillRect(unit * 4, unit * 10, unit * 4, unit)
+    context.fillRect(unit * 9, unit * 9, unit * 2, unit * 3)
+    context.fillRect(unit * 9, unit * 11, unit * 4, unit)
   }
   context.restore()
 }

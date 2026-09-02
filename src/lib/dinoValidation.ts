@@ -1,34 +1,35 @@
-import { configKeys, starterConfig } from '../data/dinoLab'
-import type { DinoConfig, PythonRunResult } from '../types'
+import { starterValues, valuesToConfig } from '../data/dinoLab'
+import type { DinoRunResult, DinoValues } from '../types'
 
-const safeRanges: Record<keyof DinoConfig, [number, number]> = {
-  player_speed: [1, 50],
-  jump_power: [1, 120],
+const safeRanges: Record<keyof DinoValues, [number, number]> = {
+  speed: [1, 50],
+  jump: [1, 120],
   gravity: [0, 30],
-  obstacle_speed: [1, 40],
-  obstacle_count: [0, 18],
+  obstacles: [0, 18],
   player_size: [16, 120],
-  lives: [1, 30],
 }
 
-export function validateDinoConfig(raw: Partial<Record<keyof DinoConfig, unknown>>): PythonRunResult {
-  const config = { ...starterConfig }
+export function validateDinoValues(raw: Partial<Record<keyof DinoValues, unknown>>): DinoRunResult {
+  const values = { ...starterValues }
+  const safeValues = { ...starterValues }
   const warnings: string[] = []
 
-  for (const key of configKeys) {
+  for (const key of Object.keys(starterValues) as Array<keyof DinoValues>) {
     const value = raw[key]
-    if (typeof value !== 'number' || !Number.isFinite(value)) {
-      throw new Error(`${key} needs a real number.`)
-    }
+    if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`${key} needs a real number.`)
+    values[key] = value
     const [min, max] = safeRanges[key]
     const clamped = Math.min(max, Math.max(min, value))
-    config[key] = clamped
-    if (value !== clamped) {
-      warnings.push(`${key} was safely capped at ${clamped}. The lab survived!`)
-    }
+    safeValues[key] = clamped
+    if (value !== clamped) warnings.push(reactionForClamp(key, value, clamped))
   }
 
-  config.obstacle_count = Math.round(config.obstacle_count)
-  config.lives = Math.round(config.lives)
-  return { config, warnings }
+  safeValues.obstacles = Math.round(safeValues.obstacles)
+  return { values, config: valuesToConfig(safeValues), warnings }
+}
+
+function reactionForClamp(key: keyof DinoValues, requested: number, clamped: number): string {
+  if (key === 'player_size' && requested > clamped) return 'THAT IS TOO MUCH DINO. PixPy kept the lab standing.'
+  if (key === 'obstacles' && requested > clamped) return 'OBSTACLE APOCALYPSE PREVENTED. The lab capped it safely.'
+  return `${key} was safely capped at ${clamped}. The experiment still ran.`
 }

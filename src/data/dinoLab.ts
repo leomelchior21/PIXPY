@@ -1,70 +1,41 @@
-import type { DinoConfig, Mission } from '../types'
+import type { DinoConfig, DinoValues } from '../types'
 
-export const starterCode = `player_speed = 6
-jump_power = 12
-gravity = 8
-obstacle_speed = 5
-obstacle_count = 3
-player_size = 42
-lives = 3`
-
-export const starterConfig: DinoConfig = {
-  player_speed: 6,
-  jump_power: 12,
+export const starterValues: DinoValues = {
+  speed: 6,
+  jump: 12,
   gravity: 8,
-  obstacle_speed: 5,
-  obstacle_count: 3,
+  obstacles: 3,
   player_size: 42,
-  lives: 3,
 }
 
-export const dinoMissions: Mission[] = [
-  {
-    id: 'super-speed',
-    number: '01',
-    title: 'Basics',
-    instruction: 'Change player_speed and make the runner move faster.',
-    reward: 80,
-    check: (config) => config.player_speed >= 10,
-  },
-  {
-    id: 'moon-mode',
-    number: '02',
-    title: 'Jump Higher',
-    instruction: 'Raise jump_power to clear taller spikes.',
-    reward: 90,
-    check: (config) => config.jump_power >= 20,
-  },
-  {
-    id: 'giant-mode',
-    number: '03',
-    title: 'Moving Hazards',
-    instruction: 'Make obstacles move faster.',
-    reward: 100,
-    check: (config) => config.obstacle_speed >= 10,
-  },
-  {
-    id: 'chaos-mode',
-    number: '04',
-    title: 'Chaos Mode',
-    instruction: 'Fill the track with obstacles.',
-    reward: 110,
-    check: (config) => config.obstacle_count >= 10,
-  },
-  {
-    id: 'survivor-mode',
-    number: '05',
-    title: 'Final Boss',
-    instruction: 'Give yourself enough lives for the final run.',
-    reward: 120,
-    check: (config) => config.lives >= 20,
-  },
-]
+export const starterCode = formatDinoCode(starterValues)
+
+export const starterConfig: DinoConfig = valuesToConfig(starterValues)
 
 export const dinoHints = [
-  'Which value controls how strongly the runner is pulled back to the ground?',
-  'Look at the line that starts with gravity.',
-  'Try changing gravity = 8 to a number below 4, then run the code.',
+  'Move one slider and run the world.',
+  'Try making gravity smaller or player_size bigger.',
+  'Every slider writes a real Python variable for you.',
 ]
 
-export const configKeys = Object.keys(starterConfig) as Array<keyof DinoConfig>
+export function valuesToConfig(values: DinoValues): DinoConfig {
+  return {
+    player_speed: values.speed,
+    jump_power: values.jump,
+    gravity: values.gravity,
+    obstacle_speed: Math.max(2, Math.min(20, values.speed * 0.8)),
+    obstacle_count: values.obstacles,
+    player_size: values.player_size,
+    lives: 3,
+  }
+}
+
+export function formatDinoCode(values: DinoValues): string {
+  return [
+    `speed = ${values.speed}`,
+    `jump = ${values.jump}`,
+    `gravity = ${values.gravity}`,
+    `obstacles = ${values.obstacles}`,
+    `player_size = ${values.player_size}`,
+  ].join('\n')
+}

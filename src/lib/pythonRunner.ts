@@ -1,13 +1,15 @@
-import { validateDinoConfig } from './dinoValidation'
-import type { DinoConfig, PythonRunResult } from '../types'
+import { validateDinoValues } from './dinoValidation'
+import { runGuidedPython } from './guidedPython'
+import type { DinoRunResult, DinoValues, RuntimeState, ScriptRunResult } from '../types'
 
-type RuntimeState = 'booting' | 'ready' | 'unavailable'
 type StateListener = (state: RuntimeState) => void
 
 interface PendingRun {
-  resolve: (value: PythonRunResult) => void
+  resolve: (value: ScriptRunResult) => void
   reject: (reason: Error) => void
   timeout: number
+  code: string
+  inputs: string[]
 }
 
 class PythonRunner {
@@ -34,13 +36,16 @@ class PythonRunner {
         window.clearTimeout(pending.timeout)
         this.pending.delete(message.id)
         if (message.type === 'error') {
-          pending.reject(new Error(cleanPythonError(message.error ?? 'Python could not run that code.')))
+          if (this.state === 'unavailable' || /fetch|network|load/i.test(message.error ?? '')) {
+            pending.resolve(runGuidedPython(pending.code, pending.inputs))
+          } else {
+            pending.reject(new Error(cleanPythonError(message.error ?? 'Python could not run that code.')))
+          }
         } else {
           try {
-            const parsed = JSON.parse(message.result ?? '{}') as DinoConfig
-            pending.resolve(validateDinoConfig(parsed))
-          } catch (error) {
-            pending.reject(error instanceof Error ? error : new Error('The result was not valid.'))
+            pending.resolve(JSON.parse(message.result ?? '{}') as ScriptRunResult)
+          } catch {
+            pending.reject(new Error('Python returned something PixPy could not read.'))
           }
         }
       }
@@ -59,14 +64,12 @@ class PythonRunner {
 
   subscribe(listener: StateListener) {
     this.listeners.add(listener)
-    return () => {
-      this.listeners.delete(listener)
-    }
+    return () => this.listeners.delete(listener)
   }
 
-  run(code: string): Promise<PythonRunResult> {
+  runScript(code: string, inputs: string[] = []): Promise<ScriptRunResult> {
     if (!this.worker || this.state === 'unavailable') {
-      return Promise.reject(new Error('The Python engine is offline. Check the connection and try again.'))
+      return Promise.resolve(runGuidedPython(code, inputs))
     }
     const id = this.nextId++
     return new Promise((resolve, reject) => {
@@ -77,15 +80,20 @@ class PythonRunner {
         this.createWorker()
         reject(new Error('That code took too long, so PixPy stopped it safely.'))
       }, 6000)
-      this.pending.set(id, { resolve, reject, timeout })
-      this.worker?.postMessage({ type: 'run', id, code })
+      this.pending.set(id, { resolve, reject, timeout, code, inputs })
+      this.worker?.postMessage({ type: 'run', id, code, inputs })
     })
+  }
+
+  async runDino(code: string): Promise<DinoRunResult> {
+    const result = await this.runScript(code)
+    return validateDinoValues(result.variables as Partial<Record<keyof DinoValues, unknown>>)
   }
 }
 
 function cleanPythonError(error: string): string {
   const lines = error.split('\n').map((line) => line.trim()).filter(Boolean)
-  const useful = [...lines].reverse().find((line) => /(?:Error|missing|number)/.test(line))
+  const useful = [...lines].reverse().find((line) => /(?:Error|missing|number|input|available)/i.test(line))
   return useful?.replace(/^PythonError:\s*/, '') ?? 'Python could not understand that yet.'
 }
 

@@ -1,18 +1,198 @@
 # PixPy
 
-PixPy is a game-like Python playground for a small middle-school classroom. The first vertical slice, Runner Lab, lets students hack an original pixel runner, observe immediate consequences, and discover variables through play.
+> Tiny Python experiments. Immediate consequences. Real understanding.
+
+PixPy is a classroom-first Python experience playground for middle-school students. It is a collection of short, polished interactions where students change real Python, run it, and immediately see what happens.
+
+The guiding loop is:
+
+**PLAY -> CHANGE -> RUN -> SEE -> UNDERSTAND**
+
+PixPy is not an LMS, a traditional course, a browser IDE, or a student-management platform. The product should feel closer to an interactive science exhibit, mini game, and coding playground than to a sequence of lessons and quizzes.
+
+## Product principles
+
+- One concept, one playful interaction, and one visible consequence.
+- Interaction comes before explanation.
+- All student-facing text is short, accessible English.
+- Students manipulate valid Python rather than a PixPy-specific language.
+- Every activity is open; recommended order never becomes enforced progression.
+- Completion is lightweight: a simple `DONE` or check mark, with no global XP economy.
+- Strange values should create playful feedback, never freeze or crash the browser.
+- Core activities behave like one-screen apps and do not require document-level scrolling.
+
+The product succeeds when a student asks, “What happens if I change this?”
+
+## Student session
+
+Entry asks only:
+
+> WHAT'S YOUR NAME?
+
+There are no passwords, accounts, classes, avatars, or profiles. The name exists only to personalize the current browser session.
+
+Progress is stored in `sessionStorage`, not `localStorage` or a cloud database. It survives navigation and accidental refreshes, but may disappear when the tab or browser session ends. That behavior is intentional.
+
+The app header has a **QUICK LIST** for jumping directly to any activity in the current group. The quick list also contains **PRINT MY PROGRESS**, which produces a clean A4 record containing the student's name, date, completed experiences, Final Boss progress, and optionally their custom Black Box work. The website chrome must not appear in print.
+
+## Main experience map
+
+The home screen has three large areas. Variables is available now; unfinished groups appear as disabled gray cards so their status is unambiguous:
+
+| Area | Promise | Delivery status |
+| --- | --- | --- |
+| Variables | Change values and watch Python remember them. | First complete area |
+| Conditionals | Make choices with code. | Coming next |
+| Functions | Build actions and reuse them. | Coming next |
+
+This is a simple world selector, not a dashboard. It has no graphs, side navigation, statistics, leaderboards, or locked content.
+
+## Variables
+
+Variables is the first classroom-ready module. Its recommended sequence creates a small conceptual arc without enforcing prerequisites:
+
+1. **Dino Variables** — values can change things.
+2. **Print Playground** — Python can output values.
+3. **Black Box** — values can be transformed.
+4. **Input Machine** — values can enter the program.
+5. **Memory Machine** — variables remember those values.
+6. **Build a Black Box** — now combine everything.
+7. **Final Bosses** — prove you can use it.
+
+Every experience is always selectable and replayable.
+
+### Dino Variables
+
+Students freely move sliders for real Python values such as `speed`, `jump`, `gravity`, `obstacles`, and `player_size`, then run a zoomed-out pixel T-Rex game. There are no levels or prescribed challenges: the goal is to make a change and immediately observe its effect.
+
+The concept is revealed only after experimentation:
+
+> A variable gives a name to a value.
+
+Rendering clamps extreme values safely while preserving playful responses such as “THAT IS TOO MUCH DINO.”
+
+### Print Playground
+
+Students write anything they want inside `print()` and immediately see it in a visible terminal. Code and output remain side by side without idea buttons or predefined challenge categories.
+
+### Black Box
+
+Students physically touch a dark, tactile Black Box to collect input-to-output clues. After collecting at least two pairs, they form and test a hypothesis. A successful hypothesis reveals the real Python that performed the transformation.
+
+### Input Machine
+
+A vending-machine-style interaction makes the flow visible:
+
+**HUMAN -> `input()` -> VARIABLE -> PYTHON -> `print()` -> HUMAN**
+
+Challenges include echoing a message, doubling a number, adding ten, and a simple age machine.
+
+### Memory Machine
+
+Students press **EXECUTE LINE** and follow one highlighted line at a time while code, memory, and output remain visible side by side. Movement and receiving animations make the result of each line explicit. After completing all five examples, students advance through a ten-question code-output quiz before the activity is marked complete.
+
+### Build a Black Box
+
+Students edit a small input/process/output program and test it with multiple values. Available transformations are presented as complete, clickable Python statements rather than isolated operator symbols. **HIDE MY CODE** turns the result into a classroom game where another student tries to crack the rule. The progress printout can include the inputs and outputs without revealing the answer.
+
+### Final Bosses
+
+Final Bosses contains approximately 12–15 compact programming challenges, shown one at a time or in a small stage grid. It covers arithmetic, quotient and remainder, temperature conversion, averages, fares, discounts, powers, and a student-created formula.
+
+## Experience shell
+
+Every activity uses a familiar compact structure:
+
+- a compact header with Back, a one-line `title — question`, and Hint;
+- a primary interaction or visual world;
+- a focused Python editor or controls with Run and Reset;
+- short instructions and feedback inside the activity itself, with no persistent bottom banner;
+- at most three predefined, progressively stronger hints.
+
+The interaction is the star. Instructions should take seconds to read. `RUN` and `HINT` must never be hidden below the fold.
+
+Target viewports:
+
+- 768x1024 iPad portrait;
+- 1024x768 iPad landscape;
+- 1180x820 iPad landscape;
+- 1366x768 Chromebook or laptop;
+- 1440x900 laptop;
+- 1920x1080 desktop.
+
+## Visual direction
+
+PixPy uses a warm, spacious neo-brutalist interface: soft paper backgrounds, folder-shaped cards, crisp black outlines, rounded corners, offset shadows, strong typography, and one bright accent color per activity. Dark surfaces are reserved for code editors, quizzes, terminals, the Dino game, and other focused interactive objects. It should feel playful, clever, experimental, polished, and slightly rebellious—never childish, corporate, crowded, or like an admin dashboard.
+
+Pixel art supports the interaction instead of overwhelming it. Touch targets, keyboard focus, readable contrast, and reduced-motion preferences remain first-class requirements.
+
+## Technical direction
+
+- React, TypeScript, and Vite.
+- CodeMirror for a focused, touch-friendly Python editor.
+- Pyodide or the existing browser Python worker when it remains reliable.
+- Canvas, DOM, or CSS chosen per experience rather than forced through one renderer.
+- Small reusable components such as `ExperienceShell`, `CodeEditor`, `PythonRunner`, `HintButton`, `RunButton`, and `PrintProgress`.
+- A tiny session layer for the student's name, completed activities, boss progress, and custom Black Box work.
+- Lazy-loaded experiences where that improves startup performance.
+
+Conceptual source structure:
+
+```text
+src/
+  app/
+    home/
+    variables/
+    conditionals/
+    functions/
+  experiences/
+    variables/
+      dino/
+      print-playground/
+      black-box/
+      input-machine/
+      memory-machine/
+      build-black-box/
+      final-bosses/
+  components/
+    ExperienceShell/
+    CodeEditor/
+    PythonRunner/
+    HintButton/
+    RunButton/
+    PrintProgress/
+  session/
+    studentSession.ts
+    progressSession.ts
+```
+
+Adapt this structure to the codebase when reuse produces a cleaner result; it is a direction, not a rigid template.
+
+## Current delivery
+
+The playground refactor includes:
+
+- simple name entry;
+- `sessionStorage` progress;
+- the three-area home screen;
+- simplified navigation;
+- a reusable no-scroll experience shell;
+- Print My Progress;
+- all seven Variables experiences;
+- no Supabase, authentication, avatars, backend persistence, ranking, or global XP.
+
+The working Dino canvas, safe value clamping, CodeMirror editor, and browser Python worker were preserved and simplified. Black Box, Input Machine, Memory Machine, Build a Black Box, and Final Bosses were built as new modular experiences.
+
+Conditionals and Functions currently provide open visual previews only. Their playable experiences are intentionally outside this delivery.
 
 ## Run locally
 
-1. Copy `.env.example` to `.env.local` and add the Supabase project URL and publishable key.
-2. Run `npm install`.
-3. Run `npm run dev`.
+```sh
+npm install
+npm run dev
+```
 
-The teacher/test access ID is configured in the classroom handoff and is intentionally not printed in the UI. Student access is validated by a protected Supabase RPC after the database migration and private roster seed have been applied. If Supabase is unavailable, an existing local session still works and progress is saved in the browser.
-
-## Supabase
-
-Run `supabase/migrations/202608310001_pixpy_core.sql` in the Supabase SQL editor. The roster seed is generated locally from the school list and is ignored by Git so student information is not published. See `supabase/README.md`.
+PixPy requires no backend, account, database, or environment variables.
 
 ## Quality checks
 
@@ -20,13 +200,13 @@ Run `supabase/migrations/202608310001_pixpy_core.sql` in the Supabase SQL editor
 npm run lint
 npm test
 npm run build
+npm run check:viewports
 ```
 
-## Architecture
+Also verify every core experience at each target viewport, with touch and keyboard input, after refresh, and in the print preview. No activity may clip its editor, visual, Run button, or Hint button.
 
-- React + TypeScript + Vite
-- CodeMirror for a focused, touch-friendly Python editor
-- Pyodide loaded on demand for genuine in-browser Python execution
-- Canvas for the Runner Lab game layer
-- Supabase RPCs with deny-by-default RLS for student identification and progress
-- Local-first saves for classroom network resilience
+## Product test
+
+In a 45-minute class, a student should interact within 30 seconds, change Python within two minutes, cause something unexpected within five minutes, and understand at least one programming idea better within ten minutes.
+
+Everything is open. Everything can be replayed. Everything invites experimentation.

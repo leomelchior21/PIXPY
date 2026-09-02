@@ -1,25 +1,33 @@
-export type AppRoute = 'login' | 'avatar' | 'home' | 'journey' | 'ranking' | 'profile' | 'dino-lab' | 'teacher'
+export const activityIds = [
+  'dino-variables',
+  'print-playground',
+  'black-box',
+  'input-machine',
+  'memory-machine',
+  'build-black-box',
+  'final-bosses',
+] as const
 
-export interface Avatar {
-  id: string
-  skin: string
-  hair: string
-  outfit: string
-  accent: string
-  accessory?: 'glasses' | 'headphones' | 'visor' | 'cap'
-}
+export type ActivityId = (typeof activityIds)[number]
 
-export interface StudentProfile {
-  id: string
-  accessId: string
-  displayName: string
-  avatarId: string | null
-  xp: number
-  completedMissions: string[]
-  badges: string[]
-  sessionToken?: string
-  isTeacher: boolean
-  lastActiveAt: string
+export type AppRoute =
+  | 'home'
+  | 'variables'
+  | 'conditionals'
+  | 'functions'
+  | ActivityId
+
+export interface SessionProgress {
+  name: string
+  completed: ActivityId[]
+  blackBoxLevels: number[]
+  inputModes: string[]
+  memoryExamples: string[]
+  memoryQuizAnswers: number[]
+  bossProgress: number[]
+  blackBoxCode: string
+  blackBoxTests: Array<{ input: number; output: number }>
+  interestingValues: string[]
 }
 
 export interface DinoConfig {
@@ -32,28 +40,25 @@ export interface DinoConfig {
   lives: number
 }
 
-export type DinoConfigKey = keyof DinoConfig
-
-export interface Mission {
-  id: string
-  number: string
-  title: string
-  instruction: string
-  reward: number
-  check: (config: DinoConfig) => boolean
+export interface DinoValues {
+  speed: number
+  jump: number
+  gravity: number
+  obstacles: number
+  player_size: number
 }
 
-export interface PythonRunResult {
+export type DinoValueKey = keyof DinoValues
+
+export interface DinoRunResult {
+  values: DinoValues
   config: DinoConfig
   warnings: string[]
 }
 
-export interface RankingEntry {
-  rank: number
-  displayName: string
-  avatarId: string
-  xp: number
-  progress: number
-  badges: number
-  isCurrent?: boolean
+export interface ScriptRunResult {
+  stdout: string
+  variables: Record<string, string | number | boolean | null>
 }
+
+export type RuntimeState = 'booting' | 'ready' | 'unavailable'

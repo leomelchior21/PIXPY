@@ -1,126 +1,76 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { BottomNav } from './components/BottomNav'
-import { Hud } from './components/Hud'
-import { isTeacherAccess, normalizeAccessId } from './lib/access'
-import { clearProfile, loadProfile, saveProfile } from './lib/storage'
-import { AvatarScreen } from './screens/AvatarScreen'
-import { HomeScreen } from './screens/HomeScreen'
-import { JourneyScreen } from './screens/JourneyScreen'
-import { LoginScreen } from './screens/LoginScreen'
-import { ProfileScreen } from './screens/ProfileScreen'
-import { TeacherScreen } from './screens/TeacherScreen'
-import type { AppRoute, StudentProfile } from './types'
+import { AppHeader } from './components/AppHeader'
+import { PrintProgress } from './components/PrintProgress'
+import { activityIds, type AppRoute, type SessionProgress } from './types'
+import { createSession, loadSession, saveSession } from './session/progressSession'
+import { ComingSoonScreen } from './screens/ComingSoonScreen'
+import { NameEntryScreen } from './screens/NameEntryScreen'
+import { PlaygroundHome } from './screens/PlaygroundHome'
+import { VariablesHome } from './screens/VariablesHome'
 
-const validRoutes: AppRoute[] = ['login', 'avatar', 'home', 'journey', 'ranking', 'profile', 'dino-lab', 'teacher']
+const DinoVariables = lazy(() => import('./experiences/variables/DinoVariables').then((module) => ({ default: module.DinoVariables })))
+const PrintPlayground = lazy(() => import('./experiences/variables/PrintPlayground').then((module) => ({ default: module.PrintPlayground })))
+const BlackBox = lazy(() => import('./experiences/variables/BlackBox').then((module) => ({ default: module.BlackBox })))
+const InputMachine = lazy(() => import('./experiences/variables/InputMachine').then((module) => ({ default: module.InputMachine })))
+const MemoryMachine = lazy(() => import('./experiences/variables/MemoryMachine').then((module) => ({ default: module.MemoryMachine })))
+const BuildBlackBox = lazy(() => import('./experiences/variables/BuildBlackBox').then((module) => ({ default: module.BuildBlackBox })))
+const FinalBosses = lazy(() => import('./experiences/variables/FinalBosses').then((module) => ({ default: module.FinalBosses })))
 
-const DinoLabScreen = lazy(() => import('./screens/DinoLabScreen').then((module) => ({ default: module.DinoLabScreen })))
-const RankingScreen = lazy(() => import('./screens/RankingScreen').then((module) => ({ default: module.RankingScreen })))
+const validRoutes: AppRoute[] = ['home', 'variables', 'conditionals', 'functions', ...activityIds]
 
-function initialRoute(profile: StudentProfile | null): AppRoute {
-  if (!profile) return 'login'
-  if (!profile.avatarId) return 'avatar'
-  const hash = window.location.hash.replace('#/', '') as AppRoute
-  if (validRoutes.includes(hash) && hash !== 'login' && hash !== 'avatar') return hash
-  return 'home'
+function routeFromHash(): AppRoute {
+  const candidate = window.location.hash.replace(/^#\/?/, '') as AppRoute
+  return validRoutes.includes(candidate) ? candidate : 'home'
 }
 
 export default function App() {
-  const [profile, setProfile] = useState<StudentProfile | null>(() => loadProfile())
-  const [route, setRoute] = useState<AppRoute>(() => initialRoute(loadProfile()))
-  const [soundOn, setSoundOn] = useState(() => localStorage.getItem('pixpy.sound') !== 'off')
+  const [progress, setProgress] = useState<SessionProgress | null>(() => loadSession())
+  const [route, setRoute] = useState<AppRoute>(routeFromHash)
 
   useEffect(() => {
-    const onHashChange = () => {
-      if (!profile) return
-      const hashRoute = window.location.hash.replace('#/', '') as AppRoute
-      if (validRoutes.includes(hashRoute) && hashRoute !== 'login') setRoute(hashRoute)
-    }
+    const onHashChange = () => setRoute(routeFromHash())
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
-  }, [profile])
+  }, [])
 
-  const navigate = (nextRoute: AppRoute) => {
-    if (nextRoute === 'teacher' && !profile?.isTeacher) return
-    setRoute(nextRoute)
-    if (nextRoute !== 'login' && nextRoute !== 'avatar') window.location.hash = `/${nextRoute}`
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  useEffect(() => {
+    if (progress) saveSession(progress)
+  }, [progress])
+
+  const navigate = (next: AppRoute) => {
+    setRoute(next)
+    window.history.replaceState(null, '', `#/${next}`)
   }
 
-  const identify = async (rawAccessId: string) => {
-    const accessId = normalizeAccessId(rawAccessId)
-    let nextProfile: StudentProfile
-    if (await isTeacherAccess(accessId)) {
-      nextProfile = {
-        id: crypto.randomUUID(),
-        accessId,
-        displayName: 'Leo',
-        avatarId: null,
-        xp: 0,
-        completedMissions: [],
-        badges: [],
-        isTeacher: true,
-        lastActiveAt: new Date().toISOString(),
-      }
-    } else {
-      const { identifyStudent } = await import('./lib/supabase')
-      nextProfile = await identifyStudent(accessId)
-    }
-    setProfile(nextProfile)
-    saveProfile(nextProfile)
-    setRoute(nextProfile.avatarId ? 'home' : 'avatar')
-  }
-
-  const updateProfile = (nextProfile: StudentProfile) => {
-    setProfile(nextProfile)
-    saveProfile(nextProfile)
-  }
-
-  const chooseAvatar = (avatarId: string) => {
-    if (!profile) return
-    const nextProfile = { ...profile, avatarId }
-    updateProfile(nextProfile)
-    void import('./lib/supabase')
-      .then(({ saveCloudProfile }) => saveCloudProfile(nextProfile))
-      .catch(() => undefined)
+  const start = (name: string) => {
+    const next = createSession(name)
+    setProgress(next)
     navigate('home')
   }
 
-  const logout = () => {
-    clearProfile()
-    setProfile(null)
-    setRoute('login')
-    window.history.replaceState(null, '', window.location.pathname)
-  }
+  if (!progress) return <NameEntryScreen onStart={start} />
 
-  const toggleSound = () => {
-    setSoundOn((current) => {
-      const next = !current
-      localStorage.setItem('pixpy.sound', next ? 'on' : 'off')
-      return next
-    })
-  }
-
-  if (!profile || route === 'login') return <LoginScreen onIdentify={identify} />
-  if (route === 'avatar') return <AvatarScreen displayName={profile.displayName} initialAvatar={profile.avatarId} onComplete={chooseAvatar} />
+  const experienceProps = { progress, onProgress: setProgress, onBack: () => navigate('variables') }
 
   return (
-    <div className={`app-shell ${route === 'dino-lab' ? 'app-shell--lab' : ''}`}>
-      <Hud profile={profile} route={route} soundOn={soundOn} onToggleSound={toggleSound} onNavigate={navigate} />
+    <div className={`app-shell route-${route}`}>
+      <AppHeader route={route} progress={progress} onNavigate={navigate} onPrint={() => window.print()} />
       <div className="app-content">
-        <Suspense fallback={<RouteLoader />}>
-          {route === 'home' && <HomeScreen profile={profile} onNavigate={navigate} />}
-          {route === 'journey' && <JourneyScreen profile={profile} onNavigate={navigate} />}
-          {route === 'ranking' && <RankingScreen profile={profile} />}
-          {route === 'profile' && <ProfileScreen profile={profile} onChangeAvatar={() => setRoute('avatar')} onLogout={logout} />}
-          {route === 'teacher' && profile.isTeacher && <TeacherScreen onNavigate={navigate} />}
-          {route === 'dino-lab' && <DinoLabScreen profile={profile} onBack={() => navigate('home')} onUpdateProfile={updateProfile} />}
+        <Suspense fallback={<div className="route-loader" role="status"><span /> Loading experiment...</div>}>
+          {route === 'home' && <PlaygroundHome progress={progress} onNavigate={navigate} />}
+          {route === 'variables' && <VariablesHome progress={progress} onNavigate={navigate} />}
+          {route === 'conditionals' && <ComingSoonScreen area="conditionals" onNavigate={navigate} />}
+          {route === 'functions' && <ComingSoonScreen area="functions" onNavigate={navigate} />}
+          {route === 'dino-variables' && <DinoVariables {...experienceProps} />}
+          {route === 'print-playground' && <PrintPlayground {...experienceProps} />}
+          {route === 'black-box' && <BlackBox {...experienceProps} />}
+          {route === 'input-machine' && <InputMachine {...experienceProps} />}
+          {route === 'memory-machine' && <MemoryMachine {...experienceProps} />}
+          {route === 'build-black-box' && <BuildBlackBox {...experienceProps} />}
+          {route === 'final-bosses' && <FinalBosses {...experienceProps} />}
         </Suspense>
       </div>
-      {route !== 'dino-lab' && route !== 'teacher' && <BottomNav route={route} onNavigate={navigate} />}
+      <PrintProgress progress={progress} />
     </div>
   )
-}
-
-function RouteLoader() {
-  return <div className="route-loader" role="status"><span /> Loading lab signal...</div>
 }
