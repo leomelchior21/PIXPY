@@ -14,7 +14,8 @@ describe('PixPy classroom session', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    const input = screen.getByLabelText("WHAT'S YOUR NAME?")
+    const input = screen.getByLabelText('What should we call you?')
+    expect(input).toHaveAttribute('placeholder', 'insert your name')
     await user.type(input, 'Leo')
     await user.click(screen.getByRole('button', { name: /let's go/i }))
 
@@ -28,12 +29,15 @@ describe('PixPy classroom session', () => {
       const number = String(index + 1).padStart(2, '0')
       expect(screen.getByRole('button', { name: new RegExp(`^${number} ${title}:`, 'i') })).toBeEnabled()
     }
+    await user.click(screen.getByRole('button', { name: 'Open Variables activity list' }))
+    expect(screen.getByRole('complementary', { name: 'Variables activities' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /print my progress/i })).not.toBeInTheDocument()
   })
 
   it('keeps the student name in sessionStorage after a refresh-style remount', async () => {
     const user = userEvent.setup()
     const first = render(<App />)
-    await user.type(screen.getByLabelText("WHAT'S YOUR NAME?"), 'Maya')
+    await user.type(screen.getByLabelText('What should we call you?'), 'Maya')
     await user.click(screen.getByRole('button', { name: /let's go/i }))
     expect(await screen.findByText('Maya', { selector: '.student-chip strong' })).toBeInTheDocument()
     first.unmount()

@@ -44,6 +44,7 @@ const session = {
   name: 'Leo',
   completed: [],
   blackBoxLevels: [],
+  blackBoxQuizAnswers: [],
   inputModes: [],
   memoryExamples: [],
   memoryQuizAnswers: [],
@@ -123,6 +124,36 @@ async function seedSession(send) {
   await send('Page.navigate', { url: `${appUrl}#/home` })
   await send('Page.reload', { ignoreCache: true })
   await waitFor(send, 'Boolean(document.querySelector(".playground-home"))')
+}
+
+async function checkNameEntry(send, size) {
+  await send('Emulation.setDeviceMetricsOverride', { width: size.width, height: size.height, deviceScaleFactor: 1, mobile: false })
+  await send('Page.navigate', { url: appUrl })
+  await waitFor(send, 'document.readyState === "complete"')
+  await send('Runtime.evaluate', { expression: `sessionStorage.removeItem('pixpy.session.v2')` })
+  await send('Page.reload', { ignoreCache: true })
+  await waitFor(send, 'Boolean(document.querySelector(".name-screen"))')
+  await sleep(700)
+  const result = await send('Runtime.evaluate', {
+    expression: `(() => {
+      const root = document.querySelector('.name-screen');
+      const rect = root.getBoundingClientRect();
+      const input = document.querySelector('#student-name');
+      return {
+        size: ${JSON.stringify(size.name)},
+        hasDocumentVerticalScroll: document.documentElement.scrollHeight > innerHeight + 1 || document.body.scrollHeight > innerHeight + 1,
+        rootInsideViewport: rect.top >= -1 && rect.bottom <= innerHeight + 1,
+        formVisible: ${visibleRectExpression('.name-card')},
+        inputVisible: ${visibleRectExpression('#student-name')},
+        placeholderCorrect: input?.placeholder === 'insert your name',
+      };
+    })()`,
+    returnByValue: true,
+  })
+  const screenshot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+  const screenshotPath = path.join(outputDir, `name-${size.name}.png`)
+  fs.writeFileSync(screenshotPath, Buffer.from(screenshot.data, 'base64'))
+  return { ...result.result.value, screenshotPath }
 }
 
 async function collectRouteMetrics(send, size, routeConfig) {
@@ -215,6 +246,39 @@ async function checkMemoryQuiz(send, size) {
   return { ...result.result.value, advanced: advanced.result.value, screenshotPath }
 }
 
+async function checkBlackBoxQuiz(send, size) {
+  const quizSession = { ...session, blackBoxLevels: [0, 1, 2], blackBoxQuizAnswers: [] }
+  await send('Emulation.setDeviceMetricsOverride', { width: size.width, height: size.height, deviceScaleFactor: 1, mobile: false })
+  await send('Runtime.evaluate', { expression: `sessionStorage.setItem('pixpy.session.v2', ${JSON.stringify(JSON.stringify(quizSession))})` })
+  await send('Page.reload', { ignoreCache: true })
+  await waitFor(send, 'document.readyState === "complete"')
+  await send('Page.navigate', { url: `${appUrl}#/black-box` })
+  await waitFor(send, 'Boolean(document.querySelector(".operation-quiz"))')
+  await sleep(250)
+  const result = await send('Runtime.evaluate', {
+    expression: `(() => {
+      const root = document.querySelector('.blackbox-quiz-experience');
+      const rect = root.getBoundingClientRect();
+      return {
+        size: ${JSON.stringify(size.name)},
+        hasDocumentVerticalScroll: document.documentElement.scrollHeight > innerHeight + 1 || document.body.scrollHeight > innerHeight + 1,
+        rootInsideViewport: rect.top >= -1 && rect.bottom <= innerHeight + 1,
+        quizVisible: ${visibleRectExpression('.operation-quiz')},
+        codeVisible: ${visibleRectExpression('.memory-quiz-code')},
+        optionCount: document.querySelectorAll('.memory-quiz-options button').length,
+      };
+    })()`,
+    returnByValue: true,
+  })
+  const screenshot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+  const screenshotPath = path.join(outputDir, `black-box-quiz-${size.name}.png`)
+  fs.writeFileSync(screenshotPath, Buffer.from(screenshot.data, 'base64'))
+  await send('Runtime.evaluate', { expression: `document.querySelector('.memory-quiz-options button')?.click()` })
+  await sleep(850)
+  const advanced = await send('Runtime.evaluate', { expression: `document.querySelector('.memory-quiz-header > strong')?.innerText.startsWith('2') ?? false`, returnByValue: true })
+  return { ...result.result.value, advanced: advanced.result.value, screenshotPath }
+}
+
 async function main() {
   const tempProfile = fs.mkdtempSync(path.join(os.tmpdir(), 'pixpy-viewport-'))
   const browser = spawn(browserPath, ['--headless=new', '--disable-gpu', `--remote-debugging-port=${port}`, `--user-data-dir=${tempProfile}`, 'about:blank'], { stdio: 'ignore', windowsHide: true })
@@ -223,18 +287,24 @@ async function main() {
     const { send, close } = await makeClient()
     await send('Page.enable')
     await send('Runtime.enable')
+    const nameChecks = []
+    for (const size of targetSizes) nameChecks.push(await checkNameEntry(send, size))
     await seedSession(send)
     const metrics = []
     for (const size of targetSizes) for (const routeConfig of routes) metrics.push(await collectRouteMetrics(send, size, routeConfig))
     const quizChecks = []
     for (const size of targetSizes.filter((item) => item.name === 'ipad-portrait' || item.name === 'ipad-landscape')) quizChecks.push(await checkMemoryQuiz(send, size))
+    const blackBoxQuizChecks = []
+    for (const size of targetSizes.filter((item) => item.name === 'ipad-portrait' || item.name === 'ipad-landscape')) blackBoxQuizChecks.push(await checkBlackBoxQuiz(send, size))
     const printCheck = await checkPrintView(send)
     close()
     const failures = metrics.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.navVisible || !item.quickListVisible || !item.experienceHeaderVisible || !item.hintVisible || !item.surfaceVisible)
     const quizFailures = quizChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.quizVisible || !item.codeVisible || item.optionCount !== 4 || !item.advanced)
+    const blackBoxQuizFailures = blackBoxQuizChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.quizVisible || !item.codeVisible || item.optionCount !== 4 || !item.advanced)
+    const nameFailures = nameChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.formVisible || !item.inputVisible || !item.placeholderCorrect)
     const printFailed = !printCheck.printVisible || !printCheck.websiteHidden || !printCheck.studentVisible || !printCheck.progressVisible || printCheck.pdfBytes < 1000
-    console.log(JSON.stringify({ outputDir, checked: metrics.length + quizChecks.length, failures, quizFailures, printCheck }, null, 2))
-    if (failures.length || quizFailures.length || printFailed) process.exitCode = 1
+    console.log(JSON.stringify({ outputDir, checked: metrics.length + quizChecks.length + blackBoxQuizChecks.length + nameChecks.length, failures, quizFailures, blackBoxQuizFailures, nameFailures, printCheck }, null, 2))
+    if (failures.length || quizFailures.length || blackBoxQuizFailures.length || nameFailures.length || printFailed) process.exitCode = 1
   } finally {
     if (!browser.killed) browser.kill()
     await Promise.race([new Promise((resolve) => browser.once('exit', resolve)), sleep(2500)])

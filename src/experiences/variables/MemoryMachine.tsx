@@ -38,6 +38,7 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
   const [quizSelected, setQuizSelected] = useState<number | null>(null)
   const timer = useRef<number | null>(null)
   const example = examples[exampleIndex]
+  const pendingStep = executing ? example.steps[stepIndex + 1] : null
   const rawStep = stepIndex >= 0 ? example.steps[stepIndex] : null
   const step = rawStep && example.id === 'input' ? { ...rawStep, memory: { age: memoryInput || '?' }, output: rawStep.output ? (memoryInput || '?') : undefined } : rawStep
   const completed = progress.completed.includes('memory-machine')
@@ -48,7 +49,12 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
 
   useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current) }, [])
 
-  const choose = (index: number) => { setExampleIndex(index); setStepIndex(-1); setExecuting(false) }
+  const choose = (index: number) => {
+    if (timer.current) window.clearTimeout(timer.current)
+    setExampleIndex(index)
+    setStepIndex(-1)
+    setExecuting(false)
+  }
   const executeLine = () => {
     if (executing || stepIndex === example.steps.length - 1) return
     setExecuting(true)
@@ -113,16 +119,18 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
         <div className="memory-tabs">{examples.map((item, index) => <button key={item.id} className={exampleIndex === index ? 'is-active' : ''} onClick={() => choose(index)}>{progress.memoryExamples.includes(item.id) && <Check />}{item.label}</button>)}</div>
         <header className="blackbox-instruction"><span>1</span><div><strong>READ ONE LINE</strong><p>Python executes from top to bottom.</p></div></header>
         {example.id === 'input' && <label className="memory-input-control">VALUE FOR INPUT() <input type="number" value={memoryInput} onChange={(event) => { setMemoryInput(event.target.value); restart() }} /></label>}
-        <pre className="memory-code-lines">{example.code.map((line, index) => <span className={`${step?.line === index ? 'is-running' : ''} ${index < stepIndex ? 'is-past' : ''}`} key={`${line}-${index}`}><i>{index + 1}</i><code>{line}</code>{step?.line === index && <b>NOW</b>}</span>)}</pre>
+        <pre className="memory-code-lines">{example.code.map((line, index) => <span className={`${executing && stepIndex + 1 === index ? 'is-reading' : ''} ${!executing && step?.line === index ? 'is-running' : ''} ${index < stepIndex ? 'is-past' : ''}`} key={`${line}-${index}`}><i>{index + 1}</i><code>{line}</code>{executing && stepIndex + 1 === index ? <b>READING</b> : !executing && step?.line === index ? <b>NOW</b> : null}</span>)}</pre>
         <div className="memory-execute-actions"><button className="secondary-action" onClick={restart}><RotateCcw /> Restart</button><button className={`primary-action execute-line-button ${executing ? 'is-executing' : ''}`} onClick={executeLine} disabled={executing || stepIndex === example.steps.length - 1}>{executing ? <><span className="execute-pulse" /> EXECUTING...</> : stepIndex === example.steps.length - 1 ? <><Check /> EXAMPLE DONE</> : <><Play fill="currentColor" /> EXECUTE LINE {stepIndex + 2}</>}</button></div>
       </section>
 
       <section className="memory-result-panel panel-surface">
         <header className="blackbox-instruction"><span>2</span><div><strong>WATCH WHAT IT BRINGS</strong><p>Every executed line creates one visible result.</p></div></header>
-        <div className={`current-line-card ${executing ? 'is-moving' : ''}`}><small>CURRENT LINE</small><code>{executing ? example.code[stepIndex + 1] : step ? example.code[step.line] : 'Press EXECUTE LINE'}</code><i>→</i></div>
+        <div className="memory-motion" aria-hidden="true">
+          {executing && <i className="memory-dot memory-dot--to-memory" />}
+          {executing && pendingStep?.output !== undefined && <i className="memory-dot memory-dot--to-output" />}
+        </div>
         <section className="memory-result-row"><header><span>MEMORY</span><small>VALUES PYTHON REMEMBERS</small></header><div className={executing ? 'is-receiving' : ''}>{step ? Object.entries(step.memory).map(([name, value]) => <article key={name}><strong>{name}</strong><b>{value}</b></article>) : <p>No variable yet.</p>}</div></section>
         <section className="memory-result-row memory-result-row--output"><header><span>OUTPUT</span><small>WHAT PRINT() BRINGS BACK</small></header><pre className={executing ? 'is-receiving' : ''}>{step?.output ?? 'Nothing printed yet.'}</pre></section>
-        <p className="memory-explanation">{executing ? 'Moving through Python...' : step?.note ?? 'Execute the first line and follow the movement.'}</p>
       </section>
     </ExperienceShell>
   )

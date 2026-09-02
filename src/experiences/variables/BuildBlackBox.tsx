@@ -9,10 +9,10 @@ import type { SessionProgress } from '../../types'
 interface Props { progress: SessionProgress; onProgress: (progress: SessionProgress) => void; onBack: () => void }
 
 const codeRecipes = [
-  { label: 'ADD', expression: 'number + 5' },
-  { label: 'MULTIPLY', expression: 'number * 2' },
-  { label: 'REMAINDER', expression: 'number % 3' },
-  { label: 'POWER', expression: 'number ** 2' },
+  { label: '+', name: 'ADD', expression: 'number + 5' },
+  { label: '−', name: 'SUBTRACT', expression: 'number - 5' },
+  { label: '×', name: 'MULTIPLY', expression: 'number * 2' },
+  { label: '÷', name: 'DIVIDE', expression: 'number / 2' },
 ]
 
 export function BuildBlackBox({ progress, onProgress, onBack }: Props) {
@@ -24,6 +24,7 @@ export function BuildBlackBox({ progress, onProgress, onBack }: Props) {
   const [message, setMessage] = useState('Build a rule. Then test it with different numbers.')
   const completed = progress.completed.includes('build-black-box')
   const tests = useMemo(() => progress.blackBoxTests.slice(-4), [progress.blackBoxTests])
+  const waitingForOperator = code.includes('result =  # type an operation here')
 
   const run = async () => {
     setBusy(true)
@@ -49,6 +50,7 @@ export function BuildBlackBox({ progress, onProgress, onBack }: Props) {
     setLastOutput(null)
     setHidden(false)
     setMessage('Starter machine restored.')
+    onProgress({ ...progress, blackBoxCode: emptyProgress.blackBoxCode, blackBoxTests: [] })
   }
 
   return (
@@ -70,16 +72,16 @@ export function BuildBlackBox({ progress, onProgress, onBack }: Props) {
 
         <div className="build-lower-grid">
           <aside className="build-reference-panel panel-surface">
-            <header><small>REAL PYTHON REFERENCE</small><h2>Available code</h2><p>Type one of these ideas into the editor. Change the number to make it yours.</p></header>
+            <header><small>REAL PYTHON REFERENCE</small><h2>Try these operators</h2><p>Write one of these operators on the blinking line. Change the number to make it yours.</p></header>
             <div className="code-recipes">
-              {codeRecipes.map((recipe) => <article key={recipe.label}><span>{recipe.label}</span><code>result = {recipe.expression}</code></article>)}
+              {codeRecipes.map((recipe) => <article key={recipe.name}><span><b>{recipe.label}</b>{recipe.name}</span><code>result = {recipe.expression}</code></article>)}
             </div>
             <div className="test-history"><small>CLUES FOR A CLASSMATE</small>{tests.length ? tests.map((test, index) => <span key={`${test.input}-${index}`}>{test.input} <i>→</i> <b>{test.output}</b></span>) : <p>Run two inputs to create clues.</p>}</div>
           </aside>
 
           <section className="build-editor-panel panel-surface">
             <div className="hide-code-bar"><button onClick={() => setHidden((value) => !value)}>{hidden ? <Eye /> : <EyeOff />} {hidden ? 'SHOW MY CODE' : 'HIDE MY CODE'}</button><span>{hidden ? 'CLASSMATE MODE' : 'BUILDER MODE'}</span></div>
-            {hidden ? <div className="secret-code"><EyeOff size={38} /><strong>CODE HIDDEN</strong><p>Can your classmate crack the rule from the clues?</p></div> : <CodeEditor value={code} onChange={(value) => { setCode(value); onProgress({ ...progress, blackBoxCode: value }) }} minHeight="230px" />}
+            {hidden ? <div className="secret-code"><EyeOff size={38} /><strong>CODE HIDDEN</strong><p>Can your classmate crack the rule from the clues?</p></div> : <div className={`build-editor-attention ${waitingForOperator ? 'is-waiting' : ''}`}><CodeEditor value={code} onChange={(value) => { setCode(value); onProgress({ ...progress, blackBoxCode: value }) }} minHeight="230px" /><span className="operator-invitation">TYPE YOUR OPERATOR ON LINE 3</span></div>}
             <button className="text-action" onClick={reset}><RotateCcw size={15} /> Reset machine</button>
           </section>
         </div>

@@ -21,6 +21,7 @@ export interface SessionProgress {
   name: string
   completed: ActivityId[]
   blackBoxLevels: number[]
+  blackBoxQuizAnswers: number[]
   inputModes: string[]
   memoryExamples: string[]
   memoryQuizAnswers: number[]

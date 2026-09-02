@@ -27,13 +27,13 @@ The product succeeds when a student asks, “What happens if I change this?”
 
 Entry asks only:
 
-> WHAT'S YOUR NAME?
+> What should we call you?
 
 There are no passwords, accounts, classes, avatars, or profiles. The name exists only to personalize the current browser session.
 
 Progress is stored in `sessionStorage`, not `localStorage` or a cloud database. It survives navigation and accidental refreshes, but may disappear when the tab or browser session ends. That behavior is intentional.
 
-The app header has a **QUICK LIST** for jumping directly to any activity in the current group. The quick list also contains **PRINT MY PROGRESS**, which produces a clean A4 record containing the student's name, date, completed experiences, Final Boss progress, and optionally their custom Black Box work. The website chrome must not appear in print.
+The app header has a **QUICK LIST** for jumping directly to any activity in the current group. It stays focused on navigation and contains no screenshot, print, or session-reset actions.
 
 ## Main experience map
 
@@ -77,7 +77,7 @@ Students write anything they want inside `print()` and immediately see it in a v
 
 ### Black Box
 
-Students physically touch a dark, tactile Black Box to collect input-to-output clues. After collecting at least two pairs, they form and test a hypothesis. A successful hypothesis reveals the real Python that performed the transformation.
+Students physically touch a dark, tactile Black Box to collect fresh random input-to-output clues. After collecting at least two pairs, they form and test a hypothesis. A successful hypothesis reveals the real Python that performed the transformation. Cracking all three boxes unlocks a ten-question quiz covering `+`, `-`, `*`, and `/` before the activity is marked complete.
 
 ### Input Machine
 
@@ -89,11 +89,11 @@ Challenges include echoing a message, doubling a number, adding ten, and a simpl
 
 ### Memory Machine
 
-Students press **EXECUTE LINE** and follow one highlighted line at a time while code, memory, and output remain visible side by side. Movement and receiving animations make the result of each line explicit. After completing all five examples, students advance through a ten-question code-output quiz before the activity is marked complete.
+Students press **EXECUTE LINE** and follow one fading, scanning line at a time while code, memory, and output remain visible side by side. Traveling dots show a value entering memory and moving from memory to output. After completing all five examples, students advance through a ten-question code-output quiz before the activity is marked complete.
 
 ### Build a Black Box
 
-Students edit a small input/process/output program and test it with multiple values. Available transformations are presented as complete, clickable Python statements rather than isolated operator symbols. **HIDE MY CODE** turns the result into a classroom game where another student tries to crack the rule. The progress printout can include the inputs and outputs without revealing the answer.
+Students edit a small input/process/output program and test it with multiple values. A compact **Try these operators** reference presents the four classic operators (`+`, `-`, `*`, `/`) as real code, while a blinking editor line invites the student to type the operation themselves. **HIDE MY CODE** turns the result into a classroom game where another student tries to crack the rule.
 
 ### Final Bosses
 
@@ -177,7 +177,6 @@ The playground refactor includes:
 - the three-area home screen;
 - simplified navigation;
 - a reusable no-scroll experience shell;
-- Print My Progress;
 - all seven Variables experiences;
 - no Supabase, authentication, avatars, backend persistence, ranking, or global XP.
 

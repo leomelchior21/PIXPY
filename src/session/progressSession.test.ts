@@ -11,4 +11,10 @@ describe('session-only progress', () => {
     expect(loadSession()?.completed).toEqual(['dino-variables'])
     expect(localStorage.length).toBe(0)
   })
+
+  it('requires both ten-question quizzes before keeping their completion marks', () => {
+    const progress = createSession('Leo')
+    saveSession({ ...progress, completed: ['black-box', 'memory-machine'], blackBoxQuizAnswers: [1], memoryQuizAnswers: [2] })
+    expect(loadSession()?.completed).toEqual([])
+  })
 })

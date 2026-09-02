@@ -5,11 +5,12 @@ const SESSION_KEY = 'pixpy.session.v2'
 export const emptyProgress: Omit<SessionProgress, 'name'> = {
   completed: [],
   blackBoxLevels: [],
+  blackBoxQuizAnswers: [],
   inputModes: [],
   memoryExamples: [],
   memoryQuizAnswers: [],
   bossProgress: [],
-  blackBoxCode: 'number = int(input())\n\nresult = number * 2\n\nprint(result)',
+  blackBoxCode: 'number = int(input())\n\nresult =  # type an operation here: number * 2\n\nprint(result)',
   blackBoxTests: [],
   interestingValues: [],
 }
@@ -25,17 +26,31 @@ export function loadSession(): SessionProgress | null {
     const parsed = JSON.parse(raw) as Partial<SessionProgress>
     if (!parsed.name || typeof parsed.name !== 'string') return null
     const memoryQuizAnswers = cleanQuizAnswers(parsed.memoryQuizAnswers)
+    const blackBoxQuizAnswers = cleanQuizAnswers(parsed.blackBoxQuizAnswers)
     const completed = cleanActivityIds(parsed.completed)
+    const quizCompleted = completed.filter((activity) => {
+      if (activity === 'memory-machine') return memoryQuizAnswers.length === 10
+      if (activity === 'black-box') return blackBoxQuizAnswers.length === 10
+      return true
+    })
     return {
       ...createSession(parsed.name),
       ...parsed,
       name: cleanName(parsed.name),
-      completed: memoryQuizAnswers.length === 10 ? completed : completed.filter((activity) => activity !== 'memory-machine'),
+      completed: quizCompleted,
+      blackBoxQuizAnswers,
       memoryQuizAnswers,
+      blackBoxCode: migrateBlackBoxCode(parsed.blackBoxCode),
     }
   } catch {
     return null
   }
+}
+
+function migrateBlackBoxCode(value: unknown): string {
+  const legacy = 'number = int(input())\n\nresult = number * 2\n\nprint(result)'
+  if (typeof value !== 'string' || value === legacy) return emptyProgress.blackBoxCode
+  return value
 }
 
 export function saveSession(progress: SessionProgress): void {

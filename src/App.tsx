@@ -54,7 +54,7 @@ export default function App() {
 
   return (
     <div className={`app-shell route-${route}`}>
-      <AppHeader route={route} progress={progress} onNavigate={navigate} onPrint={() => window.print()} />
+      <AppHeader route={route} progress={progress} onNavigate={navigate} />
       <div className="app-content">
         <Suspense fallback={<div className="route-loader" role="status"><span /> Loading experiment...</div>}>
           {route === 'home' && <PlaygroundHome progress={progress} onNavigate={navigate} />}

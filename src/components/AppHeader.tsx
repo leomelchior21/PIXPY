@@ -1,4 +1,4 @@
-import { Check, Home, List, Printer, X } from 'lucide-react'
+import { Check, Home, List, X } from 'lucide-react'
 import { useState } from 'react'
 import { variableExperiences } from '../data/variables'
 import type { AppRoute, SessionProgress } from '../types'
@@ -8,10 +8,9 @@ interface AppHeaderProps {
   route: AppRoute
   progress: SessionProgress
   onNavigate: (route: AppRoute) => void
-  onPrint: () => void
 }
 
-export function AppHeader({ route, progress, onNavigate, onPrint }: AppHeaderProps) {
+export function AppHeader({ route, progress, onNavigate }: AppHeaderProps) {
   const [listOpen, setListOpen] = useState(false)
 
   const navigate = (next: AppRoute) => {
@@ -48,7 +47,6 @@ export function AppHeader({ route, progress, onNavigate, onPrint }: AppHeaderPro
               )
             })}
           </div>
-          <button className="quick-print" onClick={() => { setListOpen(false); onPrint() }}><Printer /> Print my progress</button>
         </aside>
       )}
     </header>
