@@ -75,7 +75,18 @@ describe('Print Playground screen', () => {
     expect(screen.queryByLabelText('Activity complete')).not.toBeInTheDocument()
   })
 
-  it('removes a special reward immediately after an edit', () => {
+  it('removes a special reward immediately after an edit', async () => {
+    runScript.mockResolvedValue({ stdout: 'Bom dia, chat!', variables: {} })
+    const progress = { ...createSession('Maya'), printPlaygroundCode: { 'morning-chat': 'print("Bom dia, chat!")' }, printPlaygroundVisited: ['morning-chat' as const] }
+    render(<Harness initial={progress} />)
+    await userEvent.click(screen.getByRole('button', { name: /run it/i }))
+    expect(await screen.findByLabelText('Morning greeting display')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Python code editor'), { target: { value: 'print("changed")' } })
+    expect(screen.queryByLabelText('Morning greeting display')).not.toBeInTheDocument()
+    expect(screen.getByText('Your output appears here.')).toBeInTheDocument()
+  })
+
+  it('does not replay a persisted success animation before RUN is pressed', () => {
     const progress = {
       ...createSession('Maya'),
       printPlaygroundOutputs: { 'morning-chat': { text: 'Bom dia, chat!', kind: 'success' as const } },
@@ -83,10 +94,8 @@ describe('Print Playground screen', () => {
       printPlaygroundCompleted: ['morning-chat' as const],
     }
     render(<Harness initial={progress} />)
-    expect(screen.getByLabelText('Morning greeting display')).toBeInTheDocument()
-    fireEvent.change(screen.getByLabelText('Python code editor'), { target: { value: 'print("changed")' } })
     expect(screen.queryByLabelText('Morning greeting display')).not.toBeInTheDocument()
-    expect(screen.getByText('Your output appears here.')).toBeInTheDocument()
+    expect(screen.getByText('Bom dia, chat!', { selector: '.terminal-screen pre' })).toBeInTheDocument()
   })
 
   it('runs through the existing runner, preserves output, and reacts only to a valid result', async () => {

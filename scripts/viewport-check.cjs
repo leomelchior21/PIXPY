@@ -165,6 +165,10 @@ async function collectRouteMetrics(send, size, routeConfig) {
   await send('Emulation.setDeviceMetricsOverride', { width: size.width, height: size.height, deviceScaleFactor: 1, mobile: false })
   await send('Page.navigate', { url: `${appUrl}#/${routeConfig.route}` })
   await waitFor(send, `Boolean(document.querySelector(${JSON.stringify(routeConfig.selector)}))`)
+  if (routeConfig.route === 'print-playground') {
+    await send('Runtime.evaluate', { expression: `document.querySelector('.print-editor-controls .primary-action')?.click()` })
+    await waitFor(send, `Boolean(document.querySelector('.morning-greeting-reward'))`)
+  }
   await sleep(400)
   const result = await send('Runtime.evaluate', {
     expression: `(() => {

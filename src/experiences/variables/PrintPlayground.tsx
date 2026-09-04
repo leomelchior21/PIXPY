@@ -16,12 +16,14 @@ const EMPTY_OUTPUT = 'Your output appears here.'
 export function PrintPlayground({ progress, onProgress, onBack }: Props) {
   const [activityId, setActivityId] = useState<PrintActivityId>(progress.printPlaygroundActivity)
   const [busy, setBusy] = useState(false)
+  const [successfulRun, setSuccessfulRun] = useState<{ activityId: PrintActivityId; output: string } | null>(null)
   const executionVersion = useRef(0)
   const activity = getPrintActivity(activityId)
   const activityIndex = printActivities.findIndex((item) => item.id === activityId)
   const code = progress.printPlaygroundCode[activityId] ?? activity.starterCode
   const outputState = progress.printPlaygroundOutputs[activityId]
-  const reward = detectPrintReward(activityId, outputState?.text ?? '', outputState?.kind === 'success')
+  const currentSuccessfulRun = successfulRun?.activityId === activityId ? successfulRun : null
+  const reward = detectPrintReward(activityId, currentSuccessfulRun?.output ?? '', Boolean(currentSuccessfulRun))
   const completed = progress.printPlaygroundCompleted.includes(activityId)
   const coreComplete = printCoreActivityIds.every((id) => progress.printPlaygroundCompleted.includes(id))
 
@@ -33,6 +35,7 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
   const invalidateExecution = () => {
     executionVersion.current += 1
     setBusy(false)
+    setSuccessfulRun(null)
   }
 
   const chooseActivity = (nextId: PrintActivityId) => {
@@ -73,12 +76,14 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
     const runningActivity = activity
     const runningCode = code
     setBusy(true)
+    setSuccessfulRun(null)
 
     try {
       const result = await pythonRunner.runScript(runningCode)
       if (requestVersion !== executionVersion.current) return
 
       const success = runningActivity.validate(result, runningCode, progress.name)
+      if (success) setSuccessfulRun({ activityId: runningActivity.id, output: result.stdout })
       const completedActivities = success
         ? [...new Set([...progress.printPlaygroundCompleted, runningActivity.id])]
         : progress.printPlaygroundCompleted
@@ -130,7 +135,7 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
         <div className={`terminal-screen ${outputState?.kind === 'error' ? 'has-error' : ''}`}>
           <div><TerminalSquare /> PIXPY OUTPUT</div>
           {reward ? <PrintRewardDisplay reward={reward} /> : <><pre aria-live="polite">{outputState?.text ?? EMPTY_OUTPUT}</pre><span className="terminal-cursor" /></>}
-          {outputState?.kind === 'success' && !reward && <span className="print-success-reaction" aria-label="Activity complete"><Sparkles /> NICE! <Check /></span>}
+          {currentSuccessfulRun && !reward && <span className="print-success-reaction" aria-label="Activity complete"><Sparkles /> NICE! <Check /></span>}
         </div>
       </section>
       <nav className="print-activity-navigation panel-surface" aria-label="Print activities">
