@@ -9,12 +9,12 @@ export function runGuidedPython(code: string, inputs: string[] = []): ScriptRunR
   const lines = code.split('\n')
 
   for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index].replace(/#.*$/, '').trim()
+    const line = stripPythonComment(lines[index]).trim()
     if (!line) continue
 
     const printMatch = line.match(/^print\((.*)\)$/)
     if (printMatch) {
-      output.push(formatValue(readValue(printMatch[1], variables, inputs, () => inputIndex++)))
+      output.push(printMatch[1].trim() === '' ? '' : formatValue(readValue(printMatch[1], variables, inputs, () => inputIndex++)))
       continue
     }
 
@@ -28,6 +28,23 @@ export function runGuidedPython(code: string, inputs: string[] = []): ScriptRunR
   }
 
   return { stdout: output.join('\n'), variables }
+}
+
+function stripPythonComment(line: string): string {
+  let quote = ''
+  let escaped = false
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index]
+    if (quote) {
+      if (!escaped && character === quote) quote = ''
+      escaped = !escaped && character === '\\'
+      if (character !== '\\') escaped = false
+      continue
+    }
+    if (character === '"' || character === "'") quote = character
+    if (character === '#') return line.slice(0, index)
+  }
+  return line
 }
 
 function readValue(expression: string, variables: Record<string, Value>, inputs: string[], takeInput: () => number): Value {

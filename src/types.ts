@@ -29,6 +29,11 @@ export interface SessionProgress {
   blackBoxCode: string
   blackBoxTests: Array<{ input: number; output: number }>
   interestingValues: string[]
+  printPlaygroundActivity: PrintActivityId
+  printPlaygroundCode: Partial<Record<PrintActivityId, string>>
+  printPlaygroundOutputs: Partial<Record<PrintActivityId, PrintActivityOutputState>>
+  printPlaygroundVisited: PrintActivityId[]
+  printPlaygroundCompleted: PrintActivityId[]
 }
 
 export interface DinoConfig {
@@ -63,3 +68,23 @@ export interface ScriptRunResult {
 }
 
 export type RuntimeState = 'booting' | 'ready' | 'unavailable'
+
+export const printActivityIds = [
+  'morning-chat',
+  'introduce-yourself',
+  'blank-line',
+  'draw-frame',
+  'initials-banner',
+  'player-id-card',
+  'crack-code',
+  'launch-countdown',
+] as const
+
+export const printCoreActivityIds = printActivityIds.slice(0, 5)
+
+export type PrintActivityId = (typeof printActivityIds)[number]
+
+export interface PrintActivityOutputState {
+  text: string
+  kind: 'output' | 'error' | 'success'
+}
