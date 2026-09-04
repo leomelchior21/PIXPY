@@ -11,6 +11,7 @@ describe('Print Playground reward detection', () => {
     ['personal message', ['introduce-yourself', 'HELLO!\nMy name is Maya', true], 'personal-message'],
     ['empty line', ['blank-line', 'TOP\r\n\r\nBOTTOM', true], 'empty-line'],
     ['text frame', ['draw-frame', '#####\n#   #\n#####', true], 'text-frame'],
+    ['stacked heart', ['initials-banner', '## ##\n#######\n#####\n###\n#', true], 'heart-stack'],
   ])('detects the %s animation after a successful run', (_, input, expected) => {
     expect(detectPrintReward(...input)?.type).toBe(expected)
   })
@@ -20,6 +21,7 @@ describe('Print Playground reward detection', () => {
     ['introduce-yourself', 'HELLO!', true],
     ['blank-line', 'TOP\nBOTTOM', true],
     ['draw-frame', '#####\n#   #\n####', true],
+    ['initials-banner', '#####\n#####\n#####\n#####\n#####', true],
   ])('does not activate for incorrect output from %s', (...input) => {
     expect(detectPrintReward(...input)).toBeNull()
   })
@@ -33,6 +35,7 @@ describe('Print Playground reward detection', () => {
     [{ type: 'personal-message', greeting: 'HELLO!', message: 'My name is Maya' }, 'Personal message delivery'],
     [{ type: 'empty-line', top: 'TOP', bottom: 'BOTTOM' }, 'Clear airspace between output lines'],
     [{ type: 'text-frame', output: '###\n# #\n###', lines: ['###', '# #', '###'] }, 'Assembled text frame'],
+    [{ type: 'heart-stack', output: '## ##\n#######\n#####\n###\n#', lines: ['## ##', '#######', '#####', '###', '#'] }, 'Stacked heart celebration'],
   ])('renders each reward as its own accessible component', (reward, label) => {
     render(<PrintRewardDisplay reward={reward} />)
     expect(screen.getByLabelText(label)).toBeInTheDocument()

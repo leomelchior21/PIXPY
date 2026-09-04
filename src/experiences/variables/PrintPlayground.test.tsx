@@ -154,18 +154,19 @@ describe('Print Playground screen', () => {
 
   it('marks the parent experience complete when the fifth core activity succeeds', async () => {
     const user = userEvent.setup()
-    runScript.mockResolvedValue({ stdout: 'M\nA\nY\nA\n2026', variables: {} })
+    runScript.mockResolvedValue({ stdout: '## ##\n#######\n#####\n###\n#', variables: {} })
     let latest = createSession('Maya')
     const progress = {
       ...latest,
       printPlaygroundActivity: 'initials-banner' as const,
-      printPlaygroundCode: { 'initials-banner': 'print("M")\nprint("A")\nprint("Y")\nprint("A")\nprint("2026")' },
+      printPlaygroundCode: { 'initials-banner': 'print("## ##")\nprint("#######")\nprint("#####")\nprint("###")\nprint("#")' },
       printPlaygroundVisited: ['initials-banner' as const],
       printPlaygroundCompleted: ['morning-chat', 'introduce-yourself', 'blank-line', 'draw-frame'] as SessionProgress['printPlaygroundCompleted'],
     }
     render(<Harness initial={progress} onUpdate={(next) => { latest = next }} />)
     await user.click(screen.getByRole('button', { name: /run it/i }))
     await waitFor(() => expect(latest.completed).toContain('print-playground'))
+    expect(screen.getByLabelText('Stacked heart celebration')).toBeInTheDocument()
   })
 
   it('labels and classes optional activities as purple extras', async () => {

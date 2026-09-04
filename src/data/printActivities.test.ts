@@ -35,6 +35,8 @@ describe('Print Playground activities', () => {
   it('starts every activity with an instruction comment and keeps level one at Hello', () => {
     for (const activity of printActivities) expect(activity.starterCode).toMatch(/^#.+\n/)
     expect(printActivities[0].starterCode).toBe('#Change the message to "Bom dia, chat!"\nprint("Hello!")')
+    expect(printActivities[4].starterCode).toBe('# Use 5 print lines of ##### stacked to draw a heart.\nprint("#####")')
+    expect(printActivities[5].starterCode).toBe('# Create your ID card with name, age, favourite food, and favourite game or music.\nprint("=============================")\nprint("PLAYER: YOUR NAME")\nprint("=============================")')
   })
 
   it.each([
@@ -42,8 +44,8 @@ describe('Print Playground activities', () => {
     ['introduce-yourself', 'print("HELLO!")\nprint("My name is Maya")'],
     ['blank-line', 'print("TOP")\nprint()\nprint("BOTTOM")'],
     ['draw-frame', 'print("#####")\nprint("#   #")\nprint("#####")'],
-    ['initials-banner', 'print("M")\nprint("A")\nprint("Y")\nprint("A")\nprint("2026")'],
-    ['player-id-card', 'print("########")\nprint("PLAYER: Maya")\nprint("PIXPY")\nprint("########")'],
+    ['initials-banner', 'print("## ##")\nprint("#######")\nprint("#####")\nprint("###")\nprint("#")'],
+    ['player-id-card', 'print("=============================")\nprint("PLAYER: Maya")\nprint("AGE: 12")\nprint("FAVOURITE FOOD: PIZZA")\nprint("FAVOURITE GAME: MINECRAFT")\nprint("=============================")'],
     ['crack-code', 'access_code = 6 * 7\nprint("ACCESS CODE")\nprint(access_code)'],
     ['launch-countdown', 'print(3)\nprint(2)\nprint(1)\nprint("LIFTOFF!")'],
   ])('accepts the successful %s example', (id, code) => {
@@ -55,8 +57,8 @@ describe('Print Playground activities', () => {
     ['introduce-yourself', 'print("HELLO!")\nprint("Someone else")'],
     ['blank-line', 'print("TOP")\nprint("not blank")\nprint("BOTTOM")'],
     ['draw-frame', 'print("#####")\nprint("#   #")\nprint("####")'],
-    ['initials-banner', 'print("A")\nprint("B")\nprint("")\nprint("D")\nprint("E")'],
-    ['player-id-card', 'print("########")\nprint("PLAYER: Leo")\nprint("PIXPY")\nprint("########")'],
+    ['initials-banner', 'print("#####")\nprint("#####")\nprint("#####")\nprint("#####")\nprint("#####")'],
+    ['player-id-card', 'print("=============================")\nprint("PLAYER: Leo")\nprint("AGE: 12")\nprint("FAVOURITE FOOD: PIZZA")\nprint("FAVOURITE MUSIC: JAZZ")\nprint("=============================")'],
     ['crack-code', 'access_code = 42\nprint("ACCESS CODE")\nprint(access_code)'],
     ['launch-countdown', 'print(3)\nprint(2)\nprint(1)\nprint("GO!")'],
   ])('rejects the unsuccessful %s example', (id, code) => {
@@ -65,12 +67,17 @@ describe('Print Playground activities', () => {
 
   it('matches the current player name on the ID card', () => {
     const activity = printActivities[5]
-    const code = 'print("========")\nprint("PLAYER: Maya")\nprint("PIXPY")\nprint("========")'
+    const code = 'print("========")\nprint("PLAYER: Maya")\nprint("AGE: 12")\nprint("FAVOURITE FOOD: TACOS")\nprint("FAVOURITE MUSIC: JAZZ")\nprint("========")'
     const result = runGuidedPython(code)
     expect(activity.validate(result, code, 'Maya')).toBe(true)
     expect(activity.validate(result, code, 'Leo')).toBe(false)
-    const almost = 'print("========")\nprint("PLAYER: Maya2")\nprint("PIXPY")\nprint("========")'
+    const almost = 'print("========")\nprint("PLAYER: Maya2")\nprint("AGE: 12")\nprint("FAVOURITE FOOD: TACOS")\nprint("FAVOURITE GAME: CHESS")\nprint("========")'
     expect(activity.validate(runGuidedPython(almost), almost, 'Maya')).toBe(false)
+  })
+
+  it('accepts either a favourite game or favourite music, but requires every ID field', () => {
+    expect(validates('player-id-card', 'print("===")\nprint("PLAYER: Maya")\nprint("AGE: 9")\nprint("FAVORITE FOOD: PASTA")\nprint("FAVORITE MUSIC: POP")\nprint("===")')).toBe(true)
+    expect(validates('player-id-card', 'print("===")\nprint("PLAYER: Maya")\nprint("AGE: 9")\nprint("FAVOURITE FOOD: PASTA")\nprint("===")')).toBe(false)
   })
 
   it('ignores line-ending differences and print text inside comments', () => {

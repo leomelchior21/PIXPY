@@ -1144,6 +1144,14 @@ body *:not(.pixpy-editor):not(.pixpy-editor *):not(code):not(pre) { font-family:
 .frame-locked svg { width: 24px; height: 24px; padding: 3px; border: 2px solid var(--lime); border-radius: 50%; }
 .frame-locked strong { font: 800 10px 'IBM Plex Mono', monospace; letter-spacing: .1em; }
 
+.heart-stack-reward { display: grid; place-items: center; align-content: center; gap: 18px; padding: 18px; background: radial-gradient(circle, rgba(255,92,137,.16), transparent 52%), #02070b; }
+.heart-stack-output { display: grid; justify-items: center; color: #ff5c89; font: 900 clamp(17px, 2.5vw, 29px)/.88 'IBM Plex Mono', monospace; white-space: pre; filter: drop-shadow(0 0 7px rgba(255,92,137,.45)); }
+.heart-stack-output span { opacity: 0; transform: translateY(-24px) scale(.72); animation: reward-heart-row .32s var(--heart-row-delay) cubic-bezier(.2,.85,.3,1.25) forwards; }
+.heart-stack-status { display: flex; align-items: center; gap: 8px; color: #ff8cac; opacity: 0; animation: reward-message-in .28s .62s steps(3) forwards; }
+.heart-stack-status strong { font: 800 10px 'IBM Plex Mono', monospace; letter-spacing: .12em; }
+.heart-stack-status svg { width: 20px; height: 20px; }
+.heart-stack-status svg:last-child { animation: reward-heart-pulse .38s .62s ease-out; }
+
 @keyframes reward-orbit-in { from { opacity: 0; transform: scale(.45) rotate(-45deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
 @keyframes reward-orbit-turn { to { transform: rotate(360deg); } }
 @keyframes reward-sunrise { to { bottom: 0; } }
@@ -1155,6 +1163,8 @@ body *:not(.pixpy-editor):not(.pixpy-editor *):not(code):not(pre) { font-family:
 @keyframes reward-plane-left { from { opacity: 0; transform: translateX(320px) rotate(180deg); } to { opacity: 1; transform: translateX(0) rotate(180deg); } }
 @keyframes reward-tile-lock { to { opacity: 1; transform: scale(1) translateY(0); } }
 @keyframes reward-frame-glow { 70%, 100% { box-shadow: inset 0 0 30px rgba(185,243,82,.13); } }
+@keyframes reward-heart-row { to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes reward-heart-pulse { 50% { transform: scale(1.35); filter: drop-shadow(0 0 7px #ff5c89); } }
 
 @media (max-width: 640px) {
   .morning-clock { top: 12px; right: 13px; }
