@@ -33,8 +33,8 @@ describe('Print Playground activities', () => {
   })
 
   it('starts every activity with an instruction comment and keeps level one at Hello', () => {
-    for (const activity of printActivities) expect(activity.starterCode).toMatch(/^# .+\n/)
-    expect(printActivities[0].starterCode).toBe('# Write exactly: Bom dia, chat!\nprint("Hello!")')
+    for (const activity of printActivities) expect(activity.starterCode).toMatch(/^#.+\n/)
+    expect(printActivities[0].starterCode).toBe('#Change the message to "Bom dia, chat!"\nprint("Hello!")')
   })
 
   it.each([

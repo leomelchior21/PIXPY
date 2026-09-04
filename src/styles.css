@@ -1089,3 +1089,75 @@ body *:not(.pixpy-editor):not(.pixpy-editor *):not(code):not(pre) { font-family:
   .print-activity-dots { gap: 5px; }
   .print-activity-dots button { width: 19px; height: 19px; }
 }
+
+/* Output rewards for completed print activities */
+.print-reward { position: absolute; z-index: 1; inset: 35px 0 0; min-height: 0; overflow: hidden; color: var(--lime); background: #02070b; user-select: text; }
+.print-reward, .print-reward * { font-family: 'IBM Plex Mono', ui-monospace, monospace !important; }
+.print-reward:focus-visible { outline: 2px solid var(--cyan) !important; outline-offset: -6px; }
+.print-reward [aria-hidden='true'] { user-select: none; }
+
+.morning-greeting-reward { display: grid; place-items: center; background: radial-gradient(circle at 50% 78%, rgba(255,211,78,.16), transparent 26%), linear-gradient(#02070b, #071b28); }
+.morning-orbits { position: absolute; left: 50%; bottom: 7%; width: min(64%, 330px); aspect-ratio: 1; transform: translateX(-50%); }
+.morning-orbits i { position: absolute; inset: 0; border: 1px solid rgba(114,220,255,.38); border-radius: 50%; animation: reward-orbit-in .75s ease-out both, reward-orbit-turn 7s .75s linear infinite; }
+.morning-orbits i::after { content: ''; position: absolute; top: 11%; left: 16%; width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 9px var(--cyan); }
+.morning-orbits i:nth-child(2) { inset: 13%; animation-direction: normal, reverse; }
+.morning-orbits i:nth-child(3) { inset: 27%; }
+.morning-sunrise { position: absolute; left: 50%; bottom: 9%; width: min(46%, 220px); aspect-ratio: 2 / 1; overflow: hidden; transform: translateX(-50%); border-bottom: 1px solid rgba(255,211,78,.65); }
+.morning-sunrise span { position: absolute; left: 50%; bottom: -100%; width: 72%; aspect-ratio: 1; transform: translate(-50%, 50%); border-radius: 50%; background: var(--yellow); box-shadow: 0 0 24px rgba(255,211,78,.8); animation: reward-sunrise .8s cubic-bezier(.2,.8,.2,1) forwards; }
+.morning-clock { position: absolute; top: 18px; right: 20px; display: grid; justify-items: end; color: #dff7ff; }
+.morning-clock span { color: var(--cyan); font: 800 7px 'IBM Plex Mono', monospace; letter-spacing: .14em; }
+.morning-clock strong { margin-top: 3px; font: 700 clamp(18px, 2.4vw, 30px) 'IBM Plex Mono', monospace; }
+.morning-clock small { color: #84a7b5; font: 600 8px 'IBM Plex Mono', monospace; text-transform: uppercase; }
+.morning-greeting-reward > p { position: absolute; z-index: 2; bottom: 16px; padding: 7px 11px; border: 1px solid var(--yellow); color: var(--yellow); background: rgba(2,7,11,.86); font: 800 clamp(13px, 1.8vw, 21px) 'IBM Plex Mono', monospace; animation: reward-message-in .55s .3s steps(4) both; }
+.reward-scanline { position: absolute; z-index: 3; top: 0; right: 0; left: 0; height: 2px; opacity: .6; background: linear-gradient(90deg, transparent, var(--cyan), transparent); box-shadow: 0 0 8px var(--cyan); animation: reward-scan 1.2s linear infinite; }
+
+.personal-message-reward { display: grid; place-items: center; align-content: center; gap: 16px; padding: 22px; background: linear-gradient(180deg, #07131e, #02070b); }
+.personal-greeting { position: absolute; top: 14px; left: 17px; color: #7898a8; font: 700 9px 'IBM Plex Mono', monospace; }
+.message-on-board { position: relative; z-index: 2; display: grid; justify-items: center; max-width: 88%; padding: 10px 16px; border: 2px solid var(--cyan); border-radius: 7px; color: #effcff; background: #102331; box-shadow: 4px 4px 0 #001018; text-align: center; animation: reward-message-in .5s .28s steps(4) both; }
+.message-on-board::after { content: ''; position: absolute; bottom: -9px; width: 14px; height: 14px; border-right: 2px solid var(--cyan); border-bottom: 2px solid var(--cyan); background: #102331; transform: rotate(45deg); }
+.message-on-board span { color: var(--cyan); font: 800 7px 'IBM Plex Mono', monospace; letter-spacing: .12em; }
+.message-on-board strong { margin-top: 5px; overflow-wrap: anywhere; font: 700 clamp(13px, 1.7vw, 20px) 'IBM Plex Mono', monospace; }
+.reward-road { position: absolute; right: 0; bottom: 30px; left: 0; height: 38px; border-block: 2px solid #40515a; background: #0b1217; }
+.reward-road i { position: absolute; top: 16px; width: 42px; height: 3px; background: var(--yellow); }
+.reward-road i:nth-child(1) { left: 8%; }.reward-road i:nth-child(2) { left: 43%; }.reward-road i:nth-child(3) { right: 8%; }
+.reward-car { position: absolute; z-index: 2; right: 18%; bottom: 38px; width: 92px; height: 34px; border: 2px solid var(--cyan); border-radius: 7px 12px 5px 5px; background: var(--cyan); box-shadow: 0 0 14px rgba(114,220,255,.45); animation: reward-car-drive .78s cubic-bezier(.18,.8,.25,1) both; }
+.reward-car span { position: absolute; top: -18px; left: 23px; width: 48px; height: 20px; border: 2px solid var(--cyan); border-bottom: 0; border-radius: 9px 12px 0 0; background: #102331; transform: skewX(-12deg); }
+.reward-car b { position: absolute; bottom: -10px; width: 20px; height: 20px; border: 4px solid #81919a; border-radius: 50%; background: #02070b; animation: reward-wheel .38s linear 2; }
+.reward-car b:nth-of-type(1) { left: 10px; }.reward-car b:nth-of-type(2) { right: 10px; }
+
+.empty-line-reward { display: grid; grid-template-rows: 1fr minmax(58px, .55fr) 1fr; padding: 12px 20px; background: linear-gradient(180deg, #071b2a, #02070b); }
+.flight-path { position: relative; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed rgba(114,220,255,.4); color: #eafbff; }
+.flight-path strong { padding: 5px 8px; border: 1px solid #587584; color: var(--cyan); background: #06121a; font: 800 13px 'IBM Plex Mono', monospace; }
+.flight-path svg { width: 36px; height: 36px; color: var(--yellow); filter: drop-shadow(0 0 5px rgba(255,211,78,.5)); }
+.flight-path--top svg { animation: reward-plane-right .8s cubic-bezier(.2,.8,.2,1) both; }
+.flight-path--bottom { border-top: 1px dashed rgba(114,220,255,.4); border-bottom: 0; }
+.flight-path--bottom svg { transform: rotate(180deg); animation: reward-plane-left .8s cubic-bezier(.2,.8,.2,1) both; }
+.clear-airspace { display: grid; place-items: center; }
+.clear-airspace span { padding: 5px 10px; border-inline: 2px solid var(--lime); color: var(--lime); font: 800 9px 'IBM Plex Mono', monospace; letter-spacing: .13em; animation: reward-message-in .45s .35s steps(3) both; }
+
+.text-frame-reward { display: grid; place-items: center; align-content: center; gap: 16px; padding: 18px; animation: reward-frame-glow .9s ease-out both; }
+.frame-tiles { display: grid; gap: 2px; color: var(--lime); font: 800 clamp(15px, 2vw, 24px)/1 'IBM Plex Mono', monospace; white-space: pre; }
+.frame-tiles > div { display: flex; justify-content: center; }
+.frame-tiles span { display: inline-grid; place-items: center; min-width: .62em; opacity: 0; transform: scale(.2) translateY(-8px); text-shadow: 0 0 6px rgba(185,243,82,.65); animation: reward-tile-lock .28s var(--tile-delay) steps(3) forwards; }
+.frame-tiles span.is-space { text-shadow: none; }
+.frame-locked { display: flex; align-items: center; gap: 7px; color: var(--lime); opacity: 0; animation: reward-message-in .3s .62s steps(3) forwards; }
+.frame-locked svg { width: 24px; height: 24px; padding: 3px; border: 2px solid var(--lime); border-radius: 50%; }
+.frame-locked strong { font: 800 10px 'IBM Plex Mono', monospace; letter-spacing: .1em; }
+
+@keyframes reward-orbit-in { from { opacity: 0; transform: scale(.45) rotate(-45deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes reward-orbit-turn { to { transform: rotate(360deg); } }
+@keyframes reward-sunrise { to { bottom: 0; } }
+@keyframes reward-scan { from { transform: translateY(0); } to { transform: translateY(350px); } }
+@keyframes reward-message-in { from { opacity: 0; transform: translateY(8px) scale(.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes reward-car-drive { from { opacity: 0; transform: translateX(-520px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes reward-wheel { to { transform: rotate(360deg); } }
+@keyframes reward-plane-right { from { opacity: 0; transform: translateX(-320px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes reward-plane-left { from { opacity: 0; transform: translateX(320px) rotate(180deg); } to { opacity: 1; transform: translateX(0) rotate(180deg); } }
+@keyframes reward-tile-lock { to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes reward-frame-glow { 70%, 100% { box-shadow: inset 0 0 30px rgba(185,243,82,.13); } }
+
+@media (max-width: 640px) {
+  .morning-clock { top: 12px; right: 13px; }
+  .message-on-board { max-width: 94%; }
+  .empty-line-reward { padding-inline: 12px; }
+}

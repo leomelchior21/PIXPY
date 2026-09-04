@@ -75,17 +75,41 @@ describe('Print Playground screen', () => {
     expect(screen.queryByLabelText('Activity complete')).not.toBeInTheDocument()
   })
 
+  it('removes a special reward immediately after an edit', () => {
+    const progress = {
+      ...createSession('Maya'),
+      printPlaygroundOutputs: { 'morning-chat': { text: 'Bom dia, chat!', kind: 'success' as const } },
+      printPlaygroundVisited: ['morning-chat' as const],
+      printPlaygroundCompleted: ['morning-chat' as const],
+    }
+    render(<Harness initial={progress} />)
+    expect(screen.getByLabelText('Morning greeting display')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Python code editor'), { target: { value: 'print("changed")' } })
+    expect(screen.queryByLabelText('Morning greeting display')).not.toBeInTheDocument()
+    expect(screen.getByText('Your output appears here.')).toBeInTheDocument()
+  })
+
   it('runs through the existing runner, preserves output, and reacts only to a valid result', async () => {
     const user = userEvent.setup()
     runScript.mockResolvedValue({ stdout: 'Bom dia, chat!', variables: {} })
     let latest = createSession('Maya')
     render(<Harness initial={{ ...latest, printPlaygroundCode: { 'morning-chat': 'print("Bom dia, chat!")' }, printPlaygroundVisited: ['morning-chat'] }} onUpdate={(progress) => { latest = progress }} />)
 
+    expect(screen.queryByLabelText('Morning greeting display')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /run it/i }))
-    expect(await screen.findByText('Bom dia, chat!', { selector: '.terminal-screen pre' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Activity complete')).toBeInTheDocument()
+    expect(await screen.findByLabelText('Morning greeting display')).toBeInTheDocument()
+    expect(screen.getByText('Bom dia, chat!', { selector: '.morning-greeting-reward p' })).toBeInTheDocument()
     expect(latest.printPlaygroundCompleted).toContain('morning-chat')
     expect(runScript).toHaveBeenCalledWith('print("Bom dia, chat!")')
+  })
+
+  it('keeps ordinary console output when a run does not qualify for a reward', async () => {
+    const user = userEvent.setup()
+    runScript.mockResolvedValue({ stdout: 'Hello!', variables: {} })
+    render(<Harness initial={{ ...createSession('Maya'), printPlaygroundVisited: ['morning-chat'] }} />)
+    await user.click(screen.getByRole('button', { name: /run it/i }))
+    expect(await screen.findByText('Hello!', { selector: '.terminal-screen pre' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: /display|delivery|airspace|frame/i })).not.toBeInTheDocument()
   })
 
   it('ignores a late execution result after the code changes', async () => {

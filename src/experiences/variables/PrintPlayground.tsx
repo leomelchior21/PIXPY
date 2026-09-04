@@ -2,7 +2,9 @@ import { Check, ChevronLeft, ChevronRight, LoaderCircle, Play, RotateCcw, Sparkl
 import { useEffect, useRef, useState } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
 import { ExperienceShell } from '../../components/ExperienceShell'
+import { PrintRewardDisplay } from '../../components/printRewards/PrintRewardDisplay'
 import { getPrintActivity, printActivities } from '../../data/printActivities'
+import { detectPrintReward } from '../../lib/printRewards'
 import { pythonRunner } from '../../lib/pythonRunner'
 import { completeActivity } from '../../session/progressSession'
 import { printCoreActivityIds, type PrintActivityId, type SessionProgress } from '../../types'
@@ -19,6 +21,7 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
   const activityIndex = printActivities.findIndex((item) => item.id === activityId)
   const code = progress.printPlaygroundCode[activityId] ?? activity.starterCode
   const outputState = progress.printPlaygroundOutputs[activityId]
+  const reward = detectPrintReward(activityId, outputState?.text ?? '', outputState?.kind === 'success')
   const completed = progress.printPlaygroundCompleted.includes(activityId)
   const coreComplete = printCoreActivityIds.every((id) => progress.printPlaygroundCompleted.includes(id))
 
@@ -125,8 +128,9 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
       </section>
       <section className={`terminal-stage panel-surface ${completed ? 'is-complete' : ''}`}>
         <div className={`terminal-screen ${outputState?.kind === 'error' ? 'has-error' : ''}`}>
-          <div><TerminalSquare /> PIXPY OUTPUT</div><pre aria-live="polite">{outputState?.text ?? EMPTY_OUTPUT}</pre><span className="terminal-cursor" />
-          {outputState?.kind === 'success' && <span className="print-success-reaction" aria-label="Activity complete"><Sparkles /> NICE! <Check /></span>}
+          <div><TerminalSquare /> PIXPY OUTPUT</div>
+          {reward ? <PrintRewardDisplay reward={reward} /> : <><pre aria-live="polite">{outputState?.text ?? EMPTY_OUTPUT}</pre><span className="terminal-cursor" /></>}
+          {outputState?.kind === 'success' && !reward && <span className="print-success-reaction" aria-label="Activity complete"><Sparkles /> NICE! <Check /></span>}
         </div>
       </section>
       <nav className="print-activity-navigation panel-surface" aria-label="Print activities">

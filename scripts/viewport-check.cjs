@@ -52,6 +52,11 @@ const session = {
   blackBoxCode: 'number = int(input())\n\nresult = number * 2\n\nprint(result)',
   blackBoxTests: [],
   interestingValues: [],
+  printPlaygroundActivity: 'morning-chat',
+  printPlaygroundCode: { 'morning-chat': '#Change the message to "Bom dia, chat!"\nprint("Bom dia, chat!")' },
+  printPlaygroundOutputs: { 'morning-chat': { text: 'Bom dia, chat!', kind: 'success' } },
+  printPlaygroundVisited: ['morning-chat'],
+  printPlaygroundCompleted: ['morning-chat'],
 }
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)) }
