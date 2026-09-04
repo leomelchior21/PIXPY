@@ -89,7 +89,7 @@ export const printActivities: PrintActivity[] = [
     id: 'morning-chat',
     title: 'Bom dia, chat!',
     prompt: 'Change the print() line so the output is exactly: Bom dia, chat!',
-    starterCode: '# Print exactly: Bom dia, chat!\nprint("Hello")',
+    starterCode: '# Write exactly: Bom dia, chat!\nprint("Hello!")',
     hints: ['Only change the words between the quote marks.', 'Capital letters and punctuation must match the target.', 'Use: print("Bom dia, chat!")'],
     extra: false,
     validate: ({ stdout }, code) => normalizedOutput(stdout) === 'Bom dia, chat!' && countPrintCalls(code) === 1,
