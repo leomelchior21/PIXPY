@@ -14,6 +14,10 @@ describe('PixPy classroom session', () => {
     const user = userEvent.setup()
     render(<App />)
 
+    expect(screen.getByRole('heading', { name: 'Your playground is ready!' })).toBeInTheDocument()
+    expect(screen.queryByText('PYTHON, BUT PLAYFUL.')).not.toBeInTheDocument()
+    expect(screen.queryByText('YOUR FIRST VARIABLE')).not.toBeInTheDocument()
+    expect(screen.queryByText('Your progress stays in this browser.')).not.toBeInTheDocument()
     const input = screen.getByLabelText('What should we call you?')
     expect(input).toHaveAttribute('placeholder', 'insert your name')
     await user.type(input, 'Leo')
