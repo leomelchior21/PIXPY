@@ -16,14 +16,15 @@ const EMPTY_OUTPUT = 'Your output appears here.'
 export function PrintPlayground({ progress, onProgress, onBack }: Props) {
   const [activityId, setActivityId] = useState<PrintActivityId>(progress.printPlaygroundActivity)
   const [busy, setBusy] = useState(false)
-  const [successfulRun, setSuccessfulRun] = useState<{ activityId: PrintActivityId; output: string } | null>(null)
+  const [latestRun, setLatestRun] = useState<{ activityId: PrintActivityId; output: string; success: boolean } | null>(null)
   const executionVersion = useRef(0)
   const activity = getPrintActivity(activityId)
   const activityIndex = printActivities.findIndex((item) => item.id === activityId)
   const code = progress.printPlaygroundCode[activityId] ?? activity.starterCode
   const outputState = progress.printPlaygroundOutputs[activityId]
-  const currentSuccessfulRun = successfulRun?.activityId === activityId ? successfulRun : null
-  const reward = detectPrintReward(activityId, currentSuccessfulRun?.output ?? '', Boolean(currentSuccessfulRun))
+  const currentRun = latestRun?.activityId === activityId ? latestRun : null
+  const currentSuccessfulRun = currentRun?.success ? currentRun : null
+  const reward = detectPrintReward(activityId, currentRun?.output ?? '', Boolean(currentSuccessfulRun) || (activityId === 'introduce-yourself' && Boolean(currentRun)))
   const completed = progress.printPlaygroundCompleted.includes(activityId)
   const coreComplete = printCoreActivityIds.every((id) => progress.printPlaygroundCompleted.includes(id))
 
@@ -35,7 +36,7 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
   const invalidateExecution = () => {
     executionVersion.current += 1
     setBusy(false)
-    setSuccessfulRun(null)
+    setLatestRun(null)
   }
 
   const chooseActivity = (nextId: PrintActivityId) => {
@@ -76,14 +77,14 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
     const runningActivity = activity
     const runningCode = code
     setBusy(true)
-    setSuccessfulRun(null)
+    setLatestRun(null)
 
     try {
       const result = await pythonRunner.runScript(runningCode)
       if (requestVersion !== executionVersion.current) return
 
       const success = runningActivity.validate(result, runningCode, progress.name)
-      if (success) setSuccessfulRun({ activityId: runningActivity.id, output: result.stdout })
+      setLatestRun({ activityId: runningActivity.id, output: result.stdout, success })
       const completedActivities = success
         ? [...new Set([...progress.printPlaygroundCompleted, runningActivity.id])]
         : progress.printPlaygroundCompleted

@@ -112,6 +112,23 @@ describe('Print Playground screen', () => {
     expect(runScript).toHaveBeenCalledWith('print("Bom dia, chat!")')
   })
 
+  it('animates the introduce-yourself output when a second line is printed', async () => {
+    const user = userEvent.setup()
+    runScript.mockResolvedValue({ stdout: 'HELLO!\nSomeone on line two', variables: {} })
+    const progress = {
+      ...createSession('Maya'),
+      printPlaygroundActivity: 'introduce-yourself' as const,
+      printPlaygroundCode: { 'introduce-yourself': 'print("HELLO!")\nprint("Someone on line two")' },
+      printPlaygroundVisited: ['introduce-yourself' as const],
+    }
+    render(<Harness initial={progress} />)
+
+    await user.click(screen.getByRole('button', { name: /run it/i }))
+
+    expect(await screen.findByLabelText('Personal message delivery')).toBeInTheDocument()
+    expect(screen.getByText('Someone on line two')).toBeInTheDocument()
+  })
+
   it('keeps ordinary console output when a run does not qualify for a reward', async () => {
     const user = userEvent.setup()
     runScript.mockResolvedValue({ stdout: 'Hello!', variables: {} })
