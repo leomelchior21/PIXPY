@@ -38,7 +38,7 @@ describe('Print Playground screen', () => {
       printPlaygroundVisited: ['draw-frame' as const],
     }
     render(<Harness initial={progress} />)
-    expect(screen.getByText('Draw a frame', { selector: '.print-task-card strong' })).toBeInTheDocument()
+    expect(screen.getByText('4. Draw a frame', { selector: '.print-activity-summary strong' })).toBeInTheDocument()
     expect(screen.getByLabelText('Python code editor')).toHaveValue('print("saved frame")')
     expect(screen.getByText('saved output')).toBeInTheDocument()
   })
@@ -143,6 +143,6 @@ describe('Print Playground screen', () => {
     await user.click(extraButton)
     expect(screen.getByText('EXTRA')).toBeInTheDocument()
     expect(container.querySelector('.print-experience--extra')).toBeInTheDocument()
-    expect(container.querySelector('.print-task-card.is-extra')).toBeInTheDocument()
+    expect(container.querySelector('.print-editor-stage.is-extra')).toBeInTheDocument()
   })
 })

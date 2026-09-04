@@ -116,22 +116,21 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
 
   return (
     <ExperienceShell key={activity.id} order="02" title="Print Playground" question="How can Python put something on screen?" accent="#ffcb47" hints={activity.hints} completed={coreComplete} objective="Complete the five core print activities. Optional extras do not affect completion." onBack={onBack} className={`print-experience ${activity.extra ? 'print-experience--extra' : ''}`}>
-      <section className="code-workbench panel-surface">
+      <section className={`print-editor-stage panel-surface ${activity.extra ? 'is-extra' : ''}`}>
         <CodeEditor value={code} onChange={editCode} minHeight="260px" />
+      </section>
+      <section className="print-editor-controls panel-surface">
         <div className="run-row"><button className="secondary-action" onClick={reset}><RotateCcw /> Reset</button><button className="primary-action" onClick={run} disabled={busy}>{busy ? <LoaderCircle className="spin" /> : <Play fill="currentColor" />} RUN IT</button></div>
         <p className="concept-line"><code>print()</code> sends something to the output.</p>
       </section>
       <section className={`terminal-stage panel-surface ${completed ? 'is-complete' : ''}`}>
-        <header className={`print-task-card ${activity.extra ? 'is-extra' : ''}`}>
-          <span>{activityIndex + 1}</span>
-          <div><small>{activity.extra ? 'EXTRA' : `CORE ${activityIndex + 1} OF 5`}</small><strong>{activity.title}</strong><p>{activity.prompt}</p></div>
-        </header>
         <div className={`terminal-screen ${outputState?.kind === 'error' ? 'has-error' : ''}`}>
           <div><TerminalSquare /> PIXPY OUTPUT</div><pre aria-live="polite">{outputState?.text ?? EMPTY_OUTPUT}</pre><span className="terminal-cursor" />
           {outputState?.kind === 'success' && <span className="print-success-reaction" aria-label="Activity complete"><Sparkles /> NICE! <Check /></span>}
         </div>
       </section>
       <nav className="print-activity-navigation panel-surface" aria-label="Print activities">
+        <div className="print-activity-summary"><strong>{activityIndex + 1}. {activity.title}</strong>{activity.extra ? <span className="print-extra-label">EXTRA</span> : <small>{progress.printPlaygroundCompleted.filter((id) => printCoreActivityIds.includes(id)).length}/5 CORE</small>}</div>
         <button className="print-step-button" onClick={() => chooseActivity(printActivities[activityIndex - 1].id)} disabled={activityIndex === 0}><ChevronLeft /> PREV</button>
         <div className="print-activity-dots">
           {printActivities.map((item, index) => {
@@ -139,7 +138,6 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
             return <button key={item.id} className={`${item.id === activityId ? 'is-active' : ''} ${done ? 'is-done' : ''} ${item.extra ? 'is-extra' : ''}`} onClick={() => chooseActivity(item.id)} aria-label={`${index + 1}. ${item.title}${item.extra ? ' — EXTRA' : ''}${done ? ' — complete' : ''}`} aria-current={item.id === activityId ? 'step' : undefined}>{done ? <Check /> : <span />}</button>
           })}
         </div>
-        <span className="print-core-count">{progress.printPlaygroundCompleted.filter((id) => printCoreActivityIds.includes(id)).length}/5 CORE</span>
         <button className="print-step-button" onClick={() => chooseActivity(printActivities[activityIndex + 1].id)} disabled={activityIndex === printActivities.length - 1}>NEXT <ChevronRight /></button>
       </nav>
     </ExperienceShell>
