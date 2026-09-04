@@ -76,8 +76,8 @@ export const printActivityIds = [
   'draw-frame',
   'initials-banner',
   'player-id-card',
-  'crack-code',
   'launch-countdown',
+  'crack-code',
 ] as const
 
 export const printCoreActivityIds = printActivityIds.slice(0, 5)

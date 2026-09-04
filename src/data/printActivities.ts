@@ -94,6 +94,42 @@ function isFiveLineHeart(stdout: string): boolean {
     && hashCounts[4] === 1
 }
 
+function editDistance(left: string, right: string): number {
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index)
+  const current = Array.from({ length: right.length + 1 }, () => 0)
+
+  for (let row = 1; row <= left.length; row += 1) {
+    current[0] = row
+    for (let column = 1; column <= right.length; column += 1) {
+      const cost = left[row - 1] === right[column - 1] ? 0 : 1
+      current[column] = Math.min(
+        previous[column] + 1,
+        current[column - 1] + 1,
+        previous[column - 1] + cost,
+      )
+    }
+    previous.splice(0, previous.length, ...current)
+  }
+
+  return previous[right.length]
+}
+
+function isLiftoffPhrase(line: string | undefined): boolean {
+  const phrase = (line ?? '')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replaceAll('0', 'o')
+    .replace(/[^a-z]/g, '')
+
+  return phrase.length >= 5 && phrase.length <= 9 && phrase.startsWith('l') && editDistance(phrase, 'liftoff') <= 2
+}
+
+function isLaunchCountdown(stdout: string): boolean {
+  const lines = normalizedOutput(stdout).split('\n').map((line) => line.trim()).filter(Boolean)
+  return lines.length === 4 && lines[0] === '3' && lines[1] === '2' && lines[2] === '1' && isLiftoffPhrase(lines[3])
+}
+
 function containsPlayerName(line: string | undefined, playerName: string): boolean {
   if (!line || !playerName) return false
   const escapedName = playerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -144,7 +180,7 @@ export const printActivities: PrintActivity[] = [
     id: 'initials-banner',
     title: 'Stack a heart',
     prompt: 'Use exactly five print() calls and # characters to draw a five-line heart.',
-    starterCode: '# Use 5 print lines of ##### stacked to draw a heart.\nprint("#####")',
+    starterCode: '# Use 5 print lines of # stacked to draw a heart.\nprint("#######")',
     hints: ['Start with two groups of # for the heart\'s rounded top.', 'Make the second row widest, then make each row narrower until one # forms the point.', 'Try these rows: "## ##", "#######", "#####", "###", and "#".'],
     extra: false,
     validate: ({ stdout }, code) => countPrintCalls(code) === 5 && isFiveLineHeart(stdout),
@@ -172,25 +208,25 @@ export const printActivities: PrintActivity[] = [
     },
   },
   {
+    id: 'launch-countdown',
+    title: 'Launch countdown',
+    prompt: 'Print 3, 2, 1, and any version of LIFTOFF on separate lines.',
+    starterCode: '# Print LIFTOFF! after the countdown.\nprint(3)\nprint(2)\nprint(1)',
+    hints: ['You already have the countdown numbers.', 'Add one final print() call after print(1).', 'LIFTOFF, lift off, or even a tiny spelling mistake can still launch.'],
+    extra: true,
+    validate: ({ stdout }, code) => isLaunchCountdown(stdout) && countPrintCalls(code) >= 4,
+  },
+  {
     id: 'crack-code',
     title: 'Crack the code',
-    prompt: 'Store 6 * 7 in access_code, then print ACCESS CODE and 42 on separate lines.',
-    starterCode: '# Store 6 * 7 in access_code.\naccess_code = 6 + 7\nprint("ACCESS CODE")\nprint(access_code)',
-    hints: ['The variable name must stay access_code.', 'Use the multiplication operator * between 6 and 7.', 'Write: access_code = 6 * 7'],
+    prompt: 'Store 6 * 7 in access_code and adjust the print so it shows the correct result.',
+    starterCode: '#Store 6 * 7 in access_code and adjust it to print correctly.\naccess_code = 6 + 7\n\nprint("ACCESS CODE")',
+    hints: ['The variable name must stay access_code.', 'Use the multiplication operator * between 6 and 7.', 'Print the variable name without quote marks.'],
     extra: true,
     validate: ({ stdout, variables }, code) => {
       const executableCode = maskStringsAndComments(code)
-      return normalizedOutput(stdout) === 'ACCESS CODE\n42' && variables.access_code === 42 && /^\s*access_code\s*=\s*6\s*\*\s*7\s*(?:;|\r?$)/m.test(executableCode) && countPrintCalls(code) === 2
+      return normalizedOutput(stdout) === '42' && variables.access_code === 42 && /^\s*access_code\s*=\s*6\s*\*\s*7\s*(?:;|\r?$)/m.test(executableCode) && countPrintCalls(code) === 1
     },
-  },
-  {
-    id: 'launch-countdown',
-    title: 'Launch countdown',
-    prompt: 'Print 3, 2, 1, and LIFTOFF! on separate lines in that exact order.',
-    starterCode: '# Print LIFTOFF! after the countdown.\nprint(3)\nprint(2)\nprint(1)',
-    hints: ['You already have the countdown numbers.', 'Add one final print() call after print(1).', 'Use: print("LIFTOFF!")'],
-    extra: true,
-    validate: ({ stdout }, code) => normalizedOutput(stdout) === '3\n2\n1\nLIFTOFF!' && countPrintCalls(code) === 4,
   },
 ]
 

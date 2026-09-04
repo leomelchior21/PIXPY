@@ -19,8 +19,8 @@ describe('Print Playground activities', () => {
       'draw-frame',
       'initials-banner',
       'player-id-card',
-      'crack-code',
       'launch-countdown',
+      'crack-code',
     ])
     expect(printActivities.map(({ extra }) => extra)).toEqual([false, false, false, false, false, true, true, true])
   })
@@ -35,8 +35,9 @@ describe('Print Playground activities', () => {
   it('starts every activity with an instruction comment and keeps level one at Hello', () => {
     for (const activity of printActivities) expect(activity.starterCode).toMatch(/^#.+\n/)
     expect(printActivities[0].starterCode).toBe('#Change the message to "Bom dia, chat!"\nprint("Hello!")')
-    expect(printActivities[4].starterCode).toBe('# Use 5 print lines of ##### stacked to draw a heart.\nprint("#####")')
+    expect(printActivities[4].starterCode).toBe('# Use 5 print lines of # stacked to draw a heart.\nprint("#######")')
     expect(printActivities[5].starterCode).toBe('# Create your ID card with name, age, favourite food, and favourite game or music.\nprint("=============================")\nprint("PLAYER: YOUR NAME")\nprint("=============================")')
+    expect(printActivities[7].starterCode).toBe('#Store 6 * 7 in access_code and adjust it to print correctly.\naccess_code = 6 + 7\n\nprint("ACCESS CODE")')
   })
 
   it.each([
@@ -46,8 +47,8 @@ describe('Print Playground activities', () => {
     ['draw-frame', 'print("#####")\nprint("#   #")\nprint("#####")'],
     ['initials-banner', 'print("## ##")\nprint("#######")\nprint("#####")\nprint("###")\nprint("#")'],
     ['player-id-card', 'print("=============================")\nprint("PLAYER: Maya")\nprint("AGE: 12")\nprint("FAVOURITE FOOD: PIZZA")\nprint("FAVOURITE GAME: MINECRAFT")\nprint("=============================")'],
-    ['crack-code', 'access_code = 6 * 7\nprint("ACCESS CODE")\nprint(access_code)'],
     ['launch-countdown', 'print(3)\nprint(2)\nprint(1)\nprint("LIFTOFF!")'],
+    ['crack-code', 'access_code = 6 * 7\nprint(access_code)'],
   ])('accepts the successful %s example', (id, code) => {
     expect(validates(id, code)).toBe(true)
   })
@@ -59,10 +60,19 @@ describe('Print Playground activities', () => {
     ['draw-frame', 'print("#####")\nprint("#   #")\nprint("####")'],
     ['initials-banner', 'print("#####")\nprint("#####")\nprint("#####")\nprint("#####")\nprint("#####")'],
     ['player-id-card', 'print("=============================")\nprint("PLAYER: Leo")\nprint("AGE: 12")\nprint("FAVOURITE FOOD: PIZZA")\nprint("FAVOURITE MUSIC: JAZZ")\nprint("=============================")'],
-    ['crack-code', 'access_code = 42\nprint("ACCESS CODE")\nprint(access_code)'],
     ['launch-countdown', 'print(3)\nprint(2)\nprint(1)\nprint("GO!")'],
+    ['crack-code', 'access_code = 42\nprint("ACCESS CODE")'],
   ])('rejects the unsuccessful %s example', (id, code) => {
     expect(validates(id, code)).toBe(false)
+  })
+
+  it.each([
+    'print(3)\nprint(2)\nprint(1)\nprint("lift off")',
+    'print(3)\nprint(2)\nprint(1)\nprint(" LIFT-OFF!!! ")',
+    'print(3)\nprint(2)\nprint(1)\nprint("liftof")',
+    'print(3)\nprint(2)\nprint(1)\nprint("lifttoff")',
+  ])('accepts a flexible liftoff spelling: %s', (code) => {
+    expect(validates('launch-countdown', code)).toBe(true)
   })
 
   it('matches the current player name on the ID card', () => {
@@ -83,7 +93,7 @@ describe('Print Playground activities', () => {
   it('ignores line-ending differences and print text inside comments', () => {
     const morning = printActivities[0]
     expect(morning.validate({ stdout: 'Bom dia, chat!', variables: {} }, 'print("Bom dia, chat!")\n# print("extra")', playerName)).toBe(true)
-    const countdown = printActivities[7]
+    const countdown = printActivities[6]
     expect(countdown.validate({ stdout: '3\r\n2\r\n1\r\nLIFTOFF!', variables: {} }, 'print(3)\nprint(2)\nprint(1)\nprint("LIFTOFF!")\n# print("extra")', playerName)).toBe(true)
   })
 })

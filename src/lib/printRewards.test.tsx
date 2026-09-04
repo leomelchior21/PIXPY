@@ -12,6 +12,7 @@ describe('Print Playground reward detection', () => {
     ['empty line', ['blank-line', 'TOP\r\n\r\nBOTTOM', true], 'empty-line'],
     ['text frame', ['draw-frame', '#####\n#   #\n#####', true], 'text-frame'],
     ['stacked heart', ['initials-banner', '## ##\n#######\n#####\n###\n#', true], 'heart-stack'],
+    ['launch sequence', ['launch-countdown', '3\n2\n1\n lift-off!!! ', true], 'launch-sequence'],
   ])('detects the %s animation after a successful run', (_, input, expected) => {
     expect(detectPrintReward(...input)?.type).toBe(expected)
   })
@@ -22,6 +23,7 @@ describe('Print Playground reward detection', () => {
     ['blank-line', 'TOP\nBOTTOM', true],
     ['draw-frame', '#####\n#   #\n####', true],
     ['initials-banner', '#####\n#####\n#####\n#####\n#####', true],
+    ['launch-countdown', '3\n2\n1\nGO!', true],
   ])('does not activate for incorrect output from %s', (...input) => {
     expect(detectPrintReward(...input)).toBeNull()
   })
@@ -36,15 +38,17 @@ describe('Print Playground reward detection', () => {
     [{ type: 'empty-line', top: 'TOP', bottom: 'BOTTOM' }, 'Clear airspace between output lines'],
     [{ type: 'text-frame', output: '###\n# #\n###', lines: ['###', '# #', '###'] }, 'Assembled text frame'],
     [{ type: 'heart-stack', output: '## ##\n#######\n#####\n###\n#', lines: ['## ##', '#######', '#####', '###', '#'] }, 'Stacked heart celebration'],
+    [{ type: 'launch-sequence', countdown: ['3', '2', '1'], liftoff: 'LIFT OFF!' }, 'Launch sequence animation'],
   ])('renders each reward as its own accessible component', (reward, label) => {
     render(<PrintRewardDisplay reward={reward} />)
     expect(screen.getByLabelText(label)).toBeInTheDocument()
   })
 
   it('uses the student output in the personal message instead of hardcoding it', () => {
-    render(<PrintRewardDisplay reward={{ type: 'personal-message', greeting: 'GOOD MORNING', message: 'Maya reporting in!' }} />)
+    const { container } = render(<PrintRewardDisplay reward={{ type: 'personal-message', greeting: 'GOOD MORNING', message: 'Maya reporting in!' }} />)
     expect(screen.getByText('GOOD MORNING')).toBeInTheDocument()
     expect(screen.getByText('Maya reporting in!')).toBeInTheDocument()
     expect(screen.getByText('MESSAGE ON BOARD')).toBeInTheDocument()
+    expect(container.querySelector('.line-two-printer')).toBeInTheDocument()
   })
 })
