@@ -14,6 +14,10 @@ export const emptyProgress: Omit<SessionProgress, 'name'> = {
   completed: [],
   blackBoxLevels: [],
   blackBoxQuizAnswers: [],
+  blackBoxQuizStartedAt: null,
+  blackBoxQuizElapsedMs: null,
+  blackBoxQuizSeed: 11,
+  blackBoxQuizResults: [],
   inputModes: [],
   memoryExamples: [],
   memoryQuizAnswers: [],
@@ -40,11 +44,12 @@ export function loadSession(): SessionProgress | null {
     if (!parsed.name || typeof parsed.name !== 'string') return null
     const memoryQuizAnswers = cleanQuizAnswers(parsed.memoryQuizAnswers)
     const blackBoxQuizAnswers = cleanQuizAnswers(parsed.blackBoxQuizAnswers)
+    const blackBoxQuizResults = cleanBlackBoxQuizResults(parsed.blackBoxQuizResults)
     const printPlaygroundCompleted = cleanPrintActivityIds(parsed.printPlaygroundCompleted)
     const completed = cleanActivityIds(parsed.completed)
     const quizCompleted = completed.filter((activity) => {
       if (activity === 'memory-machine') return memoryQuizAnswers.length === 10
-      if (activity === 'black-box') return blackBoxQuizAnswers.length === 10
+      if (activity === 'black-box') return blackBoxQuizAnswers.length === 10 || blackBoxQuizResults.length > 0
       if (activity === 'print-playground') return printCoreActivityIds.every((id) => printPlaygroundCompleted.includes(id))
       return true
     })
@@ -54,6 +59,10 @@ export function loadSession(): SessionProgress | null {
       name: cleanName(parsed.name),
       completed: quizCompleted,
       blackBoxQuizAnswers,
+      blackBoxQuizStartedAt: cleanTimestamp(parsed.blackBoxQuizStartedAt),
+      blackBoxQuizElapsedMs: cleanElapsed(parsed.blackBoxQuizElapsedMs),
+      blackBoxQuizSeed: cleanQuizSeed(parsed.blackBoxQuizSeed),
+      blackBoxQuizResults,
       memoryQuizAnswers,
       blackBoxCode: migrateBlackBoxCode(parsed.blackBoxCode),
       printPlaygroundActivity: cleanPrintActivityId(parsed.printPlaygroundActivity),
@@ -102,6 +111,29 @@ function cleanActivityIds(value: unknown): ActivityId[] {
 function cleanQuizAnswers(value: unknown): number[] {
   if (!Array.isArray(value)) return []
   return value.filter((answer) => Number.isInteger(answer) && answer >= 0 && answer <= 3).slice(0, 10)
+}
+
+function cleanTimestamp(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null
+}
+
+function cleanElapsed(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null
+}
+
+function cleanQuizSeed(value: unknown): number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : emptyProgress.blackBoxQuizSeed
+}
+
+function cleanBlackBoxQuizResults(value: unknown): SessionProgress['blackBoxQuizResults'] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((result) => {
+    const item = result as Partial<SessionProgress['blackBoxQuizResults'][number]>
+    const { score, total, elapsedMs } = item
+    return typeof score === 'number' && Number.isInteger(score) && typeof total === 'number' && Number.isInteger(total) && typeof elapsedMs === 'number' && Number.isFinite(elapsedMs)
+      ? [{ score, total, elapsedMs: Math.max(0, elapsedMs) }]
+      : []
+  }).slice(-5)
 }
 
 function cleanPrintActivityId(value: unknown): PrintActivityId {

@@ -22,6 +22,10 @@ export interface SessionProgress {
   completed: ActivityId[]
   blackBoxLevels: number[]
   blackBoxQuizAnswers: number[]
+  blackBoxQuizStartedAt: number | null
+  blackBoxQuizElapsedMs: number | null
+  blackBoxQuizSeed: number
+  blackBoxQuizResults: Array<{ score: number; total: number; elapsedMs: number }>
   inputModes: string[]
   memoryExamples: string[]
   memoryQuizAnswers: number[]
