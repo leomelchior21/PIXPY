@@ -8,6 +8,7 @@ describe('Print Playground reward detection', () => {
 
   it.each<[string, Parameters<typeof detectPrintReward>, PrintReward['type']]>([
     ['morning greeting', ['morning-chat', 'Bom dia, chat!', true], 'morning-greeting'],
+    ['morning greeting variant', ['morning-chat', 'bom dia chat', true], 'morning-greeting'],
     ['personal message', ['introduce-yourself', 'HELLO!\nMy name is Maya', true], 'personal-message'],
     ['empty line', ['blank-line', 'TOP\r\n\r\nBOTTOM', true], 'empty-line'],
     ['text frame', ['draw-frame', '#####\n#   #\n#####', true], 'text-frame'],
@@ -30,6 +31,14 @@ describe('Print Playground reward detection', () => {
 
   it('does not activate from matching output unless RUN marked it successful', () => {
     expect(detectPrintReward('morning-chat', 'Bom dia, chat!', false)).toBeNull()
+  })
+
+  it.each([
+    'bom dia, chat',
+    'Bom dia chat',
+    'bom dia, chaat!',
+  ])('detects the morning animation for close greeting output: %s', (output) => {
+    expect(detectPrintReward('morning-chat', output, true)?.type).toBe('morning-greeting')
   })
 
   it.each<[PrintReward, string]>([

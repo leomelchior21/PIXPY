@@ -1136,15 +1136,33 @@ body *:not(.pixpy-editor):not(.pixpy-editor *):not(code):not(pre) { font-family:
 .reward-car b { position: absolute; bottom: -10px; width: 20px; height: 20px; border: 4px solid #81919a; border-radius: 50%; background: #02070b; animation: reward-wheel .38s linear 2; }
 .reward-car b:nth-of-type(1) { left: 10px; }.reward-car b:nth-of-type(2) { right: 10px; }
 
-.empty-line-reward { display: grid; grid-template-rows: 1fr minmax(58px, .55fr) 1fr; padding: 12px 20px; background: linear-gradient(180deg, #071b2a, #02070b); }
-.flight-path { position: relative; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed rgba(114,220,255,.4); color: #eafbff; }
-.flight-path strong { padding: 5px 8px; border: 1px solid #587584; color: var(--cyan); background: #06121a; font: 800 13px 'IBM Plex Mono', monospace; }
-.flight-path svg { width: 36px; height: 36px; color: var(--yellow); filter: drop-shadow(0 0 5px rgba(255,211,78,.5)); }
-.flight-path--top svg { animation: reward-plane-right .8s cubic-bezier(.2,.8,.2,1) both; }
-.flight-path--bottom { border-top: 1px dashed rgba(114,220,255,.4); border-bottom: 0; }
-.flight-path--bottom svg { transform: rotate(180deg); animation: reward-plane-left .8s cubic-bezier(.2,.8,.2,1) both; }
-.clear-airspace { display: grid; place-items: center; }
-.clear-airspace span { padding: 5px 10px; border-inline: 2px solid var(--lime); color: var(--lime); font: 800 9px 'IBM Plex Mono', monospace; letter-spacing: .13em; animation: reward-message-in .45s .35s steps(3) both; }
+.empty-line-reward { display: grid; grid-template-rows: 1fr minmax(82px, .72fr) 1fr; padding: 14px 20px; background: radial-gradient(circle at 50% 50%, rgba(84,227,189,.14), transparent 32%), linear-gradient(180deg, #071b2a, #02070b); }
+.airspace-clouds { position: absolute; inset: 0; pointer-events: none; color: rgba(223,247,255,.46); }
+.airspace-clouds svg { position: absolute; width: 40px; height: 40px; filter: drop-shadow(0 0 8px rgba(114,220,255,.22)); animation: reward-cloud-drift 3.8s linear infinite; }
+.airspace-clouds svg:nth-child(1) { top: 12%; left: -42px; animation-delay: -.9s; }
+.airspace-clouds svg:nth-child(2) { top: 48%; left: -64px; width: 54px; height: 54px; animation-delay: -2.1s; }
+.airspace-clouds svg:nth-child(3) { bottom: 12%; left: -48px; animation-delay: -3s; }
+.flight-path { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(70px, auto) 1fr 58px; align-items: center; gap: 10px; border-bottom: 1px dashed rgba(114,220,255,.42); color: #eafbff; }
+.flight-path::before { content: ''; position: absolute; right: 0; bottom: -3px; left: 0; height: 5px; background: repeating-linear-gradient(90deg, transparent 0 16px, rgba(114,220,255,.5) 16px 24px); animation: airspace-runway 1s linear infinite; }
+.flight-path strong { width: max-content; max-width: 150px; overflow-wrap: anywhere; padding: 6px 9px; border: 1px solid #587584; color: var(--cyan); background: #06121a; box-shadow: 3px 3px 0 #000; font: 800 13px 'IBM Plex Mono', monospace; animation: reward-message-in .34s steps(3) both; }
+.flight-path svg { justify-self: center; }
+.flight-path svg:first-of-type { width: 42px; height: 42px; color: rgba(114,220,255,.8); filter: drop-shadow(0 0 5px rgba(114,220,255,.35)); animation: reward-wind-streak .74s .12s ease-out both; }
+.flight-path svg:last-of-type { width: 42px; height: 42px; color: var(--yellow); filter: drop-shadow(0 0 7px rgba(255,211,78,.58)); }
+.flight-path--top svg:last-of-type { animation: reward-plane-right .95s cubic-bezier(.2,.8,.2,1) both, reward-plane-bob .42s .95s ease-in-out infinite; }
+.flight-path--bottom { grid-template-columns: 58px 1fr minmax(70px, auto); border-top: 1px dashed rgba(114,220,255,.42); border-bottom: 0; }
+.flight-path--bottom::before { top: -3px; bottom: auto; animation-direction: reverse; }
+.flight-path--bottom svg:first-of-type { transform: rotate(180deg); animation: reward-plane-left .95s cubic-bezier(.2,.8,.2,1) both, reward-plane-bob-left .42s .95s ease-in-out infinite; }
+.flight-path--bottom svg:last-of-type { width: 42px; height: 42px; color: rgba(114,220,255,.8); transform: rotate(180deg); animation: reward-wind-streak-left .74s .12s ease-out both; }
+.flight-path--bottom strong { justify-self: end; }
+.clear-airspace { position: relative; z-index: 1; display: grid; place-items: center; overflow: hidden; border-inline: 2px solid rgba(185,243,82,.42); background: linear-gradient(90deg, transparent, rgba(84,227,189,.08), transparent); }
+.clear-airspace::before, .clear-airspace::after { content: ''; position: absolute; top: 50%; width: 34%; height: 2px; background: linear-gradient(90deg, transparent, var(--lime)); transform: translateY(-50%); animation: airspace-open-left .58s .16s cubic-bezier(.2,.85,.28,1) both; }
+.clear-airspace::before { left: 8px; }
+.clear-airspace::after { right: 8px; transform: translateY(-50%) scaleX(-1); animation-name: airspace-open-right; }
+.clear-airspace i, .clear-airspace b { position: absolute; width: 12px; height: 12px; border: 2px solid currentColor; color: var(--lime); animation: airspace-spark .72s .35s steps(5) both; }
+.clear-airspace i { left: 22%; top: 17px; }
+.clear-airspace b { right: 23%; bottom: 15px; color: var(--yellow); animation-delay: .48s; }
+.clear-airspace svg { width: 26px; height: 26px; color: var(--lime); filter: drop-shadow(0 0 8px rgba(185,243,82,.55)); animation: airspace-sparkle-center .7s .28s ease-out both; }
+.clear-airspace span { position: relative; z-index: 1; padding: 6px 12px; border-inline: 2px solid var(--lime); color: var(--lime); background: rgba(2,7,11,.82); font: 800 10px 'IBM Plex Mono', monospace; letter-spacing: .13em; animation: reward-message-in .45s .35s steps(3) both; }
 
 .text-frame-reward { display: grid; place-items: center; align-content: center; gap: 16px; padding: 18px; animation: reward-frame-glow .9s ease-out both; }
 .frame-tiles { display: grid; gap: 2px; color: var(--lime); font: 800 clamp(15px, 2vw, 24px)/1 'IBM Plex Mono', monospace; white-space: pre; }
@@ -1193,8 +1211,18 @@ body *:not(.pixpy-editor):not(.pixpy-editor *):not(code):not(pre) { font-family:
 @keyframes line-two-scan { from { opacity: 0; transform: scaleX(.1); } 55% { opacity: 1; } to { opacity: 0; transform: scaleX(1); } }
 @keyframes reward-second-line-drop { from { opacity: 0; transform: translateY(-28px) scaleY(.45); } 70% { opacity: 1; transform: translateY(5px) scaleY(1.08); } to { opacity: 1; transform: translateY(0) scaleY(1); } }
 @keyframes line-two-pop { from { opacity: 0; transform: translateY(18px) rotate(0) scale(.3); } 50% { opacity: 1; } to { opacity: 0; transform: translateY(-20px) rotate(45deg) scale(1); } }
+@keyframes reward-cloud-drift { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 110px)); } }
+@keyframes airspace-runway { to { background-position: 24px 0; } }
+@keyframes reward-wind-streak { from { opacity: 0; transform: translateX(-110px) scaleX(.4); } 60% { opacity: 1; } to { opacity: 0; transform: translateX(90px) scaleX(1.1); } }
+@keyframes reward-wind-streak-left { from { opacity: 0; transform: translateX(110px) rotate(180deg) scaleX(.4); } 60% { opacity: 1; } to { opacity: 0; transform: translateX(-90px) rotate(180deg) scaleX(1.1); } }
 @keyframes reward-plane-right { from { opacity: 0; transform: translateX(-320px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes reward-plane-left { from { opacity: 0; transform: translateX(320px) rotate(180deg); } to { opacity: 1; transform: translateX(0) rotate(180deg); } }
+@keyframes reward-plane-bob { 50% { transform: translateY(-5px); } }
+@keyframes reward-plane-bob-left { 50% { transform: translateY(-5px) rotate(180deg); } }
+@keyframes airspace-open-left { from { opacity: 0; transform: translate(24px, -50%) scaleX(.2); } to { opacity: 1; transform: translate(0, -50%) scaleX(1); } }
+@keyframes airspace-open-right { from { opacity: 0; transform: translate(-24px, -50%) scaleX(-.2); } to { opacity: 1; transform: translate(0, -50%) scaleX(-1); } }
+@keyframes airspace-spark { from { opacity: 0; transform: scale(.3) rotate(0); } 48% { opacity: 1; } to { opacity: 0; transform: scale(1.35) rotate(45deg); } }
+@keyframes airspace-sparkle-center { from { opacity: 0; transform: scale(.25) rotate(-30deg); } 56% { opacity: 1; transform: scale(1.18) rotate(8deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
 @keyframes reward-tile-lock { to { opacity: 1; transform: scale(1) translateY(0); } }
 @keyframes reward-frame-glow { 70%, 100% { box-shadow: inset 0 0 30px rgba(185,243,82,.13); } }
 @keyframes reward-heart-row { to { opacity: 1; transform: translateY(0) scale(1); } }

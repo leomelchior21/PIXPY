@@ -1,4 +1,5 @@
 import type { PrintActivityId } from '../types'
+import { isMorningGreetingOutput } from './printMatching'
 
 export type PrintReward =
   | { type: 'morning-greeting'; message: string }
@@ -75,8 +76,8 @@ export function detectPrintReward(activityId: PrintActivityId, output: string, s
   const normalized = normalizeOutput(output)
   const lines = normalized.split('\n')
 
-  if (activityId === 'morning-chat' && normalized === 'Bom dia, chat!') {
-    return { type: 'morning-greeting', message: normalized }
+  if (activityId === 'morning-chat' && isMorningGreetingOutput(normalized)) {
+    return { type: 'morning-greeting', message: normalized.trim() }
   }
   if (activityId === 'introduce-yourself' && lines.length === 2 && lines.every(Boolean)) {
     return { type: 'personal-message', greeting: lines[0], message: lines[1] }

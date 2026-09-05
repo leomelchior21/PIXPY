@@ -54,6 +54,17 @@ describe('Print Playground activities', () => {
   })
 
   it.each([
+    'print("bom dia, chat!")',
+    'print("bom dia, chat")',
+    'print("Bom dia, chat")',
+    'print("bom dia chat")',
+    'print("bom dia, chaat!")',
+    'print("bon dia, chat!")',
+  ])('accepts a close Bom dia, chat variant: %s', (code) => {
+    expect(validates('morning-chat', code)).toBe(true)
+  })
+
+  it.each([
     ['morning-chat', 'print("Bom dia, chat!")\nprint("extra")'],
     ['introduce-yourself', 'print("HELLO!")\nprint("Someone else")'],
     ['blank-line', 'print("TOP")\nprint("not blank")\nprint("BOTTOM")'],
@@ -64,6 +75,15 @@ describe('Print Playground activities', () => {
     ['crack-code', 'access_code = 42\nprint("ACCESS CODE")'],
   ])('rejects the unsuccessful %s example', (id, code) => {
     expect(validates(id, code)).toBe(false)
+  })
+
+  it.each([
+    'print("hello")',
+    'print("boa noite, chat")',
+    'print("bom dia")',
+    'print("bom dia, chat")\nprint("extra")',
+  ])('rejects text outside the morning greeting border: %s', (code) => {
+    expect(validates('morning-chat', code)).toBe(false)
   })
 
   it.each([
