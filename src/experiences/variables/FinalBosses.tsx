@@ -1,5 +1,5 @@
-import { ArrowLeft, ArrowRight, Check, LoaderCircle, Play, Skull, Trophy } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowLeft, ArrowRight, Check, LoaderCircle, Play, RotateCcw, Skull, Trophy } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
 import { ExperienceShell } from '../../components/ExperienceShell'
 import { variableBosses } from '../../data/bosses'
@@ -16,12 +16,18 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState('Change the code. Defeat the boss.')
   const [victory, setVictory] = useState(false)
+  const drafts = useRef<Record<number, string>>({})
+  const version = useRef(0)
+  useEffect(() => () => { version.current += 1 }, [])
   const completed = progress.completed.includes('final-bosses')
 
   const run = async () => {
+    if (busy) return
+    const request = ++version.current
     setBusy(true)
     try {
       const output = await pythonRunner.runScript(code, boss.inputs)
+      if (request !== version.current) return
       const won = boss.expected === undefined ? output.stdout.trim().length > 0 : matches(output.stdout, boss.expected)
       if (!won) {
         setVictory(false)
@@ -35,19 +41,22 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
       setVictory(true)
       setResult(boss.expected === undefined ? `YOUR FORMULA MADE ${output.stdout}. BOSS DEFEATED.` : `OUTPUT ${output.stdout}. BOSS DEFEATED.`)
     } catch (error) {
+      if (request !== version.current) return
       setVictory(false)
       setResult(error instanceof Error ? error.message : 'The boss blocked that run.')
     } finally {
-      setBusy(false)
+      if (request === version.current) setBusy(false)
     }
   }
 
   const choose = (index: number) => {
+    if (busy) return
+    drafts.current[boss.id] = code
     const nextIndex = Math.max(0, Math.min(variableBosses.length - 1, index))
     const nextBoss = variableBosses[nextIndex]
     setBossIndex(nextIndex)
-    setCode(nextBoss.code)
-    setResult('Change the code. Defeat the boss.')
+    setCode(drafts.current[nextBoss.id] ?? nextBoss.code)
+    setResult(progress.bossProgress.includes(nextBoss.id) ? 'Already defeated. Try a different solution!' : 'Change the code. Defeat the boss.')
     setVictory(progress.bossProgress.includes(nextBoss.id))
   }
 
@@ -56,13 +65,14 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
       <section className="boss-stage panel-surface">
         <div className="boss-title"><span><Skull /></span><div><small>BOSS {String(boss.id).padStart(2, '0')} / {variableBosses.length}</small><h2>{boss.title}</h2><p>{boss.prompt}</p></div></div>
         <div className="boss-io"><article><small>INPUT</small><strong>{boss.inputs.join('  ·  ')}</strong></article><i>VS</i><article><small>EXPECTED</small><strong>{boss.expected ?? 'YOUR RULE'}</strong></article></div>
-        <div className={`boss-result ${victory ? 'is-victory' : ''}`}>{victory ? <Trophy /> : <Skull />}<span><small>{victory ? 'VICTORY' : 'RESULT'}</small><strong>{result}</strong></span></div>
-        <div className="boss-grid" aria-label="Choose a boss">{variableBosses.map((item, index) => <button key={item.id} className={`${index === bossIndex ? 'is-active' : ''} ${progress.bossProgress.includes(item.id) ? 'is-done' : ''}`} onClick={() => choose(index)}>{progress.bossProgress.includes(item.id) ? <Check /> : String(item.id).padStart(2, '0')}</button>)}</div>
+        <div className={`boss-result ${victory ? 'is-victory' : ''}`} role="status">{victory ? <Trophy /> : <Skull />}<span><small>{victory ? 'VICTORY' : 'RESULT'}</small><strong>{result}</strong></span></div>
+        <div className="boss-grid" aria-label="Choose a boss">{variableBosses.map((item, index) => <button key={item.id} disabled={busy} aria-label={`Boss ${item.id}: ${item.title}${progress.bossProgress.includes(item.id) ? ', defeated' : ''}`} aria-pressed={index === bossIndex} className={`${index === bossIndex ? 'is-active' : ''} ${progress.bossProgress.includes(item.id) ? 'is-done' : ''}`} onClick={() => choose(index)}>{progress.bossProgress.includes(item.id) ? <Check /> : String(item.id).padStart(2, '0')}<span>{item.title}</span></button>)}</div>
       </section>
       <section className="code-workbench panel-surface">
-        <CodeEditor value={code} onChange={setCode} minHeight="260px" />
-        <button className="primary-action full-action" onClick={run} disabled={busy}>{busy ? <LoaderCircle className="spin" /> : <Play fill="currentColor" />} RUN AGAINST BOSS</button>
-        <div className="boss-navigation"><button onClick={() => choose(bossIndex - 1)} disabled={bossIndex === 0}><ArrowLeft /> PREVIOUS</button><span>{progress.bossProgress.length} / {variableBosses.length} DEFEATED</span><button onClick={() => choose(bossIndex + 1)} disabled={bossIndex === variableBosses.length - 1}>NEXT <ArrowRight /></button></div>
+        <header className="workbench-heading"><span>YOUR SOLUTION</span><h2>Make the values work together.</h2><p>Edit the formula below, then test your code.</p></header>
+        <CodeEditor value={code} readOnly={busy} onChange={(value) => { setCode(value); setVictory(false); setResult('Code changed. Run it to see your new result.') }} minHeight="180px" />
+        <div className="run-row"><button className="secondary-action" disabled={busy} onClick={() => { setCode(boss.code); setVictory(false); setResult('Starter code restored. Try a new formula.') }}><RotateCcw /> Reset</button><button className="primary-action full-action" onClick={run} disabled={busy}>{busy ? <LoaderCircle className="spin" /> : <Play fill="currentColor" />} TEST MY CODE</button></div>
+        <div className="boss-navigation"><button onClick={() => choose(bossIndex - 1)} disabled={busy || bossIndex === 0}><ArrowLeft /> PREVIOUS</button><span>{progress.bossProgress.length} / {variableBosses.length} DEFEATED</span><button onClick={() => choose(bossIndex + 1)} disabled={busy || bossIndex === variableBosses.length - 1}>NEXT <ArrowRight /></button></div>
       </section>
     </ExperienceShell>
   )
@@ -71,6 +81,7 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
 function matches(actual: string, expected: string): boolean {
   const left = actual.trim()
   const right = expected.trim()
+  if (!left) return false
   if (left === right) return true
   if (!left.includes('\n') && !right.includes('\n')) {
     const a = Number(left)

@@ -39,7 +39,7 @@ export default function App() {
 
   const navigate = (next: AppRoute) => {
     setRoute(next)
-    window.history.replaceState(null, '', `#/${next}`)
+    if (route !== next) window.history.pushState(null, '', `#/${next}`)
   }
 
   const start = (name: string) => {

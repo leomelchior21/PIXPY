@@ -1,4 +1,4 @@
-import CodeMirror from '@uiw/react-codemirror'
+import CodeMirror, { EditorView } from '@uiw/react-codemirror'
 import { python } from '@codemirror/lang-python'
 
 interface CodeEditorProps {
@@ -17,7 +17,7 @@ export function CodeEditor({ value, onChange, label = 'Python code editor', read
         value={value}
         height="100%"
         minHeight={minHeight}
-        extensions={[python()]}
+        extensions={[python(), EditorView.lineWrapping, EditorView.contentAttributes.of({ 'aria-label': label, spellcheck: 'false', autocapitalize: 'off', autocorrect: 'off' })]}
         onChange={onChange}
         editable={!readOnly}
         basicSetup={{

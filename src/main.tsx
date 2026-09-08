@@ -9,10 +9,13 @@ import '@fontsource/ibm-plex-mono/latin-ext-600.css'
 import '@fontsource/ibm-plex-mono/latin-700.css'
 import '@fontsource/ibm-plex-mono/latin-ext-700.css'
 import App from './App'
+import { LandscapeNotice } from './components/LandscapeNotice'
 import './styles.css'
+import './classroom.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <div className="landscape-app"><App /></div>
+    <LandscapeNotice />
   </StrictMode>,
 )

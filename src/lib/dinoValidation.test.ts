@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest'
 import { starterValues } from '../data/dinoLab'
 import { validateDinoValues } from './dinoValidation'
 

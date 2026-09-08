@@ -83,6 +83,8 @@ export function DinoGame({ config, runPulse, challengeActive = false, onChalleng
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (target?.closest('button, input, textarea, [contenteditable="true"], [role="dialog"]')) return
       if (event.code === 'Space') {
         event.preventDefault()
         jump()
@@ -185,14 +187,14 @@ export function DinoGame({ config, runPulse, challengeActive = false, onChalleng
         <span>LIVES <b>{lives}</b></span>
       </div>
       <div className="dino-game__controls">
-        <button onClick={() => setRunning((value) => !value)}>
+        <button onClick={() => setRunning((value) => !value)} disabled={lives === 0}>
           {running ? <Pause size={15} /> : <Play size={15} />}
           {running ? 'PAUSE' : lives === 0 ? 'GAME OVER' : 'PLAY'}
         </button>
         <button onClick={resetGame}><RotateCcw size={15} /> RESTART</button>
       </div>
       <button className="jump-button" onClick={jump}>JUMP <span>SPACE</span></button>
-      <div className="dino-game__help"><Keyboard size={18} /> <b>CONTROLS:</b> Arrow Keys to move <i /> SPACE to jump</div>
+      <div className="dino-game__help"><Keyboard size={18} /> Tap the world or press SPACE to jump.</div>
       {!running && lives === 0 && (
         <div className="game-over">
           <small>GAME OVER</small>

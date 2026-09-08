@@ -1,5 +1,5 @@
-import { ArrowLeft, ArrowRight, Check, Eye, Hand, Play, RotateCcw, Timer, Trophy } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, ArrowRight, Check, Eye, Hand, Play, RotateCcw, Sparkles, Timer, Trophy } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
 import { ExperienceShell } from '../../components/ExperienceShell'
 import { completeActivity } from '../../session/progressSession'
@@ -90,7 +90,7 @@ export function BlackBox({ progress, onProgress, onBack }: Props) {
   const [revealed, setRevealed] = useState(false)
   const [quizSelected, setQuizSelected] = useState<number | null>(null)
   const [now, setNow] = useState(() => Date.now())
-  const answerTimer = useRef<number | null>(null)
+  const [exploring, setExploring] = useState(false)
   const current = levels[level]
   const operationQuiz = buildOperationQuiz(progress.blackBoxQuizSeed)
   const completed = progress.completed.includes('black-box')
@@ -103,8 +103,6 @@ export function BlackBox({ progress, onProgress, onBack }: Props) {
   const attemptsUsed = progress.blackBoxQuizResults.length
   const canTryAgain = quizFinished && attemptsUsed < MAX_QUIZ_ATTEMPTS
   const displayedAttempt = quizFinished ? Math.max(1, attemptsUsed) : Math.min(attemptsUsed + 1, MAX_QUIZ_ATTEMPTS)
-
-  useEffect(() => () => { if (answerTimer.current) window.clearTimeout(answerTimer.current) }, [])
 
   useEffect(() => {
     if (!quizReady || !quizStarted || quizFinished) return
@@ -134,15 +132,12 @@ export function BlackBox({ progress, onProgress, onBack }: Props) {
 
   const testGuess = () => {
     if (guess !== current.formula) {
-      setSamples([])
-      setLast(null)
-      setTesting(false)
-      setGuess('')
       setRevealed(false)
-      setFeedback('That rule missed. The Black Box reset, so start again with fresh clues.')
+      setFeedback(`Not quite. Check the clue ${samples[0]?.input} → ${samples[0]?.output}. Try another rule, or collect more clues.`)
       return
     }
     const solved = [...new Set([...progress.blackBoxLevels, level])]
+    if (solved.length === levels.length) setExploring(false)
     onProgress({ ...progress, blackBoxLevels: solved })
     setFeedback('YOU CRACKED IT. The same rule works for every input.')
     setRevealed(true)
@@ -174,33 +169,36 @@ export function BlackBox({ progress, onProgress, onBack }: Props) {
   const answerQuiz = (answer: number) => {
     if (!quizStarted || quizSelected !== null || quizFinished) return
     setQuizSelected(answer)
-    answerTimer.current = window.setTimeout(() => {
-      const answers = [...progress.blackBoxQuizAnswers, answer]
-      let next = { ...progress, blackBoxQuizAnswers: answers }
-      if (answers.length === operationQuiz.length) {
-        const elapsedMs = Date.now() - (progress.blackBoxQuizStartedAt ?? Date.now())
-        const score = answers.reduce((total, item, index) => total + (item === operationQuiz[index]?.answer ? 1 : 0), 0)
-        next = completeActivity({
-          ...next,
-          blackBoxQuizElapsedMs: elapsedMs,
-          blackBoxQuizResults: [...progress.blackBoxQuizResults, { score, total: operationQuiz.length, elapsedMs }].slice(-MAX_QUIZ_ATTEMPTS),
-        }, 'black-box')
-      }
-      onProgress(next)
-      setQuizSelected(null)
-    }, 500)
   }
 
-  if (quizReady) {
+  const nextQuestion = () => {
+    if (quizSelected === null) return
+    const answers = [...progress.blackBoxQuizAnswers, quizSelected]
+    let next = { ...progress, blackBoxQuizAnswers: answers }
+    if (answers.length === operationQuiz.length) {
+      const elapsedMs = Date.now() - (progress.blackBoxQuizStartedAt ?? Date.now())
+      const score = answers.reduce((total, item, index) => total + (item === operationQuiz[index]?.answer ? 1 : 0), 0)
+      next = completeActivity({
+        ...next,
+        blackBoxQuizElapsedMs: elapsedMs,
+        blackBoxQuizResults: [...progress.blackBoxQuizResults, { score, total: operationQuiz.length, elapsedMs }].slice(-MAX_QUIZ_ATTEMPTS),
+      }, 'black-box')
+    }
+    onProgress(next)
+    setQuizSelected(null)
+  }
+
+  if (quizReady && !exploring) {
     const question = operationQuiz[Math.min(quizIndex, operationQuiz.length - 1)]
     return (
-      <ExperienceShell order="03" title="Black Box" question="Can you use all four operations?" accent="#fe6f8f" hints={['Read the operator before calculating.', 'Work from left to right.', 'Remember: + add, - subtract, * multiply, / divide.']} completed={completed} objective="Complete all ten operation questions." onBack={onBack} className="blackbox-experience blackbox-quiz-experience">
+      <ExperienceShell order="03" title="Black Box" question="Can you use all four operations?" accent="#fe6f8f" hints={['Read the operator before calculating.', 'Use the values stored in the variables.', 'Remember: + add, - subtract, * multiply, / divide.']} completed={completed} objective="Complete all ten operation questions." onBack={onBack} className="blackbox-experience blackbox-quiz-experience">
         <div className="blackbox-quiz-layout">
           <section className="memory-quiz operation-quiz panel-surface">
             {!quizStarted && !quizFinished ? (
-              <div className="blackbox-quiz-start">
-                <span><Timer /></span><small>BLACK BOX QUIZ</small><h2>Ready for ten questions?</h2>
-                <p>The timer starts when you press start. You can try up to five times with new values.</p>
+              <div className="blackbox-quiz-start quiz-unlock" role="status">
+                <div className="quiz-unlock-burst" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>
+                <span><Sparkles /></span><small>SURPRISE · QUIZ UNLOCKED</small><h2>You cracked every box.</h2>
+                <p>Your investigation unlocked ten operation questions. Take your time—you can try up to five rounds.</p>
                 <button className="primary-action" onClick={startQuiz} disabled={attemptsUsed >= MAX_QUIZ_ATTEMPTS}>START QUIZ <ArrowRight /></button>
               </div>
             ) : quizFinished ? (
@@ -223,7 +221,7 @@ export function BlackBox({ progress, onProgress, onBack }: Props) {
                     return <button className={state} key={`${option}-${index}`} onClick={() => answerQuiz(index)} disabled={quizSelected !== null}><span>{String.fromCharCode(65 + index)}</span><code>{option}</code></button>
                   })}
                 </div>
-                <p className={`memory-quiz-feedback ${quizSelected !== null ? 'is-visible' : ''}`}>{quizSelected === null ? 'Choose one answer.' : quizSelected === question.answer ? `Correct. ${question.explanation}` : `Not quite. ${question.explanation}`}</p>
+                <div className="quiz-response"><p role="status" className={`memory-quiz-feedback ${quizSelected !== null ? 'is-visible' : ''}`}>{quizSelected === null ? 'Choose one answer.' : quizSelected === question.answer ? `Correct. ${question.explanation}` : `Not quite. ${question.explanation}`}</p><button className="primary-action quiz-next" onClick={nextQuestion} disabled={quizSelected === null}>{quizIndex === operationQuiz.length - 1 ? 'SEE RESULTS' : 'NEXT QUESTION'} <ArrowRight /></button></div>
               </>
             )}
           </section>
@@ -237,6 +235,7 @@ export function BlackBox({ progress, onProgress, onBack }: Props) {
                 {progress.blackBoxQuizResults.map((result, index) => <span key={`${result.elapsedMs}-${index}`}>{index + 1}: {result.score}/{result.total} in {formatElapsed(result.elapsedMs)}</span>)}
               </div>
             )}
+            <button className="secondary-action" onClick={() => { setExploring(true); chooseLevel(0) }}>EXPLORE THE BOXES</button>
           </aside>
         </div>
       </ExperienceShell>
@@ -248,7 +247,7 @@ export function BlackBox({ progress, onProgress, onBack }: Props) {
   return (
     <ExperienceShell order="03" title="Black Box" question="How can a value go through a calculation?" accent="#fe6f8f" hints={['Touch the box at least twice.', 'Compare how each input becomes its output.', 'Test a rule that works for every pair—not only one.']} completed={completed} objective="Crack all three random boxes, then complete the operations quiz." onBack={onBack} className="blackbox-experience">
       <section className="blackbox-stage panel-surface">
-        <div className="level-tabs">{levels.map((_, index) => <button className={level === index ? 'is-active' : ''} onClick={() => chooseLevel(index)} key={index}>BOX {index + 1}{progress.blackBoxLevels.includes(index) && <Check />}</button>)}</div>
+        <div className="level-tabs">{levels.map((_, index) => <button aria-pressed={level === index} className={level === index ? 'is-active' : ''} onClick={() => chooseLevel(index)} key={index}>BOX {index + 1}{progress.blackBoxLevels.includes(index) && <Check />}</button>)}{quizReady && <button onClick={() => setExploring(false)}>QUIZ <ArrowRight /></button>}</div>
         <header className="blackbox-instruction"><span>1</span><div><strong>TOUCH THE BOX</strong><p>Every touch gives you a fresh random input → output clue.</p></div></header>
         <button className={`real-black-box ${last ? 'has-result' : ''}`} onClick={touchBox} aria-label="Touch the Black Box to generate a random number pair">
           <span className="box-number"><i>INPUT</i><b>{last?.input ?? '?'}</b></span>
@@ -257,7 +256,7 @@ export function BlackBox({ progress, onProgress, onBack }: Props) {
           <em>→</em>
           <span className="box-number"><i>OUTPUT</i><b>{last?.output ?? '?'}</b></span>
         </button>
-        <div className="sample-rack"><small>CLUES COLLECTED</small><div>{samples.length ? samples.map((sample, index) => <span key={`${sample.input}-${index}`}>{sample.input} <i>→</i> <b>{sample.output}</b></span>) : <p>No clues yet.</p>}</div></div>
+        <div className="sample-rack"><small>CLUES COLLECTED · {samples.length < 2 ? `${2 - samples.length} MORE TO TEST A RULE` : 'COMPARE THE INPUTS AND OUTPUTS'}</small><div aria-live="polite">{samples.length ? samples.map((sample, index) => <span key={`${sample.input}-${index}`}>{sample.input} <i>→</i> <b>{sample.output}</b></span>) : <p>Tap the box above to collect your first clue.</p>}</div></div>
       </section>
 
       <section className={`hypothesis-panel panel-surface ${testing ? 'is-testing' : 'is-intro'}`}>
@@ -265,14 +264,14 @@ export function BlackBox({ progress, onProgress, onBack }: Props) {
           <>
             <header className="blackbox-instruction"><span>2</span><div><strong>LOOK FOR THE PATTERN</strong><p>The hidden rule never changes.</p></div></header>
             <button className="primary-action" onClick={() => setTesting(true)} disabled={samples.length < 2}>TEST A HYPOTHESIS <ArrowRight /></button>
-            <p className="machine-message">{feedback}</p>
+            <p className="machine-message" role="status">{feedback}</p>
           </>
         ) : (
           <>
             <header className="blackbox-instruction"><span>3</span><div><strong>TEST YOUR HYPOTHESIS</strong><p>Choose one rule that explains every clue.</p></div></header>
-            <div className="rule-options">{current.options.map((option) => <button className={guess === option ? 'is-active' : ''} onClick={() => setGuess(option)} key={option}><code>{option}</code></button>)}</div>
-            <button className="primary-action" onClick={testGuess} disabled={!guess}><Play fill="currentColor" /> RUN MY RULE</button>
-            <p className="machine-message">{feedback}</p>
+            <div className="rule-options">{current.options.map((option) => <button aria-pressed={guess === option} className={guess === option ? 'is-active' : ''} onClick={() => setGuess(option)} disabled={revealed} key={option}><code>{option}</code></button>)}</div>
+            <button className="primary-action" onClick={revealed ? () => chooseLevel((level + 1) % levels.length) : testGuess} disabled={!guess}>{revealed ? <><ArrowRight /> NEXT BOX</> : <><Play fill="currentColor" /> RUN MY RULE</>}</button>
+            <p className="machine-message" role="status">{feedback}</p>
             {revealed ? <div className="python-reveal"><span><Eye /> THE REAL PYTHON</span><CodeEditor value={revealCode} onChange={() => undefined} readOnly minHeight="135px" /></div> : <button className="text-action" onClick={() => setTesting(false)}><ArrowLeft /> COLLECT MORE CLUES</button>}
           </>
         )}

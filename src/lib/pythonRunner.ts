@@ -37,7 +37,8 @@ class PythonRunner {
         this.pending.delete(message.id)
         if (message.type === 'error') {
           if (this.state === 'unavailable' || /fetch|network|load/i.test(message.error ?? '')) {
-            pending.resolve(runGuidedPython(pending.code, pending.inputs))
+            try { pending.resolve(runGuidedPython(pending.code, pending.inputs)) }
+            catch (error) { pending.reject(error instanceof Error ? error : new Error(String(error))) }
           } else {
             pending.reject(new Error(cleanPythonError(message.error ?? 'Python could not run that code.')))
           }
@@ -75,6 +76,13 @@ class PythonRunner {
     return new Promise((resolve, reject) => {
       const timeout = window.setTimeout(() => {
         this.pending.delete(id)
+        // A first download can be slow on classroom Wi-Fi. Keep loading Python
+        // while the small-program runner answers this request locally.
+        if (this.state === 'booting' || this.state === 'unavailable') {
+          try { resolve(runGuidedPython(code, inputs)) }
+          catch (error) { reject(error instanceof Error ? error : new Error(String(error))) }
+          return
+        }
         this.worker?.terminate()
         this.setState('booting')
         this.createWorker()

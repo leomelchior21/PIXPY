@@ -7,6 +7,8 @@ interface VariablesHomeProps {
   onNavigate: (route: AppRoute) => void
 }
 
+const previews = ['speed = 12', 'print("Hello, world!")', '4 → [ ? ] → 24', 'name = input()', 'score = score + 5', 'result = number * 2', 'Your code. Your challenge.']
+
 export function VariablesHome({ progress, onNavigate }: VariablesHomeProps) {
   return (
     <main className="variables-home">
@@ -30,7 +32,8 @@ export function VariablesHome({ progress, onNavigate }: VariablesHomeProps) {
               <span className="experience-card__order">{experience.order}</span>
               <span className="experience-card__icon"><Icon /></span>
               <span className="experience-card__copy"><strong>{experience.title}</strong><p>{experience.description}</p></span>
-              <span className="experience-card__state">{complete ? <><Check size={16} /> DONE</> : <>OPEN <ArrowRight size={16} /></>}</span>
+              <code className="experience-card__preview" aria-hidden="true">{previews[index]}</code>
+              <span className="experience-card__state">{complete ? <><Check size={16} /> DONE · PLAY AGAIN</> : <>LET’S TRY IT <ArrowRight size={16} /></>}</span>
               {index === 0 && !complete && <i>START HERE</i>}
             </button>
           )

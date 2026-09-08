@@ -29,6 +29,7 @@ export interface SessionProgress {
   inputModes: string[]
   memoryExamples: string[]
   memoryQuizAnswers: number[]
+  memoryQuizCompleted: boolean
   bossProgress: number[]
   blackBoxCode: string
   blackBoxTests: Array<{ input: number; output: number }>

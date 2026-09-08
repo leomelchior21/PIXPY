@@ -24,8 +24,9 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
   const outputState = progress.printPlaygroundOutputs[activityId]
   const currentRun = latestRun?.activityId === activityId ? latestRun : null
   const currentSuccessfulRun = currentRun?.success ? currentRun : null
-  const reward = detectPrintReward(activityId, currentRun?.output ?? '', Boolean(currentSuccessfulRun) || (activityId === 'introduce-yourself' && Boolean(currentRun)))
+  const reward = detectPrintReward(activityId, currentRun?.output ?? '', Boolean(currentSuccessfulRun))
   const completed = progress.printPlaygroundCompleted.includes(activityId)
+  const visuallyComplete = completed || Boolean(currentSuccessfulRun)
   const coreComplete = printCoreActivityIds.every((id) => progress.printPlaygroundCompleted.includes(id))
 
   useEffect(() => {
@@ -126,13 +127,14 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
   return (
     <ExperienceShell key={activity.id} order="02" title="Print Playground" question="How can Python put something on screen?" accent="#ffcb47" hints={activity.hints} completed={coreComplete} objective="Complete the five core print activities. Optional extras do not affect completion." onBack={onBack} className={`print-experience ${activity.extra ? 'print-experience--extra' : ''}`}>
       <section className={`print-editor-stage panel-surface ${activity.extra ? 'is-extra' : ''}`}>
+        <header className="workbench-heading"><span>{activity.extra ? 'EXTRA EXPERIMENT' : `PRINT EXPERIMENT ${activityIndex + 1} / 5`}</span><h2>{activity.title}</h2><p>{activity.prompt}</p></header>
         <CodeEditor value={code} onChange={editCode} minHeight="260px" />
       </section>
       <section className="print-editor-controls panel-surface">
         <div className="run-row"><button className="secondary-action" onClick={reset}><RotateCcw /> Reset</button><button className="primary-action" onClick={run} disabled={busy}>{busy ? <LoaderCircle className="spin" /> : <Play fill="currentColor" />} RUN IT</button></div>
         <p className="concept-line"><code>print()</code> sends something to the output.</p>
       </section>
-      <section className={`terminal-stage panel-surface ${completed ? 'is-complete' : ''}`}>
+      <section className={`terminal-stage panel-surface ${visuallyComplete ? 'is-complete' : ''}`}>
         <div className={`terminal-screen ${outputState?.kind === 'error' ? 'has-error' : ''}`}>
           <div><TerminalSquare /> PIXPY OUTPUT</div>
           {reward ? <PrintRewardDisplay reward={reward} /> : <><pre aria-live="polite">{outputState?.text ?? EMPTY_OUTPUT}</pre><span className="terminal-cursor" /></>}
@@ -145,7 +147,7 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
         <div className="print-activity-dots">
           {printActivities.map((item, index) => {
             const done = progress.printPlaygroundCompleted.includes(item.id)
-            return <button key={item.id} className={`${item.id === activityId ? 'is-active' : ''} ${done ? 'is-done' : ''} ${item.extra ? 'is-extra' : ''}`} onClick={() => chooseActivity(item.id)} aria-label={`${index + 1}. ${item.title}${item.extra ? ' — EXTRA' : ''}${done ? ' — complete' : ''}`} aria-current={item.id === activityId ? 'step' : undefined}>{done ? <Check /> : <span />}</button>
+            return <button key={item.id} title={item.title} className={`${item.id === activityId ? 'is-active' : ''} ${done ? 'is-done' : ''} ${item.extra ? 'is-extra' : ''}`} onClick={() => chooseActivity(item.id)} aria-label={`${index + 1}. ${item.title}${item.extra ? ' — EXTRA' : ''}${done ? ' — complete' : ''}`} aria-current={item.id === activityId ? 'step' : undefined}>{done ? <Check /> : <b>{index + 1}</b>}</button>
           })}
         </div>
         <button className="print-step-button" onClick={() => chooseActivity(printActivities[activityIndex + 1].id)} disabled={activityIndex === printActivities.length - 1}>NEXT <ChevronRight /></button>

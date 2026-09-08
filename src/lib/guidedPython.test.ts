@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest'
 import { evaluateMath, runGuidedPython } from './guidedPython'
 
 describe('guided Python fallback', () => {

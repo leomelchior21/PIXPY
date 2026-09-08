@@ -113,7 +113,7 @@ The interaction is the star. Instructions should take seconds to read. `RUN` and
 
 Target viewports:
 
-- 768x1024 iPad portrait;
+- 768x1024 iPad portrait displays a rotate-to-landscape screen;
 - 1024x768 iPad landscape;
 - 1180x820 iPad landscape;
 - 1366x768 Chromebook or laptop;
@@ -182,6 +182,19 @@ The playground refactor includes:
 
 The working Dino canvas, safe value clamping, CodeMirror editor, and browser Python worker were preserved and simplified. Black Box, Input Machine, Memory Machine, Build a Black Box, and Final Bosses were built as new modular experiences.
 
+### Classroom UX review
+
+The Variables collection now has readable experiment previews, larger code and touch controls, and layouts tailored to landscape iPads and laptops. Activities keep their panels side by side without page scrolling. Portrait mode displays a rotate-to-landscape screen and preserves the current activity. The shared header shows the experiment question and completion state. Hints and the activity list support Escape and keyboard focus; browser Back follows activity navigation.
+
+- **Input Machine:** send with Enter, reset the active machine, keep drafts when switching, and see distinct input, output, and error states.
+- **Black Box:** keep clues after a wrong guess, inspect the revealed Python, and revisit the boxes after unlocking the quiz.
+- **Memory Machine:** read an explanation for each executed line, see multiple stored values, and revisit examples or replay the quiz.
+- **Both quizzes:** read feedback at your own pace and press Next to continue.
+- **Build a Black Box:** changing the rule clears old clues; two different inputs must test the same rule. Classmate mode keeps the code hidden while the machine remains usable.
+- **Final Bosses:** named challenge buttons, reset controls, readable result feedback, and drafts that survive switching challenges within the activity.
+
+`src/classroom.css` contains the classroom layout refinements. The application fills the viewport without document scrolling. Code wraps inside its editor, and decorative motion respects reduced-motion preferences.
+
 Conditionals and Functions currently provide open visual previews only. Their playable experiences are intentionally outside this delivery.
 
 ## Run locally
@@ -203,6 +216,8 @@ npm run check:viewports
 ```
 
 Also verify every core experience at each target viewport, with touch and keyboard input, after refresh, and in the print preview. No activity may clip its editor, visual, Run button, or Hint button.
+
+The viewport checker also checks the portrait rotation screen and runs touch and keyboard interactions on both landscape iPad sizes: input submission and errors, hint/list dismissal, memory execution, custom rules and hidden code, all three mystery boxes, quiz feedback, boss solutions, and progress after refresh. Screenshots are saved under the system temporary directory in `pixpy-viewport-checks`.
 
 ## Product test
 

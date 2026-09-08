@@ -58,7 +58,7 @@ export function DinoVariables({ progress, onProgress, onBack }: Props) {
           ))}
         </div>
         <div className="run-row"><button className="secondary-action" onClick={reset}><RotateCcw /> Reset</button><button className="primary-action" onClick={run}><Play fill="currentColor" /> RUN IT</button></div>
-        <p className="machine-message"><Zap />{message}</p>
+        <p className="machine-message" role="status"><Zap />{message}</p>
       </section>
     </ExperienceShell>
   )

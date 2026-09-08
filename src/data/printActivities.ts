@@ -141,7 +141,7 @@ export const printActivities: PrintActivity[] = [
   {
     id: 'morning-chat',
     title: 'Bom dia, chat!',
-    prompt: 'Change the print() line so the output is Bom dia, chat! Close punctuation, capitalization, and spelling variants can pass.',
+    prompt: 'Make Python say “Bom dia, chat!” Change the message inside print(), then run your code.',
     starterCode: '#Change the message to "Bom dia, chat!"\nprint("Hello!")',
     hints: ['Only change the words between the quote marks.', 'Capital letters and punctuation can be a little flexible.', 'Use: print("Bom dia, chat!")'],
     extra: false,

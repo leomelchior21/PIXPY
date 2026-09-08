@@ -25,7 +25,7 @@ describe('Black Box activity', () => {
     expect(screen.getByRole('button', { name: /test a hypothesis/i })).toBeEnabled()
   })
 
-  it('resets the active black box when a hypothesis misses', async () => {
+  it('preserves the evidence when a hypothesis misses so the learner can revise it', async () => {
     const user = userEvent.setup()
     const { container } = render(<BlackBox progress={{ ...emptyProgress, name: 'Leo' }} onProgress={vi.fn()} onBack={vi.fn()} />)
 
@@ -35,9 +35,12 @@ describe('Black Box activity', () => {
     await user.click(screen.getByRole('button', { name: /number \+ 6/i }))
     await user.click(screen.getByRole('button', { name: /run my rule/i }))
 
-    expect(container.querySelectorAll('.sample-rack > div > span')).toHaveLength(0)
-    expect(screen.getByText(/black box reset/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /test a hypothesis/i })).toBeDisabled()
+    expect(container.querySelectorAll('.sample-rack > div > span')).toHaveLength(2)
+    expect(screen.getByText(/check the clue/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /run my rule/i })).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: /number \* 6/i }))
+    await user.click(screen.getByRole('button', { name: /run my rule/i }))
+    expect(screen.getByText(/you cracked it/i)).toBeInTheDocument()
   })
 
   it('opens the four-operations quiz behind a start button with a side timer', async () => {
@@ -50,7 +53,7 @@ describe('Black Box activity', () => {
     }
 
     const { container } = render(<Harness />)
-    expect(screen.getByText('BLACK BOX QUIZ')).toBeInTheDocument()
+    expect(screen.getByText(/quiz unlocked/i)).toBeInTheDocument()
     expect(screen.getByText(/press start when ready/i)).toBeInTheDocument()
     expect(container.querySelector('.blackbox-quiz-layout')).toBeInTheDocument()
     expect(container.querySelector('.blackbox-quiz-timer')).toHaveTextContent('0:00')
@@ -78,7 +81,9 @@ describe('Black Box activity', () => {
       for (let index = 0; index < 10; index += 1) {
         const firstOption = document.querySelector('.memory-quiz-options button:nth-child(1)') as HTMLButtonElement
         fireEvent.click(firstOption)
-        await act(async () => vi.advanceTimersByTime(500))
+        await act(async () => vi.advanceTimersByTime(5000))
+        expect(document.querySelector('.memory-quiz-header > strong')).toHaveTextContent(`${index + 1}/10`)
+        fireEvent.click(screen.getByRole('button', { name: index === 9 ? /see results/i : /next question/i }))
       }
 
       expect(screen.getByText('BLACK BOX QUIZ COMPLETE')).toBeInTheDocument()

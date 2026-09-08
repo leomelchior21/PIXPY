@@ -21,6 +21,7 @@ export const emptyProgress: Omit<SessionProgress, 'name'> = {
   inputModes: [],
   memoryExamples: [],
   memoryQuizAnswers: [],
+  memoryQuizCompleted: false,
   bossProgress: [],
   blackBoxCode: 'number = int(input())\n\nresult =  # type an operation here: number * 2\n\nprint(result)',
   blackBoxTests: [],
@@ -48,7 +49,7 @@ export function loadSession(): SessionProgress | null {
     const printPlaygroundCompleted = cleanPrintActivityIds(parsed.printPlaygroundCompleted)
     const completed = cleanActivityIds(parsed.completed)
     const quizCompleted = completed.filter((activity) => {
-      if (activity === 'memory-machine') return memoryQuizAnswers.length === 10
+      if (activity === 'memory-machine') return memoryQuizAnswers.length === 10 || parsed.memoryQuizCompleted === true
       if (activity === 'black-box') return blackBoxQuizAnswers.length === 10 || blackBoxQuizResults.length > 0
       if (activity === 'print-playground') return printCoreActivityIds.every((id) => printPlaygroundCompleted.includes(id))
       return true
@@ -64,6 +65,7 @@ export function loadSession(): SessionProgress | null {
       blackBoxQuizSeed: cleanQuizSeed(parsed.blackBoxQuizSeed),
       blackBoxQuizResults,
       memoryQuizAnswers,
+      memoryQuizCompleted: parsed.memoryQuizCompleted === true || memoryQuizAnswers.length === 10,
       blackBoxCode: migrateBlackBoxCode(parsed.blackBoxCode),
       printPlaygroundActivity: cleanPrintActivityId(parsed.printPlaygroundActivity),
       printPlaygroundCode: cleanPrintCode(parsed.printPlaygroundCode),

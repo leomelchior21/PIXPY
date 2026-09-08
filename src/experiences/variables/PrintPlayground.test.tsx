@@ -114,6 +114,23 @@ describe('Print Playground screen', () => {
 
   it('animates the introduce-yourself output when a second line is printed', async () => {
     const user = userEvent.setup()
+    runScript.mockResolvedValue({ stdout: 'HELLO!\nMy name is Maya', variables: {} })
+    const progress = {
+      ...createSession('Maya'),
+      printPlaygroundActivity: 'introduce-yourself' as const,
+      printPlaygroundCode: { 'introduce-yourself': 'print("HELLO!")\nprint("My name is Maya")' },
+      printPlaygroundVisited: ['introduce-yourself' as const],
+    }
+    render(<Harness initial={progress} />)
+
+    await user.click(screen.getByRole('button', { name: /run it/i }))
+
+    expect(await screen.findByLabelText('Personal message delivery')).toBeInTheDocument()
+    expect(screen.getByText('My name is Maya')).toBeInTheDocument()
+    expect(document.querySelector('.terminal-stage')).toHaveClass('is-complete')
+  })
+
+  it('does not celebrate or turn the box green when the introduction is incomplete', async () => {
     runScript.mockResolvedValue({ stdout: 'HELLO!\nSomeone on line two', variables: {} })
     const progress = {
       ...createSession('Maya'),
@@ -123,10 +140,11 @@ describe('Print Playground screen', () => {
     }
     render(<Harness initial={progress} />)
 
-    await user.click(screen.getByRole('button', { name: /run it/i }))
+    await userEvent.click(screen.getByRole('button', { name: /run it/i }))
 
-    expect(await screen.findByLabelText('Personal message delivery')).toBeInTheDocument()
-    expect(screen.getByText('Someone on line two')).toBeInTheDocument()
+    await waitFor(() => expect(document.querySelector('.terminal-screen pre')).toHaveTextContent('Someone on line two'))
+    expect(screen.queryByLabelText('Personal message delivery')).not.toBeInTheDocument()
+    expect(document.querySelector('.terminal-stage')).not.toHaveClass('is-complete')
   })
 
   it('keeps ordinary console output when a run does not qualify for a reward', async () => {

@@ -1,0 +1,404 @@
+/* Classroom layouts: comfortable reading, clear cause and effect, touch-sized controls. */
+:root { --paper: #f5f3eb; --header-h: 68px; }
+body { -webkit-text-size-adjust: 100%; }
+button, input { touch-action: manipulation; }
+button { transition: background-color .16s, box-shadow .16s, transform .16s; }
+button:disabled { opacity: .55; }
+button:focus-visible, input:focus-visible { outline: 3px solid #14708c !important; outline-offset: 4px; }
+.app-header { padding-inline: clamp(20px, 3vw, 48px); border-bottom-width: 2px; }
+.brand__word span, .brand > i { color: var(--lime); }
+.app-header nav button { font-size: 12px; }
+.student-chip span { font-size: 9px; }
+.quick-list-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: auto; min-width: 44px; height: 44px; padding: 0 12px; }
+.quick-list-button > span { font-size: 12px; }
+.quick-list > header button { width: 44px; height: 44px; }
+.quick-list > div > button { min-height: 56px; }
+.quick-list > div > button strong { font-size: 14px; }
+.quick-done { color: #28733f; }
+
+/* The collection keeps its folder identity, with a small peek at each experiment. */
+.variables-home { width: min(1440px, calc(100% - 64px)); padding: 26px 0 20px; gap: 24px; }
+.variables-heading { grid-template-columns: 132px 1fr 170px; padding: 18px 22px; border-width: 2px; box-shadow: 4px 4px 0 #c6dca8; }
+.variables-heading .pixel-kicker { color: #3c702d; font-size: 10px; letter-spacing: 1.5px; }
+.variables-heading h1 { margin: 6px 0; font-size: 38px; letter-spacing: -1.5px; }
+.variables-heading > div > p:last-child { font-size: 14px; line-height: 1.4; }
+.variables-heading aside small { font-size: 10px; line-height: 1.5; }
+.variables-heading aside strong { color: #34722c; }
+.experience-grid { gap: 22px; padding: 0 5px 5px 0; }
+.experience-card { grid-template-columns: 1fr auto; grid-template-rows: auto auto 1fr auto; align-items: start; gap: 10px; padding: clamp(16px, 1.7vw, 24px); border-width: 2px; box-shadow: 4px 4px 0 var(--ink); background: #fffefb; }
+.experience-card::before { border-width: 2px; }
+.experience-card__icon { width: 44px; height: 44px; box-shadow: 2px 2px 0 var(--ink); }
+.experience-card__icon svg { width: 23px; height: 23px; }
+.experience-card__order { top: 20px; right: 20px; font: 500 14px 'IBM Plex Mono', monospace; color: #64655f; }
+.experience-card__copy { grid-column: 1 / -1; }
+.experience-card__copy strong { font-size: clamp(18px, 1.7vw, 25px); line-height: 1.12; letter-spacing: -.5px; }
+.experience-card__copy p { font-size: 13px; line-height: 1.4; margin-top: 6px; }
+.experience-card__preview { grid-column: 1 / -1; align-self: center; width: 100%; min-width: 0; padding: 12px; border: 1px solid color-mix(in srgb, var(--card-accent) 60%, #888); border-radius: 6px; background: color-mix(in srgb, var(--card-accent) 13%, white); color: #343b30; font-size: 12px; white-space: normal; overflow-wrap: anywhere; }
+.experience-card__state { align-self: end; justify-content: space-between; width: 100%; font-size: 10px; border-color: #d8d7cd; }
+.experience-card > i { right: 16px; bottom: auto; top: 16px; font-size: 9px; padding: 5px 7px; }
+.experience-card.is-start:not(.is-complete) .experience-card__order { display: none; }
+.experience-card:last-child { grid-template-columns: 54px minmax(0, 1fr); align-content: center; background: #fff0e7; }
+.experience-card:last-child .experience-card__copy { grid-column: 2; grid-row: 1; align-self: center; }
+.experience-card:last-child .experience-card__preview { margin-top: 12px; }
+.experience-card:last-child .experience-card__state { grid-row: 4; }
+.variables-note { font-size: 12px; }
+.variables-note span { font-size: 9px; }
+.playground-home { max-width: 1320px; padding-block: 42px; gap: 36px; }
+.home-intro h1 { font-size: clamp(32px, 3.3vw, 50px); line-height: 1.15; }
+.world-grid { grid-template-columns: 1.4fr 1fr 1fr; }
+.world-card { border-width: 2px; padding: 32px; box-shadow: 5px 5px 0 var(--ink); }
+.world-card__copy strong { font-size: clamp(28px, 3vw, 44px); letter-spacing: -1px; }
+.world-card__copy small, .world-card__copy p { font-size: 14px; line-height: 1.5; }
+.world-card__footer b, .world-card__footer i { font-size: 11px; }
+
+/* A stable shell with the question readable beneath the title. */
+.experience-screen { grid-template-rows: 80px minmax(0, 1fr); padding: 18px 24px 20px; gap: 16px; max-width: 1700px; margin: auto; }
+.experience-header { grid-template-columns: 124px minmax(0, 1fr) 110px; padding: 10px 14px; border-width: 1.5px; box-shadow: 3px 3px 0 var(--experience-accent); }
+.experience-title > span { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 5px; color: #5d625a !important; font: 700 9px 'IBM Plex Mono', monospace !important; letter-spacing: 1px; }
+.experience-title > span b { display: inline-flex; align-items: center; gap: 4px; color: #2e713a; font-size: 9px; letter-spacing: 0; }
+.experience-title > div { display: block; white-space: normal; }
+.experience-title h1 { font-size: 25px; letter-spacing: -.6px; }
+.experience-title i { display: none; }
+.experience-title p { margin-top: 4px; font-size: 13px; line-height: 1.2; overflow: visible; white-space: normal; }
+.back-button, .hint-button { min-height: 44px; font-size: 11px; }
+.experience-body { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.panel-surface { border: 1.5px solid #252821; box-shadow: 3px 3px 0 #d6d4c9; border-radius: 14px; }
+.primary-action, .secondary-action, .text-action { min-height: 44px; font-size: 12px; flex-shrink: 0; }
+.primary-action svg, .secondary-action svg { width: 18px; height: 18px; }
+.machine-message { font-size: 13px; line-height: 1.4; min-height: 44px; padding: 10px 12px; border-color: #d6d4c9; }
+.machine-message svg { flex-shrink: 0; }
+.level-tabs button, .mode-tabs button, .memory-tabs button { min-height: 44px; font-size: 11px; border-width: 1.5px; }
+.level-tabs svg, .memory-tabs svg { width: 14px; height: 14px; }
+.blackbox-instruction strong, .simple-instruction strong { font-size: 13px; }
+.blackbox-instruction p, .simple-instruction p { font-size: 13px; line-height: 1.35; margin-top: 4px; }
+.blackbox-instruction > span { min-width: 34px; height: 34px; }
+.hint-drawer { bottom: auto; top: 108px; right: 24px; padding: 25px; max-width: calc(100% - 48px); }
+.hint-drawer p { font-size: 17px; line-height: 1.5; }
+.hint-close { min-width: 44px; min-height: 44px; }
+.hint-drawer > button:last-child { min-height: 44px; }
+.code-workbench { grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 12px; padding: 16px; }
+.workbench-heading { padding: 4px 2px 2px; }
+.workbench-heading > span { font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: 1px; color: #596056; }
+.workbench-heading h2 { margin: 6px 0; font-size: 23px; line-height: 1.15; letter-spacing: -.6px; }
+.workbench-heading p { color: #555c52; font-size: 14px; line-height: 1.4; }
+.pixpy-editor { grid-template-rows: 40px minmax(0, 1fr); box-shadow: none; border-color: #222832; }
+.pixpy-editor .cm-editor { font-size: 16px; line-height: 1.75; }
+.pixpy-editor .cm-content { padding-block: 14px; }
+.pixpy-editor .cm-line { padding-inline: 10px; }
+.editor-titlebar { font-size: 11px; background: #1d2735; }
+.editor-titlebar small { font-size: 9px; color: #aab6c5; }
+.pixpy-editor .cm-gutters { color: #8995a6; }
+.concept-line { font-size: 12px; }
+.concept-line code, .flow-legend code { color: #6b4b08; }
+
+/* Input: one prominent sender, a visible journey, and a distinct output. */
+.input-stage { padding: 16px; gap: 14px; }
+.vending-machine { grid-template-columns: minmax(0, 1fr) 100px; align-content: center; padding: clamp(22px, 3vw, 44px); gap: 12px; background: #bceef4; border-width: 2px; box-shadow: inset 0 0 0 5px #e2f9fb, 3px 3px 0 #283b3d; }
+.machine-heading { grid-column: 1 / -1; margin-bottom: 20px; }
+.machine-heading > span { font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: 1px; color: #275663; }
+.machine-heading h2 { margin: 10px 0; font-size: clamp(24px, 2.5vw, 36px); line-height: 1.05; letter-spacing: -1px; max-width: 360px; }
+.machine-heading p { font-size: 14px; color: #35565c; }
+.vending-machine label { font-size: 11px; letter-spacing: .5px; }
+.vending-machine input { height: 52px; font-size: 18px; background: #fffefb; border-width: 2px; }
+.vending-machine button { border-width: 2px; background: #192a30; color: white; font-size: 12px; }
+.machine-lights i { border-radius: 50%; width: 7px; height: 7px; box-shadow: none; background: #3c808a; }
+.machine-transfer { display: flex; grid-column: 1 / -1; justify-content: center; align-items: center; gap: 10px; padding: 16px 0; font: 500 11px 'IBM Plex Mono', monospace; color: #30535b; }
+.machine-transfer span { width: 6px; height: 6px; border-radius: 50%; background: #33727e; }
+.is-processing .machine-transfer span { animation: transfer-pulse .6s ease-in-out infinite alternate; }
+.machine-output { min-height: 120px; max-height: 220px; overflow: auto; padding: 18px; border-width: 2px; gap: 14px; }
+.machine-output small { font: 500 10px 'IBM Plex Mono', monospace; color: #a5c2c2; }
+.machine-output strong { overflow: visible; overflow-wrap: anywhere; font: 500 clamp(18px, 2vw, 28px)/1.4 'IBM Plex Mono', monospace; }
+.has-error .machine-output strong { color: #ffa8b7; font-size: 15px; }
+.input-stage .input-learning-note { font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; max-height: 58px; overflow: auto; }
+.flow-legend { font-size: 10px; letter-spacing: .5px; }
+
+/* Memory has enough room to show every variable, including two values at once. */
+.memory-experience .experience-body { grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); }
+.memory-code-panel, .memory-result-panel { padding: 16px; gap: 14px; }
+.memory-code-lines { justify-content: center; padding: 16px; }
+.memory-code-lines > span { min-height: 50px; font-size: 17px; }
+.memory-step-note { color: #4d4264; background: #f2edfc; padding: 12px; border-radius: 8px; font-size: 14px; line-height: 1.4; }
+.memory-result-row { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+.memory-result-row > header { flex-direction: row; align-items: center; justify-content: space-between; padding: 14px; border-right: 0; border-bottom: 1px solid #384152; }
+.memory-result-row > header small { font-size: 9px; color: #adb8c8; max-width: 150px; text-align: right; }
+.memory-result-row > div { flex-wrap: wrap; justify-content: center; align-content: center; overflow: auto; padding: 18px; gap: 12px; }
+.memory-result-row article { grid-template-columns: 1fr; min-width: 100px; border-radius: 8px; }
+.memory-result-row article strong { min-height: 32px; font: 600 14px 'IBM Plex Mono', monospace; }
+.memory-result-row article b { font-size: 28px; min-height: 56px; }
+.memory-result-row p { color: #b4bfd0; font-size: 14px; }
+.memory-result-row--output pre { padding: 20px; font-size: 22px; overflow: auto; overflow-wrap: anywhere; }
+.memory-input-control { font-size: 11px; }
+.memory-input-control input { min-height: 44px; font-size: 16px; }
+
+/* Investigations leave space for hypotheses and readable evidence. */
+.blackbox-experience .experience-body { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+.blackbox-stage, .hypothesis-panel { padding: 18px; gap: 14px; }
+.hypothesis-panel.is-intro { align-content: center; gap: 22px; padding: clamp(22px, 3vw, 48px); background: #fff7f8; }
+.hypothesis-panel.is-intro .blackbox-instruction { align-items: flex-start; }
+.hypothesis-panel.is-intro .blackbox-instruction strong { font-size: 23px; letter-spacing: -.5px; }
+.hypothesis-panel.is-intro .blackbox-instruction p { margin-top: 10px; }
+.real-black-box { max-width: none; gap: 12px; grid-template-columns: minmax(60px, 1fr) 16px minmax(100px, 1.4fr) 16px minmax(60px, 1fr); padding: 22px 16px; }
+.physical-black-box { border-width: 2px; }
+.sample-rack { border-color: #d2cdc6; padding: 14px; }
+.sample-rack > small { font-size: 10px; }
+.sample-rack span { font-size: 16px; padding: 8px 12px; border-width: 1px; background: #fff0f3; }
+.sample-rack p { font-size: 13px; line-height: 1.4; }
+.rule-options { gap: 9px; }
+.rule-options button { min-height: 48px; font-size: 16px; padding: 10px 14px; }
+.python-reveal { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; min-height: 0; }
+.python-reveal > span { margin-bottom: 0; }
+.python-reveal .pixpy-editor { width: 100%; height: 100%; min-height: 0; }
+.python-reveal .cm-editor { font-size: 14px; }
+.python-reveal > span { font-size: 10px; }
+
+/* Quizzes wait for the learner to read the explanation. */
+.memory-quiz { gap: 16px; padding: clamp(20px, 3vw, 38px); grid-template-rows: auto 6px auto auto auto; overflow: auto; }
+.memory-quiz-code { font-size: 19px; padding: 20px; line-height: 1.55; }
+.memory-quiz-options { grid-template-columns: 1fr 1fr; gap: 12px; }
+.memory-quiz-options button { min-height: 64px; }
+.memory-quiz-options button code { font-size: 17px; white-space: pre-wrap; }
+.quiz-response { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.memory-quiz-feedback { font-size: 14px; line-height: 1.45; padding: 14px; }
+.quiz-next { min-height: 48px; }
+.quiz-explore { margin-top: 4px; background: #202c3c; color: #e5eaf3; }
+.blackbox-quiz-layout { grid-template-columns: minmax(0, 1fr) 250px; }
+.blackbox-quiz-layout > .operation-quiz { grid-column: auto; }
+.blackbox-quiz-timer { background: #fff0f3; color: #272127; border-color: #bb7b8b; box-shadow: 3px 3px 0 #e0bec6; }
+.blackbox-quiz-timer > small, .blackbox-quiz-timer > svg { color: #913e55; filter: none; }
+.blackbox-quiz-timer > strong { color: #38272d; font-size: 64px; text-shadow: none; font-variant-numeric: tabular-nums; }
+.blackbox-quiz-timer > p { color: #6d4b55; font-size: 13px; }
+.blackbox-quiz-timer > div span { color: #6d3646; border-color: #c79da8; }
+.blackbox-quiz-timer > button { margin-top: 18px; font-size: 11px; width: 100%; }
+
+/* Build: the code, operator reference and clues describe the same rule. */
+.build-workspace { grid-template-rows: 144px minmax(0, 1fr); gap: 16px; }
+.build-machine-strip { padding: 12px 24px; border: 1px solid #c6d7c9; border-radius: 14px; background: #e5f4e9; grid-template-columns: minmax(0, 1fr) minmax(220px, .65fr); }
+.custom-machine > span small { font-size: 10px; color: #476151; }
+.build-machine-strip .custom-machine > span { background: #fff; }
+.build-run-stack > p { background: transparent; font-size: 13px; padding: 2px 0; }
+.build-lower-grid { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 16px; }
+.build-reference-panel { padding: 18px; }
+.build-reference-panel > header h2 { font-size: 25px; }
+.build-reference-panel > header p { font-size: 14px; }
+.build-reference-panel .code-recipes { grid-template-columns: 1fr; gap: 8px; }
+.code-recipes article { grid-template-columns: 120px 1fr; grid-template-rows: 1fr; box-shadow: none; border-color: #c3cfc5; border-width: 1px; }
+.code-recipes article span { font-size: 10px; padding: 8px; background: #dcf5ea; }
+.code-recipes article code { font-size: 14px; padding: 12px; overflow: auto; text-overflow: clip; }
+.test-history { border-color: #c3cfc5; padding: 12px; }
+.test-history > small { color: #33654c; font-size: 10px; }
+.test-history span { color: #254937; font-size: 16px; }
+.test-history span i { color: #376a53; }
+.test-history p { font-size: 12px; }
+.build-editor-panel { padding: 14px; gap: 12px; }
+.hide-code-bar button { min-height: 44px; font-size: 11px; }
+.hide-code-bar span { font-size: 10px; }
+.operator-invitation { position: static; grid-row: 2; padding: 9px 12px; font-size: 11px; }
+.build-editor-attention.is-waiting { grid-template-rows: minmax(0, 1fr) auto; }
+.secret-code { border-radius: 10px; padding: 20px; gap: 10px; }
+.secret-code p { font-size: 14px; line-height: 1.6; }
+
+/* Final challenges are identifiable without opening each one. */
+.boss-stage { grid-template-rows: auto auto auto minmax(0, 1fr); padding: 18px; gap: 16px; }
+.boss-title > span { flex-shrink: 0; border: 2px solid var(--ink); border-radius: 12px; box-shadow: 3px 3px 0 #d48d6c; }
+.boss-title small { color: #924724; font-size: 10px; }
+.boss-title h2 { font-size: 26px; }
+.boss-title p { font-size: 14px; color: #53594f; line-height: 1.4; }
+.boss-io article { background: #fff4e9; border-color: #e2bc9c; padding: 12px; }
+.boss-io article small { font-size: 10px; color: #765e4c; }
+.boss-io article strong { font-size: 20px; color: #814323; white-space: pre-wrap; overflow-wrap: anywhere; }
+.boss-io > i { color: #99572f; }
+.boss-result { color: #65452c; border-color: #dab698; background: #fcf1e4; min-height: 72px; }
+.boss-result small { font-size: 10px; }
+.boss-result strong { font-size: 13px; line-height: 1.4; white-space: pre-wrap; overflow: auto; max-height: 100px; overflow-wrap: anywhere; }
+.boss-result.is-victory { color: #235e33; border-color: #6c9c71; background: #e5f4e5; }
+.boss-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); align-content: center; gap: 8px; }
+.boss-grid button { min-height: 58px; padding: 7px 4px; font-size: 13px; border: 1px solid #c3b8aa; gap: 4px; }
+.boss-grid button span { font-size: 9px; line-height: 1.15; }
+.boss-grid button.is-done:not(.is-active) { color: #2c6235; background: #e6f1e1; border-color: #68956b; }
+.boss-navigation button { min-height: 44px; font-size: 10px; }
+.boss-navigation span { color: #7e4728; font-size: 10px; }
+
+/* Print keeps the task and output side by side, with named, numbered navigation. */
+.print-editor-stage { grid-template-rows: auto minmax(0, 1fr); gap: 14px; padding: 16px; }
+.print-editor-controls, .print-activity-navigation { min-height: 100px; padding: 12px; }
+.print-activity-navigation { grid-template-columns: 64px minmax(0, 1fr) 64px; grid-template-rows: auto 44px; gap: 8px; }
+.print-activity-summary strong { font-size: 13px; }
+.print-activity-summary small { font-size: 10px; }
+.print-activity-dots { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; }
+.print-activity-dots button { height: 44px; font-size: 12px; }
+.print-step-button { height: 44px; font-size: 10px; }
+.print-experience .terminal-stage { padding: 12px; }
+.terminal-screen > div:first-child { font-size: 10px; }
+.dino-control-panel { padding: 16px; }
+.dino-control-panel > header h2 { font-size: 25px; }
+.dino-control-panel > header p { font-size: 13px; line-height: 1.4; }
+.dino-control-panel > header small { color: #497426; font-size: 10px; }
+.panel-label strong { color: #e9f6ff; }
+.dino-game__controls button { min-height: 44px; font-size: 10px; }
+.game-over { border-radius: 12px; color: white; }
+.game-over button { min-height: 44px; }
+.dino-sliders label { grid-template-columns: minmax(174px, 1fr) minmax(100px, 1fr); }
+.dino-sliders code { text-overflow: clip; }
+.experience-card__preview { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+.morning-greeting-reward > p { animation-delay: 0s; animation-duration: .25s; }
+.dino-sliders input { min-height: 32px; touch-action: pan-y; }
+.dino-sliders code { font-size: 15px; }
+.dino-sliders strong { font-size: 22px; }
+.jump-button { min-width: 100px; min-height: 48px; }
+@keyframes transfer-pulse { to { opacity: .3; transform: translateX(5px); } }
+
+@media (max-height: 820px) and (min-width: 641px) {
+  :root { --header-h: 60px; }
+  .experience-screen { grid-template-rows: 76px minmax(0, 1fr); padding: 12px 18px 16px; gap: 12px; }
+  .variables-home { padding-block: 18px; gap: 16px; }
+  .variables-heading { padding-block: 12px; }
+  .variables-heading h1 { font-size: 32px; }
+  .experience-card { gap: 8px; padding: 16px; }
+  .experience-card__preview { padding: 9px; font-size: 11px; }
+  .experience-card__copy strong { font-size: 20px; }
+  .experience-card__copy p { font-size: 12px; }
+  .experience-card__icon { width: 38px; height: 38px; }
+  .experience-grid { row-gap: 16px; }
+  .code-workbench, .memory-code-panel, .memory-result-panel, .boss-stage, .input-stage { padding: 12px; gap: 10px; }
+  .workbench-heading h2 { font-size: 21px; }
+  .workbench-heading p { font-size: 13px; }
+  .pixpy-editor .cm-editor { font-size: 15px; }
+  .vending-machine { padding: 24px; }
+  .machine-heading { margin-bottom: 6px; }
+  .machine-heading h2 { font-size: 28px; }
+  .machine-transfer { padding: 8px 0; }
+  .machine-output { min-height: 100px; }
+  .memory-code-lines > span { font-size: 16px; min-height: 44px; }
+  .memory-step-note { font-size: 13px; padding: 10px; }
+  .memory-quiz { padding: 20px; gap: 12px; }
+  .memory-quiz-code { font-size: 17px; padding: 16px; min-height: 80px; }
+  .memory-quiz-options button { min-height: 54px; }
+  .build-workspace { grid-template-rows: 124px minmax(0, 1fr); gap: 12px; }
+  .build-reference-panel { padding: 14px; gap: 10px; }
+  .build-reference-panel > header h2 { font-size: 22px; }
+  .build-reference-panel > header p { font-size: 13px; }
+  .code-recipes article code { font-size: 13px; padding: 8px; }
+  .code-recipes article span { padding: 5px 8px; }
+  .boss-title h2 { font-size: 23px; }
+  .boss-grid button { min-height: 50px; }
+  .print-editor-controls, .print-activity-navigation { min-height: 94px; padding: 10px; }
+}
+
+/* Landscape is the classroom canvas. Rotating never resets an experiment. */
+html, body, #root { width: 100%; height: 100%; overflow: hidden; }
+.landscape-app {
+  width: 125%;
+  height: 125%;
+  overflow: hidden;
+  transform: scale(.8);
+  transform-origin: top left;
+}
+.landscape-app .name-screen,
+.landscape-app .app-shell { height: 100%; }
+.landscape-app .app-content { height: calc(100% - var(--header-h)); }
+.landscape-notice { display: none; }
+@media screen and (orientation: portrait) {
+  .landscape-app { visibility: hidden; pointer-events: none; }
+  .landscape-notice { position: fixed; z-index: 100; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 36px; background: var(--paper); text-align: center; }
+  .landscape-notice > .brand { position: absolute; top: 32px; left: 32px; }
+  .landscape-notice__illustration { position: relative; display: grid; place-items: center; width: 180px; height: 180px; margin-bottom: 10px; border: 2px solid var(--ink); border-radius: 36px; background: var(--lime); box-shadow: 7px 7px 0 var(--ink); }
+  .landscape-notice__illustration > svg:first-child { width: 100px; height: 100px; transform: rotate(90deg); stroke-width: 1.5; }
+  .landscape-notice__illustration > svg:last-child { position: absolute; right: -16px; bottom: -12px; width: 56px; height: 56px; padding: 12px; border: 2px solid var(--ink); border-radius: 50%; background: white; }
+  .landscape-notice__label { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #4a622f; }
+  .landscape-notice h1 { max-width: 540px; font-size: clamp(30px, 5vw, 46px); line-height: 1.05; letter-spacing: -1.5px; }
+  .landscape-notice p { color: #53604d; font-size: 17px; line-height: 1.6; }
+  .landscape-notice small { margin-top: 12px; color: #666b60; font-size: 12px; }
+}
+@media screen and (orientation: landscape) and (max-width: 1100px) {
+  .experience-screen { padding-inline: 14px; }
+  .experience-body { gap: 12px; }
+  .dino-sliders label { grid-template-columns: minmax(170px, 1fr) minmax(80px, .85fr); gap: 10px; }
+  .dino-sliders code { font-size: 14px; }
+  .print-activity-navigation { grid-template-columns: 56px minmax(0, 1fr) 56px; grid-template-rows: auto 92px; gap: 6px; }
+  .print-activity-dots { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .build-machine-strip { padding-inline: 16px; }
+  .build-reference-panel { padding: 12px; }
+  .code-recipes article { grid-template-columns: 108px minmax(0, 1fr); }
+  .code-recipes article code { font-size: 12px; padding: 10px 8px; }
+  .hide-code-bar span { font-size: 9px; }
+  .blackbox-quiz-layout { grid-template-columns: minmax(0, 1fr) 210px; }
+}
+@media screen and (orientation: landscape) and (max-height: 740px) and (min-width: 641px) {
+  :root { --header-h: 56px; }
+  .experience-screen { grid-template-rows: 66px minmax(0, 1fr); gap: 8px; padding: 8px 12px 10px; }
+  .experience-header { padding-block: 6px; }
+  .blackbox-stage, .hypothesis-panel { gap: 8px; padding: 10px; }
+  .rule-options { gap: 6px; }
+  .rule-options button { min-height: 44px; padding-block: 7px; font-size: 14px; }
+  .sample-rack { padding: 9px; }
+  .print-activity-navigation { grid-template-columns: 56px minmax(0, 1fr) 56px; grid-template-rows: auto 44px; min-height: 70px; }
+  .print-activity-dots { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .print-activity-dots button { height: 44px; }
+  .variables-home { padding-block: 10px; gap: 10px; }
+  .variables-heading { padding-block: 9px; }
+  .experience-grid { row-gap: 12px; }
+  .experience-card { gap: 6px; padding: 12px; }
+  .experience-card__preview { padding: 7px; }
+}
+@media screen and (orientation: landscape) and (max-height: 600px) and (min-width: 641px) {
+  .variables-home { width: calc(100% - 52px); padding-block: 10px 8px; }
+  .variables-heading { grid-template-columns: 132px minmax(0, 1fr) 170px; padding: 8px 16px; }
+  .variables-heading h1 { margin-block: 3px; font-size: 30px; }
+  .variables-heading > div > p:last-child { font-size: 12px; }
+  .experience-grid { column-gap: 16px; row-gap: 12px; }
+  .experience-card, .experience-card:last-child { grid-template-columns: 38px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; align-items: center; gap: 5px 8px; padding: 9px 11px; overflow: visible; }
+  .experience-card__icon { grid-column: 1; grid-row: 1; width: 36px; height: 36px; }
+  .experience-card__icon svg { width: 20px; height: 20px; }
+  .experience-card__copy, .experience-card:last-child .experience-card__copy { grid-column: 2; grid-row: 1; align-self: center; }
+  .experience-card__copy strong { font-size: 17px; line-height: 1.05; }
+  .experience-card__copy p { margin-top: 4px; font-size: 10px; line-height: 1.25; }
+  .experience-card__preview, .experience-card:last-child .experience-card__preview { display: none; }
+  .experience-card__state, .experience-card:last-child .experience-card__state { grid-column: 1 / -1; grid-row: 2; padding-top: 6px; font-size: 9px; }
+  .experience-card__order { top: 11px; right: 11px; font-size: 11px; }
+  .experience-card > i { top: 11px; right: 11px; }
+
+  .dino-control-panel { gap: 6px; padding: 9px; }
+  .dino-control-panel > header { gap: 8px; }
+  .dino-control-panel > header > svg { width: 36px; height: 36px; padding: 7px; }
+  .dino-control-panel > header h2 { margin-block: 1px; font-size: 20px; }
+  .dino-control-panel > header p { font-size: 10px; line-height: 1.2; }
+  .dino-sliders { gap: 4px; }
+  .dino-sliders label { min-height: 38px; padding-block: 3px; }
+  .dino-sliders code { font-size: 13px; }
+  .dino-sliders strong { font-size: 18px; }
+
+  .input-stage { padding: 9px; gap: 6px; }
+  .vending-machine { align-content: center; padding: 12px 16px; gap: 6px; }
+  .machine-heading { margin-bottom: 0; }
+  .machine-heading h2 { margin-block: 4px; font-size: 24px; }
+  .machine-heading p { font-size: 12px; }
+  .machine-transfer { padding-block: 4px; }
+  .machine-output { min-height: 76px; padding: 10px; }
+
+  .memory-quiz { grid-template-rows: auto 5px auto auto auto auto; gap: 6px; padding: 11px; overflow: hidden; }
+  .memory-quiz-header h2 { font-size: 21px; }
+  .memory-quiz-code { min-height: 64px; padding: 8px 12px; font-size: 14px; }
+  .memory-quiz-options { gap: 5px; }
+  .memory-quiz-options button { min-height: 44px; padding-block: 4px; }
+  .memory-quiz-options button code { font-size: 14px; }
+  .memory-quiz-feedback { min-height: 44px; padding: 8px 10px; font-size: 12px; }
+  .quiz-next, .quiz-explore { min-height: 44px; }
+
+  .build-reference-panel { gap: 6px; padding: 9px; }
+  .build-reference-panel > header h2 { margin-block: 2px; font-size: 18px; }
+  .build-reference-panel > header p { font-size: 10px; line-height: 1.25; }
+  .build-reference-panel .code-recipes { gap: 4px; }
+  .code-recipes article { min-height: 27px; }
+  .code-recipes article span { padding: 2px 6px; font-size: 9px; }
+  .code-recipes article span b { width: 20px; height: 20px; font-size: 15px; }
+  .code-recipes article code { padding: 4px 6px; overflow: hidden; font-size: 10px; }
+  .test-history { min-height: 44px; padding: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+@media print {
+  .app-header, .app-content, .landscape-notice { display: none !important; }
+  html, body, #root { height: auto; overflow: visible; }
+  .landscape-app { visibility: visible; width: 100%; height: auto; overflow: visible; transform: none; }
+}

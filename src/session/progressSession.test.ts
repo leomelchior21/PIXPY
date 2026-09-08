@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it } from 'vitest'
 import { completeActivity, createSession, loadSession, saveSession } from './progressSession'
 
 describe('session-only progress', () => {

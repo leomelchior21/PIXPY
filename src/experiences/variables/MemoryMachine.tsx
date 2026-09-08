@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Play, RotateCcw, Trophy } from 'lucide-react'
+import { ArrowRight, Check, Play, RotateCcw, Sparkles, Trophy } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { ExperienceShell } from '../../components/ExperienceShell'
 import { completeActivity } from '../../session/progressSession'
@@ -36,6 +36,8 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
   const [memoryInput, setMemoryInput] = useState('12')
   const [executing, setExecuting] = useState(false)
   const [quizSelected, setQuizSelected] = useState<number | null>(null)
+  const [quizStarted, setQuizStarted] = useState(() => progress.memoryQuizAnswers.length > 0 || progress.memoryQuizCompleted)
+  const [exploring, setExploring] = useState(false)
   const timer = useRef<number | null>(null)
   const example = examples[exampleIndex]
   const pendingStep = executing ? example.steps[stepIndex + 1] : null
@@ -64,6 +66,10 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
       setExecuting(false)
       if (nextIndex === example.steps.length - 1) {
         const done = [...new Set([...progress.memoryExamples, example.id])]
+        if (done.length === examples.length) {
+          setQuizStarted(false)
+          setExploring(false)
+        }
         onProgress({ ...progress, memoryExamples: done })
       }
     }, 420)
@@ -74,16 +80,17 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
   const answerQuiz = (answer: number) => {
     if (quizSelected !== null || quizFinished) return
     setQuizSelected(answer)
-    timer.current = window.setTimeout(() => {
-      const answers = [...progress.memoryQuizAnswers, answer]
-      let nextProgress = { ...progress, memoryQuizAnswers: answers }
-      if (answers.length === quizQuestions.length) nextProgress = completeActivity(nextProgress, 'memory-machine')
-      onProgress(nextProgress)
-      setQuizSelected(null)
-    }, 700)
+  }
+  const nextQuestion = () => {
+    if (quizSelected === null) return
+    const answers = [...progress.memoryQuizAnswers, quizSelected]
+    let nextProgress = { ...progress, memoryQuizAnswers: answers }
+    if (answers.length === quizQuestions.length) nextProgress = completeActivity({ ...nextProgress, memoryQuizCompleted: true }, 'memory-machine')
+    onProgress(nextProgress)
+    setQuizSelected(null)
   }
 
-  if (quizReady) {
+  if (quizReady && !exploring) {
     const question = quizQuestions[quizIndex]
     return (
       <ExperienceShell order="05" title="Memory Machine" question="Prove what Python remembers." accent="#a994ff" hints={['Read the code from top to bottom.', 'Track the newest value stored under each name.', 'Only print() creates visible output.']} completed={completed} objective="Complete all ten questions." onBack={onBack} className="memory-experience memory-quiz-experience">
@@ -93,6 +100,14 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
               <span><Trophy /></span><small>MEMORY QUIZ COMPLETE</small><h2>{quizScore} / {quizQuestions.length}</h2>
               <p>{quizScore === quizQuestions.length ? 'Perfect memory. Python has nothing on you.' : 'Nice work. You followed values through ten programs.'}</p>
               <button className="primary-action" onClick={onBack}>BACK TO ACTIVITIES <ArrowRight /></button>
+              <button className="secondary-action" onClick={() => { setQuizSelected(null); setQuizStarted(true); onProgress({ ...progress, memoryQuizAnswers: [], memoryQuizCompleted: true }) }}><RotateCcw /> TRY THE QUIZ AGAIN</button>
+            </div>
+          ) : !quizStarted ? (
+            <div className="blackbox-quiz-start quiz-unlock memory-quiz-start" role="status">
+              <div className="quiz-unlock-burst" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>
+              <span><Sparkles /></span><small>SURPRISE · QUIZ UNLOCKED</small><h2>You followed every value.</h2>
+              <p>Your five completed examples unlocked ten quick challenges. Start when you are ready.</p>
+              <button className="primary-action" onClick={() => setQuizStarted(true)}>START QUIZ <ArrowRight /></button>
             </div>
           ) : (
             <>
@@ -105,9 +120,10 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
                   return <button className={state} key={`${option}-${index}`} onClick={() => answerQuiz(index)} disabled={quizSelected !== null}><span>{String.fromCharCode(65 + index)}</span><code>{option}</code></button>
                 })}
               </div>
-              <p className={`memory-quiz-feedback ${quizSelected !== null ? 'is-visible' : ''}`}>{quizSelected === null ? 'Choose one answer.' : quizSelected === question.answer ? `Correct. ${question.explanation}` : `Not quite. ${question.explanation}`}</p>
+              <div className="quiz-response"><p role="status" className={`memory-quiz-feedback ${quizSelected !== null ? 'is-visible' : ''}`}>{quizSelected === null ? 'Choose one answer.' : quizSelected === question.answer ? `Correct. ${question.explanation}` : `Not quite. ${question.explanation}`}</p><button className="primary-action quiz-next" onClick={nextQuestion} disabled={quizSelected === null}>{quizIndex === quizQuestions.length - 1 ? 'SEE RESULTS' : 'NEXT QUESTION'} <ArrowRight /></button></div>
             </>
           )}
+          <button className="text-action quiz-explore" onClick={() => { setExploring(true); choose(0) }}>REVISIT THE EXAMPLES</button>
         </section>
       </ExperienceShell>
     )
@@ -116,17 +132,19 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
   return (
     <ExperienceShell order="05" title="Memory Machine" question="Where does a variable's value go?" accent="#a994ff" hints={['Press EXECUTE LINE once.', 'Watch the highlighted line travel into memory or output.', 'Reassignment replaces the value already inside the same memory box.']} completed={completed} objective="Execute one line at a time. Follow exactly what that line brings into memory and output." onBack={onBack} onComplete={() => onProgress(completeActivity(progress, 'memory-machine'))} className="memory-experience">
       <section className="memory-code-panel panel-surface">
-        <div className="memory-tabs">{examples.map((item, index) => <button key={item.id} className={exampleIndex === index ? 'is-active' : ''} onClick={() => choose(index)}>{progress.memoryExamples.includes(item.id) && <Check />}{item.label}</button>)}</div>
+        <div className="memory-tabs">{examples.map((item, index) => <button aria-pressed={exampleIndex === index} key={item.id} className={exampleIndex === index ? 'is-active' : ''} onClick={() => choose(index)}>{progress.memoryExamples.includes(item.id) && <Check />}{item.label}</button>)}</div>
         <header className="blackbox-instruction"><span>1</span><div><strong>READ ONE LINE</strong><p>Python executes from top to bottom.</p></div></header>
         {example.id === 'input' && <label className="memory-input-control">VALUE FOR INPUT() <input type="number" value={memoryInput} onChange={(event) => { setMemoryInput(event.target.value); restart() }} /></label>}
         <pre className="memory-code-lines">{example.code.map((line, index) => <span className={`${executing && stepIndex + 1 === index ? 'is-reading' : ''} ${!executing && step?.line === index ? 'is-running' : ''} ${index < stepIndex ? 'is-past' : ''}`} key={`${line}-${index}`}><i>{index + 1}</i><code>{line}</code>{executing && stepIndex + 1 === index ? <b>READING</b> : !executing && step?.line === index ? <b>NOW</b> : null}</span>)}</pre>
-        <div className="memory-execute-actions"><button className="secondary-action" onClick={restart}><RotateCcw /> Restart</button><button className={`primary-action execute-line-button ${executing ? 'is-executing' : ''}`} onClick={executeLine} disabled={executing || stepIndex === example.steps.length - 1}>{executing ? <><span className="execute-pulse" /> EXECUTING...</> : stepIndex === example.steps.length - 1 ? <><Check /> EXAMPLE DONE</> : <><Play fill="currentColor" /> EXECUTE LINE {stepIndex + 2}</>}</button></div>
+        <p className="memory-step-note" role="status">{step?.note ?? 'Press Execute line. Watch where the value goes.'}</p>
+        <div className="memory-execute-actions"><button className="secondary-action" onClick={restart}><RotateCcw /> Restart</button><button className={`primary-action execute-line-button ${executing ? 'is-executing' : ''}`} onClick={stepIndex === example.steps.length - 1 ? () => choose((exampleIndex + 1) % examples.length) : executeLine} disabled={executing}>{executing ? <><span className="execute-pulse" /> EXECUTING...</> : stepIndex === example.steps.length - 1 ? <>NEXT EXAMPLE <ArrowRight /></> : <><Play fill="currentColor" /> EXECUTE LINE {stepIndex + 2}</>}</button></div>
+        {quizReady && <button className="secondary-action" onClick={() => setExploring(false)}>RETURN TO QUIZ <ArrowRight /></button>}
       </section>
 
       <section className="memory-result-panel panel-surface">
-        <header className="blackbox-instruction"><span>2</span><div><strong>WATCH WHAT IT BRINGS</strong><p>Every executed line creates one visible result.</p></div></header>
+        <header className="blackbox-instruction"><span>2</span><div><strong>FOLLOW THE VALUE</strong><p>Assignments store values. print() shows them.</p></div></header>
         <div className="memory-motion" aria-hidden="true">
-          {executing && <i className="memory-dot memory-dot--to-memory" />}
+          {executing && pendingStep?.output === undefined && <i className="memory-dot memory-dot--to-memory" />}
           {executing && pendingStep?.output !== undefined && <i className="memory-dot memory-dot--to-output" />}
         </div>
         <section className="memory-result-row"><header><span>MEMORY</span><small>VALUES PYTHON REMEMBERS</small></header><div className={executing ? 'is-receiving' : ''}>{step ? Object.entries(step.memory).map(([name, value]) => <article key={name}><strong>{name}</strong><b>{value}</b></article>) : <p>No variable yet.</p>}</div></section>

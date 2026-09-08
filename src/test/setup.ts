@@ -1,5 +1,7 @@
-import '@testing-library/jest-dom/vitest'
+import * as matchers from '@testing-library/jest-dom/matchers'
 import { webcrypto } from 'node:crypto'
+
+expect.extend(matchers)
 
 Object.defineProperty(globalThis, 'crypto', { value: webcrypto })
 Object.defineProperty(window, 'scrollTo', { value: () => undefined })
