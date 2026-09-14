@@ -4,7 +4,7 @@ import { isMorningGreetingOutput } from './printMatching'
 export type PrintReward =
   | { type: 'morning-greeting'; message: string }
   | { type: 'personal-message'; greeting: string; message: string }
-  | { type: 'word-space'; left: string; right: string }
+  | { type: 'empty-line'; top: string; bottom: string }
   | { type: 'text-frame'; output: string; lines: string[] }
   | { type: 'heart-stack'; output: string; lines: string[] }
   | { type: 'launch-sequence'; countdown: string[]; liftoff: string }
@@ -83,8 +83,8 @@ export function detectPrintReward(activityId: PrintActivityId, output: string, s
   if (activityId === 'introduce-yourself' && lines.length === 2 && lines.every(Boolean)) {
     return { type: 'personal-message', greeting: lines[0], message: lines[1] }
   }
-  if (activityId === 'blank-line' && normalized === 'TOP BOTTOM') {
-    return { type: 'word-space', left: 'TOP', right: 'BOTTOM' }
+  if (activityId === 'blank-line' && normalized === 'TOP\n\nBOTTOM') {
+    return { type: 'empty-line', top: 'TOP', bottom: 'BOTTOM' }
   }
   if (activityId === 'draw-frame' && isClosedFrame(lines)) {
     return { type: 'text-frame', output: normalized, lines }

@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, ChevronRight, LoaderCircle, Play, RotateCcw, Sparkles, TerminalSquare } from 'lucide-react'
+import { Check, LoaderCircle, Play, RotateCcw, Sparkles, TerminalSquare } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
 import { ExperienceShell } from '../../components/ExperienceShell'
@@ -127,7 +127,7 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
   return (
     <ExperienceShell key={activity.id} order="02" title="Print Playground" question="How can Python put something on screen?" accent="#ffcb47" hints={activity.hints} completed={coreComplete} objective="Complete the five core print activities. Optional extras do not affect completion." onBack={onBack} className={`print-experience ${activity.extra ? 'print-experience--extra' : ''}`}>
       <section className={`print-editor-stage panel-surface ${activity.extra ? 'is-extra' : ''}`}>
-        <header className="workbench-heading"><span>{activity.extra ? 'EXTRA EXPERIMENT' : `PRINT EXPERIMENT ${activityIndex + 1} / 5`}</span><h2>{activity.title}</h2><p>{activity.prompt}</p></header>
+        <header className="workbench-heading"><h2>{activity.title}</h2></header>
         <CodeEditor value={code} onChange={editCode} minHeight="260px" />
       </section>
       <section className="print-editor-controls panel-surface">
@@ -143,14 +143,12 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
       </section>
       <nav className="print-activity-navigation panel-surface" aria-label="Print activities">
         <div className="print-activity-summary"><strong>{activityIndex + 1}. {activity.title}</strong>{activity.extra ? <span className="print-extra-label">EXTRA</span> : <small>{progress.printPlaygroundCompleted.filter((id) => printCoreActivityIds.includes(id)).length}/5 CORE</small>}</div>
-        <button className="print-step-button" onClick={() => chooseActivity(printActivities[activityIndex - 1].id)} disabled={activityIndex === 0}><ChevronLeft /> PREV</button>
         <div className="print-activity-dots">
           {printActivities.map((item, index) => {
             const done = progress.printPlaygroundCompleted.includes(item.id)
             return <button key={item.id} title={item.title} className={`${item.id === activityId ? 'is-active' : ''} ${done ? 'is-done' : ''} ${item.extra ? 'is-extra' : ''}`} onClick={() => chooseActivity(item.id)} aria-label={`${index + 1}. ${item.title}${item.extra ? ' — EXTRA' : ''}${done ? ' — complete' : ''}`} aria-current={item.id === activityId ? 'step' : undefined}>{done ? <Check /> : <b>{index + 1}</b>}</button>
           })}
         </div>
-        <button className="print-step-button" onClick={() => chooseActivity(printActivities[activityIndex + 1].id)} disabled={activityIndex === printActivities.length - 1}>NEXT <ChevronRight /></button>
       </nav>
     </ExperienceShell>
   )

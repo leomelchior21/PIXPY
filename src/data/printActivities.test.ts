@@ -37,14 +37,14 @@ describe('Print Playground activities', () => {
     expect(printActivities[0].starterCode).toBe('#Change the message to "Bom dia, chat!"\nprint("Hello!")')
     expect(printActivities[4].starterCode).toBe('# Use 5 print lines of # stacked to draw a heart.\nprint("#######")')
     expect(printActivities[5].starterCode).toBe('# Create your ID card with name, age, favourite food, and favourite game or music.\nprint("=============================")\nprint("PLAYER: YOUR NAME")\nprint("=============================")')
-    expect(printActivities[2].starterCode).toBe('# Add one space between TOP and BOTTOM.\nprint("TOPBOTTOM")')
+    expect(printActivities[2].starterCode).toBe('# Add one blank line with print().\nprint("TOP")\nprint("BOTTOM")')
     expect(printActivities[7].starterCode).toBe('#Store 6 * 7 in password and adjust it to print correctly.\npassword = 6 + 7\n\nprint("PASSWORD")')
   })
 
   it.each([
     ['morning-chat', 'print("Bom dia, chat!")'],
     ['introduce-yourself', 'print("HELLO!")\nprint("My name is Maya")'],
-    ['blank-line', 'print("TOP BOTTOM")'],
+    ['blank-line', 'print("TOP")\nprint()\nprint("BOTTOM")'],
     ['draw-frame', 'print("#####")\nprint("#   #")\nprint("#####")'],
     ['initials-banner', 'print("## ##")\nprint("#######")\nprint("#####")\nprint("###")\nprint("#")'],
     ['player-id-card', 'print("=============================")\nprint("PLAYER: Maya")\nprint("AGE: 12")\nprint("FAVOURITE FOOD: PIZZA")\nprint("FAVOURITE GAME: MINECRAFT")\nprint("=============================")'],
@@ -76,7 +76,7 @@ describe('Print Playground activities', () => {
   it.each([
     ['morning-chat', 'print("Bom dia, chat!")\nprint("extra")'],
     ['introduce-yourself', 'print("HELLO!")\nprint("Someone else")'],
-    ['blank-line', 'print("TOP  BOTTOM")'],
+    ['blank-line', 'print("TOP")\nprint("BOTTOM")'],
     ['draw-frame', 'print("#####")\nprint("#   #")\nprint("####")'],
     ['initials-banner', 'print("#####")\nprint("#####")\nprint("#####")\nprint("#####")\nprint("#####")'],
     ['player-id-card', 'print("=============================")\nprint("PLAYER: Leo")\nprint("AGE: 12")\nprint("FAVOURITE FOOD: PIZZA")\nprint("FAVOURITE MUSIC: JAZZ")\nprint("=============================")'],

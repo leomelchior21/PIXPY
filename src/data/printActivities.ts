@@ -67,6 +67,10 @@ export function countPrintCalls(code: string): number {
   return maskStringsAndComments(code).match(/\bprint\s*\(/g)?.length ?? 0
 }
 
+export function hasEmptyPrintCall(code: string): boolean {
+  return /\bprint\s*\(\s*\)/.test(maskStringsAndComments(code))
+}
+
 function isFrame(stdout: string): boolean {
   const lines = normalizedOutput(stdout).split('\n')
   if (lines.length < 3 || lines[0].length < 3) return false
@@ -158,12 +162,12 @@ export const printActivities: PrintActivity[] = [
   },
   {
     id: 'blank-line',
-    title: 'Add a space',
-    prompt: 'Print TOP BOTTOM on one line with exactly one space between the words.',
-    starterCode: '# Add one space between TOP and BOTTOM.\nprint("TOPBOTTOM")',
-    hints: ['Keep TOP and BOTTOM inside the same pair of quote marks.', 'A space is a character too. Put it after TOP.', 'Use: print("TOP BOTTOM")'],
+    title: 'Leave a blank line',
+    prompt: 'Print TOP and BOTTOM with exactly one empty line between them. Use print() with no argument.',
+    starterCode: '# Add one blank line with print().\nprint("TOP")\nprint("BOTTOM")',
+    hints: ['An empty print sends only a new line.', 'Put print() between the TOP and BOTTOM lines.', 'Use three calls: print("TOP"), print(), then print("BOTTOM").'],
     extra: false,
-    validate: ({ stdout }, code) => normalizedOutput(stdout) === 'TOP BOTTOM' && countPrintCalls(code) === 1,
+    validate: ({ stdout }, code) => normalizedOutput(stdout) === 'TOP\n\nBOTTOM' && countPrintCalls(code) === 3 && hasEmptyPrintCall(code),
   },
   {
     id: 'draw-frame',
