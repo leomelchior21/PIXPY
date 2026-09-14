@@ -10,7 +10,7 @@ describe('Print Playground reward detection', () => {
     ['morning greeting', ['morning-chat', 'Bom dia, chat!', true], 'morning-greeting'],
     ['morning greeting variant', ['morning-chat', 'bom dia chat', true], 'morning-greeting'],
     ['personal message', ['introduce-yourself', 'HELLO!\nMy name is Maya', true], 'personal-message'],
-    ['empty line', ['blank-line', 'TOP\r\n\r\nBOTTOM', true], 'empty-line'],
+    ['word space', ['blank-line', 'TOP BOTTOM', true], 'word-space'],
     ['text frame', ['draw-frame', '#####\n#   #\n#####', true], 'text-frame'],
     ['stacked heart', ['initials-banner', '## ##\n#######\n#####\n###\n#', true], 'heart-stack'],
     ['launch sequence', ['launch-countdown', '3\n2\n1\n lift-off!!! ', true], 'launch-sequence'],
@@ -21,7 +21,7 @@ describe('Print Playground reward detection', () => {
   it.each<Parameters<typeof detectPrintReward>>([
     ['morning-chat', 'Hello!', true],
     ['introduce-yourself', 'HELLO!', true],
-    ['blank-line', 'TOP\nBOTTOM', true],
+    ['blank-line', 'TOP  BOTTOM', true],
     ['draw-frame', '#####\n#   #\n####', true],
     ['initials-banner', '#####\n#####\n#####\n#####\n#####', true],
     ['launch-countdown', '3\n2\n1\nGO!', true],
@@ -44,7 +44,7 @@ describe('Print Playground reward detection', () => {
   it.each<[PrintReward, string]>([
     [{ type: 'morning-greeting', message: 'Bom dia, chat!' }, 'Morning greeting display'],
     [{ type: 'personal-message', greeting: 'HELLO!', message: 'My name is Maya' }, 'Personal message delivery'],
-    [{ type: 'empty-line', top: 'TOP', bottom: 'BOTTOM' }, 'Clear airspace between output lines'],
+    [{ type: 'word-space', left: 'TOP', right: 'BOTTOM' }, 'One space between TOP and BOTTOM'],
     [{ type: 'text-frame', output: '###\n# #\n###', lines: ['###', '# #', '###'] }, 'Assembled text frame'],
     [{ type: 'heart-stack', output: '## ##\n#######\n#####\n###\n#', lines: ['## ##', '#######', '#####', '###', '#'] }, 'Stacked heart celebration'],
     [{ type: 'launch-sequence', countdown: ['3', '2', '1'], liftoff: 'LIFT OFF!' }, 'Launch sequence animation'],

@@ -4,7 +4,7 @@ import { isMorningGreetingOutput } from './printMatching'
 export type PrintReward =
   | { type: 'morning-greeting'; message: string }
   | { type: 'personal-message'; greeting: string; message: string }
-  | { type: 'empty-line'; top: string; bottom: string }
+  | { type: 'word-space'; left: string; right: string }
   | { type: 'text-frame'; output: string; lines: string[] }
   | { type: 'heart-stack'; output: string; lines: string[] }
   | { type: 'launch-sequence'; countdown: string[]; liftoff: string }
@@ -20,16 +20,17 @@ function isClosedFrame(lines: string[]): boolean {
 }
 
 function isFiveLineHeart(lines: string[]): boolean {
-  if (lines.length !== 5 || lines.some((line) => !/^[# ]+$/.test(line))) return false
+  if (lines.length !== 5 || lines.some((line) => !/^[# ]+$/.test(line) || !line.includes('#'))) return false
   const visibleRows = lines.map((line) => line.trim())
   const hashCounts = visibleRows.map((line) => line.replaceAll(' ', '').length)
+  const lowerRowsTaper = hashCounts.slice(2).every((count, index) => count <= hashCounts[index + 1])
   return /^#+ +#+$/.test(visibleRows[0])
     && /^#+$/.test(visibleRows[1])
     && visibleRows.slice(2).every((line) => /^#+$/.test(line))
     && hashCounts[1] > hashCounts[0]
-    && hashCounts[1] > hashCounts[2]
-    && hashCounts[2] > hashCounts[3]
-    && hashCounts[3] > hashCounts[4]
+    && hashCounts[1] >= hashCounts[2]
+    && lowerRowsTaper
+    && hashCounts[2] > hashCounts[4]
     && hashCounts[4] === 1
 }
 
@@ -82,8 +83,8 @@ export function detectPrintReward(activityId: PrintActivityId, output: string, s
   if (activityId === 'introduce-yourself' && lines.length === 2 && lines.every(Boolean)) {
     return { type: 'personal-message', greeting: lines[0], message: lines[1] }
   }
-  if (activityId === 'blank-line' && normalized === 'TOP\n\nBOTTOM') {
-    return { type: 'empty-line', top: lines[0], bottom: lines[2] }
+  if (activityId === 'blank-line' && normalized === 'TOP BOTTOM') {
+    return { type: 'word-space', left: 'TOP', right: 'BOTTOM' }
   }
   if (activityId === 'draw-frame' && isClosedFrame(lines)) {
     return { type: 'text-frame', output: normalized, lines }

@@ -53,13 +53,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid #14708c !importan
 
 /* A stable shell with the question readable beneath the title. */
 .experience-screen { grid-template-rows: 80px minmax(0, 1fr); padding: 18px 24px 20px; gap: 16px; max-width: 1700px; margin: auto; }
-.experience-header { grid-template-columns: 124px minmax(0, 1fr) 110px; padding: 10px 14px; border-width: 1.5px; box-shadow: 3px 3px 0 var(--experience-accent); }
-.experience-title > span { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 5px; color: #5d625a !important; font: 700 9px 'IBM Plex Mono', monospace !important; letter-spacing: 1px; }
+.experience-header { grid-template-columns: minmax(220px, 1fr) minmax(280px, 2fr) minmax(220px, 1fr); gap: 12px; padding: 10px 14px; border-width: 1.5px; box-shadow: 3px 3px 0 var(--experience-accent); }
+.experience-title > span { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 1px; color: #5d625a !important; font: 700 8px/1 'IBM Plex Mono', monospace !important; letter-spacing: 1px; }
 .experience-title > span b { display: inline-flex; align-items: center; gap: 4px; color: #2e713a; font-size: 9px; letter-spacing: 0; }
-.experience-title > div { display: block; white-space: normal; }
-.experience-title h1 { font-size: 25px; letter-spacing: -.6px; }
-.experience-title i { display: none; }
-.experience-title p { margin-top: 4px; font-size: 13px; line-height: 1.2; overflow: visible; white-space: normal; }
+.experience-title h1 { font-size: 24px; line-height: 1; letter-spacing: -.6px; }
+.experience-title p { margin-top: 1px; overflow: hidden; font-size: 11px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
+.experience-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
+.experience-actions .reset-level-button > span { color: inherit; font: inherit; }
 .back-button, .hint-button { min-height: 44px; font-size: 11px; }
 .experience-body { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .panel-surface { border: 1.5px solid #252821; box-shadow: 3px 3px 0 #d6d4c9; border-radius: 14px; }
@@ -325,8 +325,10 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 }
 @media screen and (orientation: landscape) and (max-height: 740px) and (min-width: 641px) {
   :root { --header-h: 56px; }
-  .experience-screen { grid-template-rows: 66px minmax(0, 1fr); gap: 8px; padding: 8px 12px 10px; }
+  .experience-screen { grid-template-rows: 76px minmax(0, 1fr); gap: 8px; padding: 8px 12px 10px; }
   .experience-header { padding-block: 6px; }
+  .back-button, .reset-level-button, .hint-button, .primary-action, .run-row button { min-height: 56px; }
+  .hypothesis-panel.is-intro > .primary-action { min-height: 56px; }
   .blackbox-stage, .hypothesis-panel { gap: 8px; padding: 10px; }
   .rule-options { gap: 6px; }
   .rule-options button { min-height: 44px; padding-block: 7px; font-size: 14px; }
@@ -356,6 +358,9 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
   .experience-card__state, .experience-card:last-child .experience-card__state { grid-column: 1 / -1; grid-row: 2; padding-top: 6px; font-size: 9px; }
   .experience-card__order { top: 11px; right: 11px; font-size: 11px; }
   .experience-card > i { top: 11px; right: 11px; }
+
+  .experience-title h1 { font-size: 22px; }
+  .experience-title p { font-size: 10px; }
 
   .dino-control-panel { gap: 6px; padding: 9px; }
   .dino-control-panel > header { gap: 8px; }

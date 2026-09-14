@@ -1,7 +1,7 @@
 import { ArrowRight, Check, Play, RotateCcw, Sparkles, Trophy } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { ExperienceShell } from '../../components/ExperienceShell'
-import { completeActivity } from '../../session/progressSession'
+import { completeActivity, resetActivityProgress } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
 
 interface Props { progress: SessionProgress; onProgress: (progress: SessionProgress) => void; onBack: () => void }
@@ -76,6 +76,17 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
   }
 
   const restart = () => { if (timer.current) window.clearTimeout(timer.current); setExecuting(false); setStepIndex(-1) }
+  const resetLevel = () => {
+    if (timer.current) window.clearTimeout(timer.current)
+    setExampleIndex(0)
+    setStepIndex(-1)
+    setMemoryInput('12')
+    setExecuting(false)
+    setQuizSelected(null)
+    setQuizStarted(false)
+    setExploring(false)
+    onProgress(resetActivityProgress(progress, 'memory-machine'))
+  }
 
   const answerQuiz = (answer: number) => {
     if (quizSelected !== null || quizFinished) return
@@ -93,7 +104,7 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
   if (quizReady && !exploring) {
     const question = quizQuestions[quizIndex]
     return (
-      <ExperienceShell order="05" title="Memory Machine" question="Prove what Python remembers." accent="#a994ff" hints={['Read the code from top to bottom.', 'Track the newest value stored under each name.', 'Only print() creates visible output.']} completed={completed} objective="Complete all ten questions." onBack={onBack} className="memory-experience memory-quiz-experience">
+      <ExperienceShell order="05" title="Memory Machine" question="Prove what Python remembers." accent="#a994ff" hints={['Read the code from top to bottom.', 'Track the newest value stored under each name.', 'Only print() creates visible output.']} completed={completed} objective="Complete all ten questions." onBack={onBack} onReset={resetLevel} className="memory-experience memory-quiz-experience">
         <section className="memory-quiz panel-surface">
           {quizFinished ? (
             <div className="memory-quiz-finish">
@@ -130,7 +141,7 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
   }
 
   return (
-    <ExperienceShell order="05" title="Memory Machine" question="Where does a variable's value go?" accent="#a994ff" hints={['Press EXECUTE LINE once.', 'Watch the highlighted line travel into memory or output.', 'Reassignment replaces the value already inside the same memory box.']} completed={completed} objective="Execute one line at a time. Follow exactly what that line brings into memory and output." onBack={onBack} onComplete={() => onProgress(completeActivity(progress, 'memory-machine'))} className="memory-experience">
+    <ExperienceShell order="05" title="Memory Machine" question="Where does a variable's value go?" accent="#a994ff" hints={['Press EXECUTE LINE once.', 'Watch the highlighted line travel into memory or output.', 'Reassignment replaces the value already inside the same memory box.']} completed={completed} objective="Execute one line at a time. Follow exactly what that line brings into memory and output." onBack={onBack} onReset={resetLevel} onComplete={() => onProgress(completeActivity(progress, 'memory-machine'))} className="memory-experience">
       <section className="memory-code-panel panel-surface">
         <div className="memory-tabs">{examples.map((item, index) => <button aria-pressed={exampleIndex === index} key={item.id} className={exampleIndex === index ? 'is-active' : ''} onClick={() => choose(index)}>{progress.memoryExamples.includes(item.id) && <Check />}{item.label}</button>)}</div>
         <header className="blackbox-instruction"><span>1</span><div><strong>READ ONE LINE</strong><p>Python executes from top to bottom.</p></div></header>

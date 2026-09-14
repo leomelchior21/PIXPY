@@ -97,6 +97,32 @@ export function completeActivity(progress: SessionProgress, activity: ActivityId
   return { ...progress, completed: [...progress.completed, activity] }
 }
 
+type ResettableActivityId = 'black-box' | 'input-machine' | 'memory-machine' | 'build-black-box' | 'final-bosses'
+
+export function resetActivityProgress(progress: SessionProgress, activity: ResettableActivityId): SessionProgress {
+  const reset = { ...progress, completed: progress.completed.filter((id) => id !== activity) }
+
+  if (activity === 'black-box') {
+    return {
+      ...reset,
+      blackBoxLevels: [],
+      blackBoxQuizAnswers: [],
+      blackBoxQuizStartedAt: null,
+      blackBoxQuizElapsedMs: null,
+      blackBoxQuizSeed: emptyProgress.blackBoxQuizSeed,
+      blackBoxQuizResults: [],
+    }
+  }
+  if (activity === 'input-machine') return { ...reset, inputModes: [] }
+  if (activity === 'memory-machine') {
+    return { ...reset, memoryExamples: [], memoryQuizAnswers: [], memoryQuizCompleted: false }
+  }
+  if (activity === 'build-black-box') {
+    return { ...reset, blackBoxCode: emptyProgress.blackBoxCode, blackBoxTests: [] }
+  }
+  return { ...reset, bossProgress: [] }
+}
+
 export function cleanName(value: string): string {
   return value
     .replace(/[^\p{L}\p{M}' -]/gu, '')

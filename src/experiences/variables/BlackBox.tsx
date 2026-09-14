@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowRight, Check, Eye, Hand, Play, RotateCcw, Sparkles, Tim
 import { useEffect, useState } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
 import { ExperienceShell } from '../../components/ExperienceShell'
-import { completeActivity } from '../../session/progressSession'
+import { completeActivity, resetActivityProgress } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
 
 interface Props { progress: SessionProgress; onProgress: (progress: SessionProgress) => void; onBack: () => void }
@@ -130,6 +130,14 @@ export function BlackBox({ progress, onProgress, onBack }: Props) {
     setFeedback('Touch the Black Box. It will reveal a fresh random pair.')
   }
 
+  const resetLevel = () => {
+    chooseLevel(0)
+    setQuizSelected(null)
+    setExploring(false)
+    setNow(Date.now())
+    onProgress(resetActivityProgress(progress, 'black-box'))
+  }
+
   const testGuess = () => {
     if (guess !== current.formula) {
       setRevealed(false)
@@ -191,7 +199,7 @@ export function BlackBox({ progress, onProgress, onBack }: Props) {
   if (quizReady && !exploring) {
     const question = operationQuiz[Math.min(quizIndex, operationQuiz.length - 1)]
     return (
-      <ExperienceShell order="03" title="Black Box" question="Can you use all four operations?" accent="#fe6f8f" hints={['Read the operator before calculating.', 'Use the values stored in the variables.', 'Remember: + add, - subtract, * multiply, / divide.']} completed={completed} objective="Complete all ten operation questions." onBack={onBack} className="blackbox-experience blackbox-quiz-experience">
+      <ExperienceShell order="03" title="Black Box" question="Can you use all four operations?" accent="#fe6f8f" hints={['Read the operator before calculating.', 'Use the values stored in the variables.', 'Remember: + add, - subtract, * multiply, / divide.']} completed={completed} objective="Complete all ten operation questions." onBack={onBack} onReset={resetLevel} className="blackbox-experience blackbox-quiz-experience">
         <div className="blackbox-quiz-layout">
           <section className="memory-quiz operation-quiz panel-surface">
             {!quizStarted && !quizFinished ? (
@@ -245,7 +253,7 @@ export function BlackBox({ progress, onProgress, onBack }: Props) {
   const revealCode = last ? `number = ${last.input}\nresult = ${current.formula}\n\nprint(result)` : ''
 
   return (
-    <ExperienceShell order="03" title="Black Box" question="How can a value go through a calculation?" accent="#fe6f8f" hints={['Touch the box at least twice.', 'Compare how each input becomes its output.', 'Test a rule that works for every pair—not only one.']} completed={completed} objective="Crack all three random boxes, then complete the operations quiz." onBack={onBack} className="blackbox-experience">
+    <ExperienceShell order="03" title="Black Box" question="How can a value go through a calculation?" accent="#fe6f8f" hints={['Touch the box at least twice.', 'Compare how each input becomes its output.', 'Test a rule that works for every pair—not only one.']} completed={completed} objective="Crack all three random boxes, then complete the operations quiz." onBack={onBack} onReset={resetLevel} className="blackbox-experience">
       <section className="blackbox-stage panel-surface">
         <div className="level-tabs">{levels.map((_, index) => <button aria-pressed={level === index} className={level === index ? 'is-active' : ''} onClick={() => chooseLevel(index)} key={index}>BOX {index + 1}{progress.blackBoxLevels.includes(index) && <Check />}</button>)}{quizReady && <button onClick={() => setExploring(false)}>QUIZ <ArrowRight /></button>}</div>
         <header className="blackbox-instruction"><span>1</span><div><strong>TOUCH THE BOX</strong><p>Every touch gives you a fresh random input → output clue.</p></div></header>

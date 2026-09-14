@@ -4,7 +4,7 @@ import { CodeEditor } from '../../components/CodeEditor'
 import { ExperienceShell } from '../../components/ExperienceShell'
 import { variableBosses } from '../../data/bosses'
 import { pythonRunner } from '../../lib/pythonRunner'
-import { completeActivity } from '../../session/progressSession'
+import { completeActivity, resetActivityProgress } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
 
 interface Props { progress: SessionProgress; onProgress: (progress: SessionProgress) => void; onBack: () => void }
@@ -60,8 +60,19 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
     setVictory(progress.bossProgress.includes(nextBoss.id))
   }
 
+  const resetLevel = () => {
+    version.current += 1
+    drafts.current = {}
+    setBusy(false)
+    setBossIndex(0)
+    setCode(variableBosses[0].code)
+    setResult('Change the code. Defeat the boss.')
+    setVictory(false)
+    onProgress(resetActivityProgress(progress, 'final-bosses'))
+  }
+
   return (
-    <ExperienceShell order="07" title="Final Bosses" question="Can you use what you discovered?" accent="#ff855e" hints={['Look at the input names above result.', 'Build the formula using those variables.', `This boss gives input: ${boss.inputs.join(', ')}.`]} completed={completed} objective="No lesson. No locks. Pick any boss and make the expected output." onBack={onBack} onComplete={() => onProgress(completeActivity(progress, 'final-bosses'))} className="boss-experience">
+    <ExperienceShell order="07" title="Final Bosses" question="Can you use what you discovered?" accent="#ff855e" hints={['Look at the input names above result.', 'Build the formula using those variables.', `This boss gives input: ${boss.inputs.join(', ')}.`]} completed={completed} objective="No lesson. No locks. Pick any boss and make the expected output." onBack={onBack} onReset={resetLevel} onComplete={() => onProgress(completeActivity(progress, 'final-bosses'))} className="boss-experience">
       <section className="boss-stage panel-surface">
         <div className="boss-title"><span><Skull /></span><div><small>BOSS {String(boss.id).padStart(2, '0')} / {variableBosses.length}</small><h2>{boss.title}</h2><p>{boss.prompt}</p></div></div>
         <div className="boss-io"><article><small>INPUT</small><strong>{boss.inputs.join('  ·  ')}</strong></article><i>VS</i><article><small>EXPECTED</small><strong>{boss.expected ?? 'YOUR RULE'}</strong></article></div>

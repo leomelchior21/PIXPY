@@ -67,10 +67,6 @@ export function countPrintCalls(code: string): number {
   return maskStringsAndComments(code).match(/\bprint\s*\(/g)?.length ?? 0
 }
 
-export function hasEmptyPrintCall(code: string): boolean {
-  return /\bprint\s*\(\s*\)/.test(maskStringsAndComments(code))
-}
-
 function isFrame(stdout: string): boolean {
   const lines = normalizedOutput(stdout).split('\n')
   if (lines.length < 3 || lines[0].length < 3) return false
@@ -81,17 +77,18 @@ function isFrame(stdout: string): boolean {
 
 function isFiveLineHeart(stdout: string): boolean {
   const lines = normalizedOutput(stdout).split('\n')
-  if (lines.length !== 5 || lines.some((line) => !/^[# ]+$/.test(line))) return false
+  if (lines.length !== 5 || lines.some((line) => !/^[# ]+$/.test(line) || !line.includes('#'))) return false
 
   const visibleRows = lines.map((line) => line.trim())
   const hashCounts = visibleRows.map((line) => line.replaceAll(' ', '').length)
+  const lowerRowsTaper = hashCounts.slice(2).every((count, index) => count <= hashCounts[index + 1])
   return /^#+ +#+$/.test(visibleRows[0])
     && /^#+$/.test(visibleRows[1])
     && visibleRows.slice(2).every((line) => /^#+$/.test(line))
     && hashCounts[1] > hashCounts[0]
-    && hashCounts[1] > hashCounts[2]
-    && hashCounts[2] > hashCounts[3]
-    && hashCounts[3] > hashCounts[4]
+    && hashCounts[1] >= hashCounts[2]
+    && lowerRowsTaper
+    && hashCounts[2] > hashCounts[4]
     && hashCounts[4] === 1
 }
 
@@ -161,12 +158,12 @@ export const printActivities: PrintActivity[] = [
   },
   {
     id: 'blank-line',
-    title: 'Leave a blank line',
-    prompt: 'Print TOP and BOTTOM with exactly one empty line between them. Use print() with no argument.',
-    starterCode: '# Add one blank line with print().\nprint("TOP")\nprint("BOTTOM")',
-    hints: ['An empty print sends only a new line.', 'Put print() between the TOP and BOTTOM lines.', 'Use three calls: print("TOP"), print(), then print("BOTTOM").'],
+    title: 'Add a space',
+    prompt: 'Print TOP BOTTOM on one line with exactly one space between the words.',
+    starterCode: '# Add one space between TOP and BOTTOM.\nprint("TOPBOTTOM")',
+    hints: ['Keep TOP and BOTTOM inside the same pair of quote marks.', 'A space is a character too. Put it after TOP.', 'Use: print("TOP BOTTOM")'],
     extra: false,
-    validate: ({ stdout }, code) => normalizedOutput(stdout) === 'TOP\n\nBOTTOM' && countPrintCalls(code) === 3 && hasEmptyPrintCall(code),
+    validate: ({ stdout }, code) => normalizedOutput(stdout) === 'TOP BOTTOM' && countPrintCalls(code) === 1,
   },
   {
     id: 'draw-frame',
@@ -220,13 +217,13 @@ export const printActivities: PrintActivity[] = [
   {
     id: 'crack-code',
     title: 'Crack the code',
-    prompt: 'Store 6 * 7 in access_code and adjust the print so it shows the correct result.',
-    starterCode: '#Store 6 * 7 in access_code and adjust it to print correctly.\naccess_code = 6 + 7\n\nprint("ACCESS CODE")',
-    hints: ['The variable name must stay access_code.', 'Use the multiplication operator * between 6 and 7.', 'Print the variable name without quote marks.'],
+    prompt: 'Store 6 * 7 in password and adjust the print so it shows the correct result.',
+    starterCode: '#Store 6 * 7 in password and adjust it to print correctly.\npassword = 6 + 7\n\nprint("PASSWORD")',
+    hints: ['The variable name must stay password.', 'Use the multiplication operator * between 6 and 7.', 'Print the variable name without quote marks.'],
     extra: true,
     validate: ({ stdout, variables }, code) => {
       const executableCode = maskStringsAndComments(code)
-      return normalizedOutput(stdout) === '42' && variables.access_code === 42 && /^\s*access_code\s*=\s*6\s*\*\s*7\s*(?:;|\r?$)/m.test(executableCode) && countPrintCalls(code) === 1
+      return normalizedOutput(stdout) === '42' && variables.password === 42 && /^\s*password\s*=\s*6\s*\*\s*7\s*(?:;|\r?$)/m.test(executableCode) && countPrintCalls(code) === 1
     },
   },
 ]

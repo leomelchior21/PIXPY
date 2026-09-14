@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
 import { ExperienceShell } from '../../components/ExperienceShell'
 import { pythonRunner } from '../../lib/pythonRunner'
-import { completeActivity, emptyProgress } from '../../session/progressSession'
+import { completeActivity, emptyProgress, resetActivityProgress } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
 
 interface Props { progress: SessionProgress; onProgress: (progress: SessionProgress) => void; onBack: () => void }
@@ -56,11 +56,14 @@ export function BuildBlackBox({ progress, onProgress, onBack }: Props) {
   }
 
   const reset = () => {
+    version.current += 1
+    setBusy(false)
     setCode(emptyProgress.blackBoxCode)
+    setInput('10')
     setLastOutput(null)
     setHidden(false)
     setMessage('Starter machine restored.')
-    onProgress({ ...progress, blackBoxCode: emptyProgress.blackBoxCode, blackBoxTests: [] })
+    onProgress(resetActivityProgress(progress, 'build-black-box'))
   }
 
   const editCode = (value: string) => {
@@ -72,7 +75,7 @@ export function BuildBlackBox({ progress, onProgress, onBack }: Props) {
   }
 
   return (
-    <ExperienceShell order="06" title="Build a Black Box" question="Can I make my own transformation?" accent="#54e3bd" hints={['Change only the result line first.', 'Use number with +, -, *, /, //, %, or **.', 'Try result = number * 5 + 3.']} completed={completed} objective="Create a rule, test at least two inputs, then hide your code for a classmate." onBack={onBack} onComplete={() => onProgress(completeActivity(progress, 'build-black-box'))} className="buildbox-experience">
+    <ExperienceShell order="06" title="Build a Black Box" question="Can I make my own transformation?" accent="#54e3bd" hints={['Change only the result line first.', 'Use number with +, -, *, /, //, %, or **.', 'Try result = number * 5 + 3.']} completed={completed} objective="Create a rule, test at least two inputs, then hide your code for a classmate." onBack={onBack} onReset={reset} onComplete={() => onProgress(completeActivity(progress, 'build-black-box'))} className="buildbox-experience">
       <section className="build-workspace">
         <header className="build-machine-strip">
           <div className="custom-machine">

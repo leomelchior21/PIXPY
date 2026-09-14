@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
 import { ExperienceShell } from '../../components/ExperienceShell'
 import { pythonRunner } from '../../lib/pythonRunner'
-import { completeActivity } from '../../session/progressSession'
+import { completeActivity, resetActivityProgress } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
 
 interface Props { progress: SessionProgress; onProgress: (progress: SessionProgress) => void; onBack: () => void }
@@ -39,6 +39,18 @@ export function InputMachine({ progress, onProgress, onBack }: Props) {
     clearOutput()
   }
   const reset = () => { setCode(mode.starter); setInput(mode.value); clearOutput() }
+  const resetLevel = () => {
+    version.current += 1
+    drafts.current = {}
+    setBusy(false)
+    setModeIndex(0)
+    setCode(modes[0].starter)
+    setInput(modes[0].value)
+    setSentInput('')
+    setStatus('idle')
+    setOutput('Your output will appear here.')
+    onProgress(resetActivityProgress(progress, 'input-machine'))
+  }
 
   const run = async () => {
     if (busy) return
@@ -64,7 +76,7 @@ export function InputMachine({ progress, onProgress, onBack }: Props) {
   }
 
   return (
-    <ExperienceShell order="04" title="Input Machine" question="How can a program receive something from me?" accent="#72dcff" hints={['The value starts with you.', 'input() waits for something you type.', 'For number math, wrap it in int(input()).']} completed={completed} objective="Send a value through every machine. Change the code if you want a different result." onBack={onBack} onComplete={() => onProgress(completeActivity(progress, 'input-machine'))} className="input-experience">
+    <ExperienceShell order="04" title="Input Machine" question="How can a program receive something from me?" accent="#72dcff" hints={['The value starts with you.', 'input() waits for something you type.', 'For number math, wrap it in int(input()).']} completed={completed} objective="Send a value through every machine. Change the code if you want a different result." onBack={onBack} onReset={resetLevel} onComplete={() => onProgress(completeActivity(progress, 'input-machine'))} className="input-experience">
       <section className="input-stage panel-surface">
         <div className="mode-tabs" aria-label="Choose a machine">{modes.map((item, index) => <button aria-pressed={modeIndex === index} disabled={busy} className={modeIndex === index ? 'is-active' : ''} onClick={() => choose(index)} key={item.id}>{progress.inputModes.includes(item.id) && <Check size={12} />}{item.label}</button>)}</div>
         <form className={`vending-machine ${busy ? 'is-processing' : ''} ${status === 'error' ? 'has-error' : ''}`} onSubmit={(event) => { event.preventDefault(); void run() }}>
