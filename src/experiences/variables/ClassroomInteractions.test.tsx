@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { createSession } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
@@ -26,29 +26,73 @@ function Harness({ activity, initial = createSession('Maya'), onUpdate = () => {
 
 beforeEach(() => runScript.mockReset())
 
-it('keeps machine drafts when switching and restores only the active starter on reset', () => {
+async function enterInputLab() {
+  fireEvent.click(screen.getByRole('button', { name: /let python listen/i }))
+  expect(screen.getByLabelText('YOUR AGE')).toBeInTheDocument()
+  fireEvent.change(screen.getByLabelText('YOUR AGE'), { target: { value: '12' } })
+  vi.useFakeTimers()
+  fireEvent.click(screen.getByRole('button', { name: /calculate birth year/i }))
+  await act(async () => vi.advanceTimersByTime(1200))
+  vi.useRealTimers()
+  expect(screen.getByText('2014')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /how did it do that/i }))
+  fireEvent.click(screen.getByRole('button', { name: /stored my age/i }))
+  fireEvent.click(screen.getByRole('button', { name: /show me the code/i }))
+  expect(screen.getByText('age = int(input())')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /build it step by step/i }))
+  fireEvent.click(screen.getByRole('button', { name: /open the lab/i }))
+}
+
+async function runInputMachine(buttonName: RegExp) {
+  vi.useFakeTimers()
+  fireEvent.click(screen.getByRole('button', { name: buttonName }))
+  await act(async () => vi.runAllTimersAsync())
+  vi.useRealTimers()
+}
+
+it('guides a change, explains the catch, checks the fix, and opens the chapter quiz', async () => {
+  runScript.mockResolvedValue({ stdout: 'Maya', variables: {} })
   render(<Harness activity="input" />)
-  fireEvent.change(screen.getByLabelText('Python code editor'), { target: { value: 'print("my draft")' } })
+  await enterInputLab()
   fireEvent.change(screen.getByLabelText('YOUR MESSAGE'), { target: { value: 'Maya' } })
-  fireEvent.click(screen.getByRole('button', { name: 'DOUBLE' }))
-  fireEvent.click(screen.getByRole('button', { name: 'RAW INPUT' }))
-  expect(screen.getByLabelText('Python code editor')).toHaveValue('print("my draft")')
-  expect(screen.getByLabelText('YOUR MESSAGE')).toHaveValue('Maya')
-  fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
-  expect(screen.getByLabelText('Python code editor')).toHaveValue('message = input()\nprint(message)')
-})
+  await runInputMachine(/send input/i)
+  expect(screen.getByText('TRY THIS')).toBeInTheDocument()
+
+  fireEvent.change(screen.getByLabelText('Python code editor'), { target: { value: '# Try replacing input() with your name in quotes\nmessage = "Maya"\nprint(message)' } })
+  await runInputMachine(/run code/i)
+  expect(screen.getByText('DID YOU NOTICE?')).toBeInTheDocument()
+  expect(screen.getByText(/stopped listening because input\(\) is gone/i)).toBeInTheDocument()
+
+  fireEvent.change(screen.getByLabelText('Python code editor'), { target: { value: '# Try replacing input() with your name in quotes\nmessage = input()\nprint(message)' } })
+  await runInputMachine(/run code/i)
+  const quickQuiz = screen.getByRole('button', { name: /quick quiz/i })
+  expect(quickQuiz).toBeEnabled()
+  fireEvent.click(quickQuiz)
+
+  fireEvent.click(screen.getByRole('button', { name: /message$/i }))
+  fireEvent.click(screen.getByRole('button', { name: /next question/i }))
+  fireEvent.click(screen.getByRole('button', { name: /rocket$/i }))
+  fireEvent.click(screen.getByRole('button', { name: /next question/i }))
+  fireEvent.click(screen.getByRole('button', { name: /message = input\(\)$/i }))
+  fireEvent.click(screen.getByRole('button', { name: /next chapter/i }))
+  expect(screen.getByText('Now make the input grow.')).toBeInTheDocument()
+}, 15_000)
 
 it('sends the typed value, shows errors, and does not award completion for an error', async () => {
   const update = vi.fn()
   runScript.mockRejectedValueOnce(new Error('Use a whole number.'))
   render(<Harness activity="input" onUpdate={update} />)
-  fireEvent.click(screen.getByRole('button', { name: 'DOUBLE' }))
-  fireEvent.change(screen.getByLabelText('YOUR NUMBER'), { target: { value: 'hello' } })
-  await act(async () => fireEvent.click(screen.getByRole('button', { name: 'SEND' })))
+  await enterInputLab()
+  fireEvent.click(screen.getByRole('button', { name: /send input/i }))
+  expect(screen.getByText(/type something in the message field first/i)).toBeInTheDocument()
+  expect(runScript).not.toHaveBeenCalled()
+  fireEvent.change(screen.getByLabelText('Python code editor'), { target: { value: 'message = int(input())\nprint(message)' } })
+  fireEvent.change(screen.getByLabelText('YOUR MESSAGE'), { target: { value: 'hello' } })
+  await runInputMachine(/send input/i)
   expect(runScript).toHaveBeenCalledWith(expect.stringContaining('int(input())'), ['hello'])
-  expect(screen.getByText('Use a whole number.')).toBeInTheDocument()
+  await waitFor(() => expect(screen.getByText('Use a whole number.')).toBeInTheDocument(), { timeout: 2000 })
   expect(update).not.toHaveBeenCalled()
-})
+}, 10_000)
 
 it('clears evidence when a box rule changes and requires new tests of that rule', async () => {
   const initial = { ...createSession('Maya'), blackBoxCode: 'number = int(input())\nresult = number * 2\nprint(result)', blackBoxTests: [{ input: 10, output: 20 }] }

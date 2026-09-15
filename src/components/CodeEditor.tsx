@@ -7,11 +7,13 @@ interface CodeEditorProps {
   label?: string
   readOnly?: boolean
   minHeight?: string
+  activeLine?: number | null
+  attentionLine?: number | null
 }
 
-export function CodeEditor({ value, onChange, label = 'Python code editor', readOnly = false, minHeight = '220px' }: CodeEditorProps) {
+export function CodeEditor({ value, onChange, label = 'Python code editor', readOnly = false, minHeight = '220px', activeLine = null, attentionLine = null }: CodeEditorProps) {
   return (
-    <div className="pixpy-editor" aria-label={label}>
+    <div className="pixpy-editor" aria-label={label} data-active-line={activeLine ?? undefined} data-attention-line={attentionLine ?? undefined}>
       <div className="editor-titlebar"><span><b>PY</b> Python</span><small>REAL CODE</small></div>
       <CodeMirror
         value={value}
