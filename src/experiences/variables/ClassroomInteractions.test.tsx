@@ -168,6 +168,17 @@ it('preserves a boss solution when exploring another challenge', () => {
   expect(screen.getByLabelText('Python code editor')).toHaveValue('result = a + b')
 })
 
+it('unlocks boss missions in completed groups of three', () => {
+  const first = render(<Harness activity="bosses" />)
+  expect(screen.getByRole('button', { name: 'Boss 3: Double It' })).toBeEnabled()
+  expect(screen.getByRole('button', { name: 'Boss 4: Triple It, locked' })).toBeDisabled()
+  first.unmount()
+
+  render(<Harness activity="bosses" initial={{ ...createSession('Maya'), bossProgress: [1, 2, 3] }} />)
+  expect(screen.getByRole('button', { name: 'Boss 4: Triple It' })).toBeEnabled()
+  expect(screen.getByRole('button', { name: 'Boss 7: Celsius to Fahrenheit, locked' })).toBeDisabled()
+})
+
 it('runs three surprise phone tests before completing a boss mission', async () => {
   runScript.mockImplementation((_code: string, inputs: string[] = []) => Promise.resolve({
     stdout: inputs.length === 2 ? String(Number(inputs[0]) + Number(inputs[1])) : '',

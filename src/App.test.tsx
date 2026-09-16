@@ -2,6 +2,18 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 
+const cloud = vi.hoisted(() => ({
+  loginToClassroom: vi.fn(async (username: string) => ({
+    username,
+    displayName: username === 'leleomaker' ? 'Leo' : `${username[0].toUpperCase()}${username.slice(1)}`,
+    isTeacher: username === 'leleomaker',
+    progress: null,
+  })),
+  saveClassroomProgress: vi.fn(async () => {}),
+  loadClassProgress: vi.fn(async () => []),
+}))
+vi.mock('./lib/classroomCloud', () => cloud)
+
 describe('PixPy classroom session', () => {
   beforeEach(() => {
     sessionStorage.clear()
@@ -9,7 +21,7 @@ describe('PixPy classroom session', () => {
     window.history.replaceState(null, '', '/')
   })
 
-  it('asks only for a name and opens every Variables experience', async () => {
+  it('logs in with a roster username and opens every Variables experience', async () => {
     const user = userEvent.setup()
     render(<App />)
 
@@ -17,12 +29,12 @@ describe('PixPy classroom session', () => {
     expect(screen.queryByText('PYTHON, BUT PLAYFUL.')).not.toBeInTheDocument()
     expect(screen.queryByText('YOUR FIRST VARIABLE')).not.toBeInTheDocument()
     expect(screen.queryByText('Your progress stays in this browser.')).not.toBeInTheDocument()
-    const input = screen.getByLabelText('What should we call you?')
-    expect(input).toHaveAttribute('placeholder', 'insert your name')
-    await user.type(input, 'Leo')
-    await user.click(screen.getByRole('button', { name: /let's go/i }))
+    const input = screen.getByLabelText('Enter your PixPy login')
+    expect(input).toHaveAttribute('placeholder', 'firstnamelastname')
+    await user.type(input, 'LeoStudent')
+    await user.click(screen.getByRole('button', { name: /log in to pixpy/i }))
 
-    expect(await screen.findByRole('heading', { name: /ready, leo.*let's get to work/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /ready, leostudent.*let's get to work/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /conditionals coming soon/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: /functions coming soon/i })).toBeDisabled()
     await user.click(screen.getByRole('button', { name: 'Open Variables' }))
@@ -40,13 +52,21 @@ describe('PixPy classroom session', () => {
   it('keeps the student name in sessionStorage after a refresh-style remount', async () => {
     const user = userEvent.setup()
     const first = render(<App />)
-    await user.type(screen.getByLabelText('What should we call you?'), 'Maya')
-    await user.click(screen.getByRole('button', { name: /let's go/i }))
-    expect(await screen.findByText('Maya', { selector: '.student-chip strong' })).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Enter your PixPy login'), 'MayaStudent')
+    await user.click(screen.getByRole('button', { name: /log in to pixpy/i }))
+    expect(await screen.findByText('Mayastudent', { selector: '.student-chip strong' })).toBeInTheDocument()
     first.unmount()
 
     render(<App />)
-    expect(await screen.findByText('Maya', { selector: '.student-chip strong' })).toBeInTheDocument()
-    expect(screen.queryByLabelText("WHAT'S YOUR NAME?")).not.toBeInTheDocument()
+    expect(await screen.findByText('Mayastudent', { selector: '.student-chip strong' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Enter your PixPy login')).not.toBeInTheDocument()
+  })
+
+  it('opens the teacher progress view for leleomaker', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.type(screen.getByLabelText('Enter your PixPy login'), 'leleomaker')
+    await user.click(screen.getByRole('button', { name: /log in to pixpy/i }))
+    expect(await screen.findByRole('heading', { name: 'Class progress' })).toBeInTheDocument()
   })
 })

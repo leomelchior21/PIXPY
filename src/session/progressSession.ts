@@ -8,9 +8,9 @@ import {
   type SessionProgress,
 } from '../types'
 
-const SESSION_KEY = 'pixpy.session.v2'
+const SESSION_KEY = 'pixpy.session.v3'
 
-export const emptyProgress: Omit<SessionProgress, 'name'> = {
+export const emptyProgress: Omit<SessionProgress, 'name' | 'username' | 'isTeacher'> = {
   completed: [],
   blackBoxLevels: [],
   blackBoxQuizAnswers: [],
@@ -33,8 +33,8 @@ export const emptyProgress: Omit<SessionProgress, 'name'> = {
   printPlaygroundCompleted: [],
 }
 
-export function createSession(name: string): SessionProgress {
-  return { name: cleanName(name), ...structuredClone(emptyProgress) }
+export function createSession(name: string, username = cleanUsername(name), isTeacher = false): SessionProgress {
+  return { name: cleanName(name), username: cleanUsername(username), isTeacher, ...structuredClone(emptyProgress) }
 }
 
 export function loadSession(): SessionProgress | null {
@@ -42,39 +42,52 @@ export function loadSession(): SessionProgress | null {
     const raw = sessionStorage.getItem(SESSION_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<SessionProgress>
-    if (!parsed.name || typeof parsed.name !== 'string') return null
-    const memoryQuizAnswers = cleanQuizAnswers(parsed.memoryQuizAnswers)
-    const blackBoxQuizAnswers = cleanQuizAnswers(parsed.blackBoxQuizAnswers)
-    const blackBoxQuizResults = cleanBlackBoxQuizResults(parsed.blackBoxQuizResults)
-    const printPlaygroundCompleted = cleanPrintActivityIds(parsed.printPlaygroundCompleted)
-    const completed = cleanActivityIds(parsed.completed)
-    const quizCompleted = completed.filter((activity) => {
-      if (activity === 'memory-machine') return memoryQuizAnswers.length === 10 || parsed.memoryQuizCompleted === true
-      if (activity === 'black-box') return blackBoxQuizAnswers.length === 10 || blackBoxQuizResults.length > 0
-      if (activity === 'print-playground') return printCoreActivityIds.every((id) => printPlaygroundCompleted.includes(id))
-      return true
-    })
-    return {
-      ...createSession(parsed.name),
-      ...parsed,
-      name: cleanName(parsed.name),
-      completed: quizCompleted,
-      blackBoxQuizAnswers,
-      blackBoxQuizStartedAt: cleanTimestamp(parsed.blackBoxQuizStartedAt),
-      blackBoxQuizElapsedMs: cleanElapsed(parsed.blackBoxQuizElapsedMs),
-      blackBoxQuizSeed: cleanQuizSeed(parsed.blackBoxQuizSeed),
-      blackBoxQuizResults,
-      memoryQuizAnswers,
-      memoryQuizCompleted: parsed.memoryQuizCompleted === true || memoryQuizAnswers.length === 10,
-      blackBoxCode: migrateBlackBoxCode(parsed.blackBoxCode),
-      printPlaygroundActivity: cleanPrintActivityId(parsed.printPlaygroundActivity),
-      printPlaygroundCode: cleanPrintCode(parsed.printPlaygroundCode),
-      printPlaygroundOutputs: cleanPrintOutputs(parsed.printPlaygroundOutputs),
-      printPlaygroundVisited: cleanPrintActivityIds(parsed.printPlaygroundVisited),
-      printPlaygroundCompleted,
-    }
+    return normalizeProgress(parsed)
   } catch {
     return null
+  }
+}
+
+export function restoreProgress(username: string, displayName: string, value: unknown): SessionProgress {
+  const stored = value && typeof value === 'object' ? value as Partial<SessionProgress> : {}
+  return normalizeProgress({ ...stored, name: displayName, username, isTeacher: false }) ?? createSession(displayName, username)
+}
+
+function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | null {
+  if (!parsed.name || typeof parsed.name !== 'string') return null
+  const username = cleanUsername(typeof parsed.username === 'string' ? parsed.username : parsed.name)
+  if (!username) return null
+  const memoryQuizAnswers = cleanQuizAnswers(parsed.memoryQuizAnswers)
+  const blackBoxQuizAnswers = cleanQuizAnswers(parsed.blackBoxQuizAnswers)
+  const blackBoxQuizResults = cleanBlackBoxQuizResults(parsed.blackBoxQuizResults)
+  const printPlaygroundCompleted = cleanPrintActivityIds(parsed.printPlaygroundCompleted)
+  const completed = cleanActivityIds(parsed.completed)
+  const quizCompleted = completed.filter((activity) => {
+    if (activity === 'memory-machine') return memoryQuizAnswers.length === 10 || parsed.memoryQuizCompleted === true
+    if (activity === 'black-box') return blackBoxQuizAnswers.length === 10 || blackBoxQuizResults.length > 0
+    if (activity === 'print-playground') return printCoreActivityIds.every((id) => printPlaygroundCompleted.includes(id))
+    return true
+  })
+  return {
+    ...createSession(parsed.name, username, parsed.isTeacher === true),
+    ...parsed,
+    name: cleanName(parsed.name),
+    username,
+    isTeacher: parsed.isTeacher === true,
+    completed: quizCompleted,
+    blackBoxQuizAnswers,
+    blackBoxQuizStartedAt: cleanTimestamp(parsed.blackBoxQuizStartedAt),
+    blackBoxQuizElapsedMs: cleanElapsed(parsed.blackBoxQuizElapsedMs),
+    blackBoxQuizSeed: cleanQuizSeed(parsed.blackBoxQuizSeed),
+    blackBoxQuizResults,
+    memoryQuizAnswers,
+    memoryQuizCompleted: parsed.memoryQuizCompleted === true || memoryQuizAnswers.length === 10,
+    blackBoxCode: migrateBlackBoxCode(parsed.blackBoxCode),
+    printPlaygroundActivity: cleanPrintActivityId(parsed.printPlaygroundActivity),
+    printPlaygroundCode: cleanPrintCode(parsed.printPlaygroundCode),
+    printPlaygroundOutputs: cleanPrintOutputs(parsed.printPlaygroundOutputs),
+    printPlaygroundVisited: cleanPrintActivityIds(parsed.printPlaygroundVisited),
+    printPlaygroundCompleted,
   }
 }
 
@@ -129,6 +142,15 @@ export function cleanName(value: string): string {
     .replace(/\s+/g, ' ')
     .trimStart()
     .slice(0, 28)
+}
+
+export function cleanUsername(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .slice(0, 40)
 }
 
 function cleanActivityIds(value: unknown): ActivityId[] {

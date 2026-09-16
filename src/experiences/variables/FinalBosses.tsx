@@ -24,9 +24,10 @@ type TestStatus = 'waiting' | 'running' | 'passed' | 'failed'
 interface TestRun extends BossTestCase { number: number; output: string; status: TestStatus; error?: string }
 
 const mysteryEmoji = ['❔', '🔒', '🕵️', '🌫️']
+const missionBatchSize = 3
 
 export function FinalBosses({ progress, onProgress, onBack }: Props) {
-  const [bossIndex, setBossIndex] = useState(0)
+  const [bossIndex, setBossIndex] = useState(() => firstOpenMission(progress.bossProgress))
   const boss = variableBosses[bossIndex]
   const [code, setCode] = useState(boss.code)
   const [busy, setBusy] = useState(false)
@@ -104,8 +105,9 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
 
   const choose = (index: number) => {
     if (busy) return
-    drafts.current[boss.id] = code
     const nextIndex = Math.max(0, Math.min(variableBosses.length - 1, index))
+    if (!isMissionUnlocked(nextIndex, progress.bossProgress)) return
+    drafts.current[boss.id] = code
     const nextBoss = variableBosses[nextIndex]
     const savedDraft = drafts.current[nextBoss.id]
     setBossIndex(nextIndex)
@@ -179,21 +181,22 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
             {variableBosses.map((item, index) => {
               const done = progress.bossProgress.includes(item.id)
               const current = index === bossIndex
-              const titleVisible = current || (!done && index >= bossIndex && index < bossIndex + 3)
+              const unlocked = isMissionUnlocked(index, progress.bossProgress)
+              const sameBatch = Math.floor(index / missionBatchSize) === Math.floor(bossIndex / missionBatchSize)
+              const titleVisible = current || (!done && unlocked && sameBatch)
               return (
                 <button
                   key={item.id}
-                  disabled={busy}
-                  aria-label={`Boss ${item.id}: ${item.title}${done ? ', defeated' : ''}`}
+                  disabled={busy || !unlocked}
+                  aria-label={`Boss ${item.id}: ${item.title}${done ? ', defeated' : unlocked ? '' : ', locked'}`}
                   aria-pressed={current}
-                  className={`${current ? 'is-active' : ''} ${done ? 'is-done' : ''} ${titleVisible ? 'is-revealed' : 'is-mystery'}`}
+                  className={`${current ? 'is-active' : ''} ${done ? 'is-done' : ''} ${unlocked ? 'is-unlocked' : 'is-locked'} ${titleVisible ? 'is-revealed' : 'is-mystery'}`}
                   onClick={() => choose(index)}
                 >
                   <span className="boss-trail-dot" aria-hidden="true">
                     {done ? <Check /> : titleVisible ? String(item.id).padStart(2, '0') : mysteryEmoji[index % mysteryEmoji.length]}
                   </span>
                   <span className="boss-trail-copy">
-                    <small>{current ? 'NOW' : done ? 'CLEARED' : titleVisible ? `MISSION ${String(item.id).padStart(2, '0')}` : 'MYSTERY'}</small>
                     {titleVisible && <strong>{item.title}</strong>}
                   </span>
                 </button>
@@ -212,7 +215,7 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
             </div>
             <div className="boss-mission-nav">
               <button onClick={() => choose(bossIndex - 1)} disabled={busy || bossIndex === 0} aria-label="Previous mission"><ArrowLeft /></button>
-              <button onClick={() => choose(bossIndex + 1)} disabled={busy || bossIndex === variableBosses.length - 1} aria-label="Next mission"><ArrowRight /></button>
+              <button onClick={() => choose(bossIndex + 1)} disabled={busy || bossIndex === variableBosses.length - 1 || !isMissionUnlocked(bossIndex + 1, progress.bossProgress)} aria-label="Next mission"><ArrowRight /></button>
             </div>
           </article>
 
@@ -276,7 +279,7 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
                   {victory ? <Trophy /> : testRuns.some((test) => test.status === 'failed') ? <X /> : busy ? <LoaderCircle className="spin" /> : <Sparkles />}
                   <p>{result}</p>
                 </div>
-                {victory && bossIndex < variableBosses.length - 1 && <button className="boss-phone-next" onClick={() => choose(bossIndex + 1)}>NEXT MISSION <ArrowRight /></button>}
+                {victory && bossIndex < variableBosses.length - 1 && isMissionUnlocked(bossIndex + 1, progress.bossProgress) && <button className="boss-phone-next" onClick={() => choose(bossIndex + 1)}>NEXT MISSION <ArrowRight /></button>}
               </div>
             </div>
             <div className="boss-phone-home" />
@@ -285,6 +288,17 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
       </div>
     </ExperienceShell>
   )
+}
+
+function isMissionUnlocked(index: number, completed: number[]): boolean {
+  if (index < missionBatchSize) return true
+  const batchStart = Math.floor(index / missionBatchSize) * missionBatchSize
+  return variableBosses.slice(0, batchStart).every((mission) => completed.includes(mission.id))
+}
+
+function firstOpenMission(completed: number[]): number {
+  const next = variableBosses.findIndex((mission, index) => !completed.includes(mission.id) && isMissionUnlocked(index, completed))
+  return next === -1 ? variableBosses.length - 1 : next
 }
 
 function makeEmptyRuns(): TestRun[] {

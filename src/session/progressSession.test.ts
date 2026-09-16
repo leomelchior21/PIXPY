@@ -1,4 +1,4 @@
-import { completeActivity, createSession, emptyProgress, loadSession, resetActivityProgress, saveSession } from './progressSession'
+import { cleanUsername, completeActivity, createSession, emptyProgress, loadSession, resetActivityProgress, restoreProgress, saveSession } from './progressSession'
 import type { SessionProgress } from '../types'
 
 describe('session-only progress', () => {
@@ -10,6 +10,12 @@ describe('session-only progress', () => {
     expect(loadSession()?.name).toBe('Leo')
     expect(loadSession()?.completed).toEqual(['dino-variables'])
     expect(localStorage.length).toBe(0)
+  })
+
+  it('normalizes roster logins and restores cloud progress with the current identity', () => {
+    expect(cleanUsername(' João-Da Silva ')).toBe('joaodasilva')
+    const restored = restoreProgress('joaosilva', 'João Silva', { ...createSession('Old Name'), bossProgress: [1, 2, 3] })
+    expect(restored).toMatchObject({ username: 'joaosilva', name: 'João Silva', isTeacher: false, bossProgress: [1, 2, 3] })
   })
 
   it('requires both ten-question quizzes before keeping their completion marks', () => {

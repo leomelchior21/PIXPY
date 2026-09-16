@@ -19,6 +19,8 @@ export type AppRoute =
 
 export interface SessionProgress {
   name: string
+  username: string
+  isTeacher: boolean
   completed: ActivityId[]
   blackBoxLevels: number[]
   blackBoxQuizAnswers: number[]

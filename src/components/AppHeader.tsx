@@ -1,4 +1,4 @@
-import { Check, Home, List, X } from 'lucide-react'
+import { Check, Cloud, CloudOff, Home, List, LogOut, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { variableExperiences } from '../data/variables'
 import type { AppRoute, SessionProgress } from '../types'
@@ -7,10 +7,12 @@ import { Brand } from './Brand'
 interface AppHeaderProps {
   route: AppRoute
   progress: SessionProgress
+  syncState: 'saved' | 'saving' | 'offline'
   onNavigate: (route: AppRoute) => void
+  onLogout: () => void
 }
 
-export function AppHeader({ route, progress, onNavigate }: AppHeaderProps) {
+export function AppHeader({ route, progress, syncState, onNavigate, onLogout }: AppHeaderProps) {
   const [listOpen, setListOpen] = useState(false)
   const listRef = useRef<HTMLElement>(null)
   const toggleRef = useRef<HTMLButtonElement>(null)
@@ -41,8 +43,9 @@ export function AppHeader({ route, progress, onNavigate }: AppHeaderProps) {
         <button className={route === 'variables' || variableExperiences.some((item) => item.id === route) ? 'is-active' : ''} onClick={() => navigate('variables')}>Variables <span>{progress.completed.length}/7</span></button>
       </nav>
       <div className="header-actions">
-        <div className="student-chip"><span>PLAYING AS</span><strong>{progress.name}</strong></div>
+        <div className={`student-chip sync-${syncState}`}><span>{syncState === 'saving' ? 'SAVING…' : syncState === 'offline' ? 'SAVED ON DEVICE' : 'CLOUD SAVED'}</span><strong>{syncState === 'offline' ? <CloudOff /> : <Cloud />}{progress.name}</strong></div>
         <button ref={toggleRef} className={`quick-list-button ${listOpen ? 'is-active' : ''}`} onClick={() => setListOpen((value) => !value)} aria-label="Open Variables activity list" aria-expanded={listOpen} aria-controls="activity-list"><List size={21} /><span>Activities</span></button>
+        <button className="logout-button" onClick={onLogout} aria-label="Log out"><LogOut /></button>
       </div>
 
       {listOpen && (

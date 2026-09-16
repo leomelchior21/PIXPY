@@ -1,0 +1,1 @@
+-- The real classroom roster is loaded privately and is intentionally not kept in Git.

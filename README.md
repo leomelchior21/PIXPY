@@ -16,22 +16,24 @@ PixPy is not an LMS, a traditional course, a browser IDE, or a student-managemen
 - Interaction comes before explanation.
 - All student-facing text is short, accessible English.
 - Students manipulate valid Python rather than a PixPy-specific language.
-- Every activity is open; recommended order never becomes enforced progression.
+- Every main activity stays open; Final Boss missions use small three-at-a-time mastery gates.
 - Completion is lightweight: a simple `DONE` or check mark, with no global XP economy.
 - Strange values should create playful feedback, never freeze or crash the browser.
 - Core activities behave like one-screen apps and do not require document-level scrolling.
 
 The product succeeds when a student asks, “What happens if I change this?”
 
-## Student session
+## Classroom login and progress
 
-Entry asks only:
+Entry uses one simple roster login:
 
-> What should we call you?
+> firstnamelastname
 
-There are no passwords, accounts, classes, avatars, or profiles. The name exists only to personalize the current browser session.
+Students use their first and last names together, without spaces. The accepted roster lives in Supabase; emails, enrollment numbers, and other source-roster fields are not stored by PixPy.
 
-Progress is stored in `sessionStorage`, not `localStorage` or a cloud database. It survives navigation and accidental refreshes, but may disappear when the tab or browser session ends. That behavior is intentional.
+Progress is cached in `sessionStorage` for fast refresh recovery and synchronized to Supabase after each change. The browser uses only the project publishable key. Roster tables are private and protected by RLS; public database functions expose only login, progress-save, and teacher-summary operations.
+
+The teacher login `leleomaker` opens a roster dashboard with activity completion, Final Boss mission progress, last update, search, and summary totals.
 
 The app header has a **QUICK LIST** for jumping directly to any activity in the current group. It stays focused on navigation and contains no screenshot, print, or session-reset actions.
 
@@ -59,7 +61,7 @@ Variables is the first classroom-ready module. Its recommended sequence creates 
 6. **Build a Black Box** — now combine everything.
 7. **Final Bosses** — prove you can use it.
 
-Every experience is always selectable and replayable.
+Every Variables experience is selectable and replayable. Inside Final Bosses, missions unlock in groups of three so students prove one group before seeing the next.
 
 ### Dino Variables
 
@@ -97,7 +99,7 @@ Students edit a small input/process/output program and test it with multiple val
 
 ### Final Bosses
 
-Final Bosses contains approximately 12–15 compact programming challenges, shown one at a time or in a small stage grid. It covers arithmetic, quotient and remainder, temperature conversion, averages, fares, discounts, powers, and a student-created formula.
+Final Bosses contains 15 compact programming missions with a trail, focused editor, and three-test phone runner. Missions unlock three at a time: clearing the current three reveals the next group. It covers arithmetic, quotient and remainder, temperature conversion, averages, fares, discounts, powers, and a student-created formula.
 
 ## Experience shell
 
@@ -133,7 +135,7 @@ Pixel art supports the interaction instead of overwhelming it. Touch targets, ke
 - Pyodide or the existing browser Python worker when it remains reliable.
 - Canvas, DOM, or CSS chosen per experience rather than forced through one renderer.
 - Small reusable components such as `ExperienceShell`, `CodeEditor`, `PythonRunner`, `HintButton`, `RunButton`, and `PrintProgress`.
-- A tiny session layer for the student's name, completed activities, boss progress, and custom Black Box work.
+- A session and Supabase sync layer for the student's roster identity, completed activities, boss progress, and custom Black Box work.
 - Lazy-loaded experiences where that improves startup performance.
 
 Conceptual source structure:
@@ -170,15 +172,16 @@ Adapt this structure to the codebase when reuse produces a cleaner result; it is
 
 ## Current delivery
 
-The playground refactor includes:
+The playground includes:
 
-- simple name entry;
-- `sessionStorage` progress;
+- roster-based `firstnamelastname` login;
+- Supabase-backed progress with a local session cache;
+- a teacher progress dashboard;
 - the three-area home screen;
 - simplified navigation;
 - a reusable no-scroll experience shell;
 - all seven Variables experiences;
-- no Supabase, authentication, avatars, backend persistence, ranking, or global XP.
+- no passwords, avatars, ranking, or global XP.
 
 The working Dino canvas, safe value clamping, CodeMirror editor, and browser Python worker were preserved and simplified. Black Box, Input Machine, Memory Machine, Build a Black Box, and Final Bosses were built as new modular experiences.
 
@@ -204,7 +207,7 @@ npm install
 npm run dev
 ```
 
-PixPy requires no backend, account, database, or environment variables.
+PixPy connects to its classroom Supabase project with a browser-safe publishable key. Database schema changes live in `supabase/migrations` and can be deployed with the Supabase CLI.
 
 ## Quality checks
 
@@ -223,4 +226,4 @@ The viewport checker also checks the portrait rotation screen and runs touch and
 
 In a 45-minute class, a student should interact within 30 seconds, change Python within two minutes, cause something unexpected within five minutes, and understand at least one programming idea better within ten minutes.
 
-Everything is open. Everything can be replayed. Everything invites experimentation.
+Everything completed can be replayed. Every new mission invites experimentation.

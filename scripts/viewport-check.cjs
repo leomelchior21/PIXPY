@@ -44,6 +44,8 @@ fs.mkdirSync(outputDir, { recursive: true })
 
 const session = {
   name: 'Leo',
+  username: 'leo',
+  isTeacher: false,
   completed: [],
   blackBoxLevels: [],
   blackBoxQuizAnswers: [],
@@ -126,7 +128,7 @@ async function seedSession(send) {
   await send('Page.navigate', { url: appUrl })
   await waitFor(send, 'document.readyState === "complete"')
   await send('Runtime.evaluate', {
-    expression: `sessionStorage.setItem('pixpy.session.v2', ${JSON.stringify(JSON.stringify(session))})`,
+    expression: `sessionStorage.setItem('pixpy.session.v3', ${JSON.stringify(JSON.stringify(session))})`,
     returnByValue: true,
   })
   await send('Page.navigate', { url: `${appUrl}#/home` })
@@ -138,7 +140,7 @@ async function checkNameEntry(send, size) {
   await send('Emulation.setDeviceMetricsOverride', { width: size.width, height: size.height, deviceScaleFactor: 1, mobile: false })
   await send('Page.navigate', { url: appUrl })
   await waitFor(send, 'document.readyState === "complete"')
-  await send('Runtime.evaluate', { expression: `sessionStorage.removeItem('pixpy.session.v2')` })
+  await send('Runtime.evaluate', { expression: `sessionStorage.removeItem('pixpy.session.v3')` })
   await send('Page.reload', { ignoreCache: true })
   await waitFor(send, 'Boolean(document.querySelector(".name-screen"))')
   await sleep(700)
@@ -153,13 +155,44 @@ async function checkNameEntry(send, size) {
         rootInsideViewport: rect.top >= -1 && rect.bottom <= innerHeight + 1,
         formVisible: ${visibleRectExpression('.name-card')},
         inputVisible: ${visibleRectExpression('#student-name')},
-        placeholderCorrect: input?.placeholder === 'insert your name',
+        placeholderCorrect: input?.placeholder === 'firstnamelastname',
       };
     })()`,
     returnByValue: true,
   })
   const screenshot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
   const screenshotPath = path.join(outputDir, `name-${size.name}.png`)
+  fs.writeFileSync(screenshotPath, Buffer.from(screenshot.data, 'base64'))
+  return { ...result.result.value, screenshotPath }
+}
+
+async function checkTeacherDashboard(send, size) {
+  const teacherSession = { ...session, name: 'Leo', username: 'leleomaker', isTeacher: true }
+  await send('Emulation.setDeviceMetricsOverride', { width: size.width, height: size.height, deviceScaleFactor: 1, mobile: false })
+  await send('Page.navigate', { url: appUrl })
+  await waitFor(send, 'document.readyState === "complete"')
+  await send('Runtime.evaluate', { expression: `sessionStorage.setItem('pixpy.session.v3', ${JSON.stringify(JSON.stringify(teacherSession))})` })
+  await send('Page.reload', { ignoreCache: true })
+  await waitFor(send, 'Boolean(document.querySelector(".teacher-dashboard"))')
+  await waitFor(send, 'document.querySelectorAll(".teacher-table-wrap tbody tr").length >= 80', 15000)
+  const result = await send('Runtime.evaluate', {
+    expression: `(() => {
+      const root = document.querySelector('.teacher-dashboard');
+      const rect = root.getBoundingClientRect();
+      return {
+        size: ${JSON.stringify(size.name)},
+        hasDocumentVerticalScroll: document.documentElement.scrollHeight > innerHeight + 1 || document.body.scrollHeight > innerHeight + 1,
+        rootInsideViewport: rect.top >= -1 && rect.bottom <= innerHeight + 1,
+        headerVisible: ${visibleRectExpression('.teacher-header')},
+        summaryVisible: ${visibleRectExpression('.teacher-summary')},
+        rosterVisible: ${visibleRectExpression('.teacher-roster')},
+        rosterCount: document.querySelectorAll('.teacher-table-wrap tbody tr').length,
+      };
+    })()`,
+    returnByValue: true,
+  })
+  const screenshot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+  const screenshotPath = path.join(outputDir, `teacher-${size.name}.png`)
   fs.writeFileSync(screenshotPath, Buffer.from(screenshot.data, 'base64'))
   return { ...result.result.value, screenshotPath }
 }
@@ -273,7 +306,7 @@ async function checkPrintView(send) {
 
 async function checkMemoryQuiz(send, size) {
   await send('Emulation.setDeviceMetricsOverride', { width: size.width, height: size.height, deviceScaleFactor: 1, mobile: false })
-  await send('Runtime.evaluate', { expression: `sessionStorage.setItem('pixpy.session.v2', ${JSON.stringify(JSON.stringify(session))})` })
+  await send('Runtime.evaluate', { expression: `sessionStorage.setItem('pixpy.session.v3', ${JSON.stringify(JSON.stringify(session))})` })
   await send('Page.navigate', { url: `${appUrl}#/memory-machine` })
   await send('Page.reload', { ignoreCache: true })
   await sleep(300)
@@ -348,7 +381,7 @@ async function checkMemoryQuiz(send, size) {
 async function checkBlackBoxQuiz(send, size) {
   const quizSession = { ...session, blackBoxLevels: [0, 1, 2], blackBoxQuizAnswers: [] }
   await send('Emulation.setDeviceMetricsOverride', { width: size.width, height: size.height, deviceScaleFactor: 1, mobile: false })
-  await send('Runtime.evaluate', { expression: `sessionStorage.setItem('pixpy.session.v2', ${JSON.stringify(JSON.stringify(quizSession))})` })
+  await send('Runtime.evaluate', { expression: `sessionStorage.setItem('pixpy.session.v3', ${JSON.stringify(JSON.stringify(quizSession))})` })
   await send('Page.reload', { ignoreCache: true })
   await sleep(300)
   await waitFor(send, 'document.readyState === "complete"')
@@ -591,6 +624,8 @@ async function main() {
     }
     const nameChecks = []
     for (const size of targetSizes) nameChecks.push(await checkNameEntry(send, size))
+    const teacherChecks = []
+    for (const size of targetSizes.slice(0, 2)) teacherChecks.push(await checkTeacherDashboard(send, size))
     await seedSession(send)
     const metrics = []
     for (const size of targetSizes) for (const routeConfig of routes) metrics.push(await collectRouteMetrics(send, size, routeConfig))
@@ -606,10 +641,11 @@ async function main() {
     const quizFailures = quizChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.quizVisible || !item.codeVisible || !item.contentFits || !item.optionsClearFeedback || item.optionCount !== 3 || !item.advanced)
     const blackBoxQuizFailures = blackBoxQuizChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.quizVisible || !item.codeVisible || !item.contentFits || !item.optionsClearFeedback || item.optionCount !== 4 || !item.advanced)
     const nameFailures = nameChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.formVisible || !item.inputVisible || !item.placeholderCorrect)
+    const teacherFailures = teacherChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.headerVisible || !item.summaryVisible || !item.rosterVisible || item.rosterCount < 80)
     const printFailed = !printCheck.printVisible || !printCheck.websiteHidden || !printCheck.studentVisible || !printCheck.progressVisible || printCheck.pdfBytes < 1000
     const interactionFailures = interactionChecks.filter((item) => !item.passed)
-    console.log(JSON.stringify({ outputDir, checked: metrics.length + quizChecks.length + blackBoxQuizChecks.length + nameChecks.length, interactionChecks: interactionChecks.length, failures, quizFailures, blackBoxQuizFailures, nameFailures, interactionFailures, printCheck }, null, 2))
-    if (failures.length || quizFailures.length || blackBoxQuizFailures.length || nameFailures.length || interactionFailures.length || printFailed) process.exitCode = 1
+    console.log(JSON.stringify({ outputDir, checked: metrics.length + quizChecks.length + blackBoxQuizChecks.length + nameChecks.length + teacherChecks.length, interactionChecks: interactionChecks.length, failures, quizFailures, blackBoxQuizFailures, nameFailures, teacherFailures, interactionFailures, printCheck }, null, 2))
+    if (failures.length || quizFailures.length || blackBoxQuizFailures.length || nameFailures.length || teacherFailures.length || interactionFailures.length || printFailed) process.exitCode = 1
   } finally {
     if (!browser.killed) browser.kill()
     await Promise.race([new Promise((resolve) => browser.once('exit', resolve)), sleep(2500)])

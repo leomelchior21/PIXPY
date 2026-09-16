@@ -2,10 +2,12 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { AppHeader } from './components/AppHeader'
 import { PrintProgress } from './components/PrintProgress'
 import { activityIds, type AppRoute, type SessionProgress } from './types'
-import { createSession, loadSession, saveSession } from './session/progressSession'
+import { clearSession, createSession, loadSession, restoreProgress, saveSession } from './session/progressSession'
+import { loginToClassroom, saveClassroomProgress } from './lib/classroomCloud'
 import { ComingSoonScreen } from './screens/ComingSoonScreen'
 import { NameEntryScreen } from './screens/NameEntryScreen'
 import { PlaygroundHome } from './screens/PlaygroundHome'
+import { TeacherDashboard } from './screens/TeacherDashboard'
 import { VariablesHome } from './screens/VariablesHome'
 
 const DinoVariables = lazy(() => import('./experiences/variables/DinoVariables').then((module) => ({ default: module.DinoVariables })))
@@ -26,6 +28,7 @@ function routeFromHash(): AppRoute {
 export default function App() {
   const [progress, setProgress] = useState<SessionProgress | null>(() => loadSession())
   const [route, setRoute] = useState<AppRoute>(routeFromHash)
+  const [syncState, setSyncState] = useState<'saved' | 'saving' | 'offline'>('saved')
 
   useEffect(() => {
     const onHashChange = () => setRoute(routeFromHash())
@@ -34,7 +37,15 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (progress) saveSession(progress)
+    if (!progress) return
+    saveSession(progress)
+    if (progress.isTeacher) return
+    setSyncState('saving')
+    let active = true
+    void saveClassroomProgress(progress)
+      .then(() => { if (active) setSyncState('saved') })
+      .catch(() => { if (active) setSyncState('offline') })
+    return () => { active = false }
   }, [progress])
 
   const navigate = (next: AppRoute) => {
@@ -42,19 +53,30 @@ export default function App() {
     if (route !== next) window.history.pushState(null, '', `#/${next}`)
   }
 
-  const start = (name: string) => {
-    const next = createSession(name)
+  const start = async (username: string) => {
+    const login = await loginToClassroom(username)
+    const next = login.isTeacher
+      ? createSession(login.displayName, login.username, true)
+      : restoreProgress(login.username, login.displayName, login.progress)
     setProgress(next)
     navigate('home')
   }
 
+  const logout = () => {
+    clearSession()
+    setProgress(null)
+    setSyncState('saved')
+    navigate('home')
+  }
+
   if (!progress) return <NameEntryScreen onStart={start} />
+  if (progress.isTeacher) return <TeacherDashboard username={progress.username} onLogout={logout} />
 
   const experienceProps = { progress, onProgress: setProgress, onBack: () => navigate('variables') }
 
   return (
     <div className={`app-shell route-${route}`}>
-      <AppHeader route={route} progress={progress} onNavigate={navigate} />
+      <AppHeader route={route} progress={progress} syncState={syncState} onNavigate={navigate} onLogout={logout} />
       <div className="app-content">
         <Suspense fallback={<div className="route-loader" role="status"><span /> Loading experiment...</div>}>
           {route === 'home' && <PlaygroundHome progress={progress} onNavigate={navigate} />}
