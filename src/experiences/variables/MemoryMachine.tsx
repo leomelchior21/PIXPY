@@ -126,7 +126,7 @@ function ModeIntro({ mode, index, done, onBack, onStart }: { mode: MemoryMode; i
   return <section className="memory-mode-intro">
     <div className="memory-mode-count"><span>{String(index + 1).padStart(2, '0')}</span><i /><small>{modes.length}</small></div>
     <div className="memory-mode-copy"><span className="memory-story-kicker">{done ? 'READY TO REVISIT' : `MEMORY MOVE ${index + 1}`}</span><h2>{mode.title}</h2><p>{mode.intro}</p><code>{mode.formula}</code></div>
-    <div className="memory-mode-intro-bulb"><Lightbulb /><i /><i /><i /></div>
+    <div className="memory-mode-intro-preview" aria-label="Code flows to memory, then output"><span><Code2 /><b>CODE</b></span><ArrowRight /><span className="is-memory"><MonitorUp /><b>MEMORY</b></span><ArrowRight /><span><MonitorUp /><b>OUTPUT</b></span></div>
     <div className="memory-story-actions"><button className="memory-story-back" onClick={onBack}><ArrowLeft /> BACK</button><button className="story-next memory-story-next is-ready" onClick={onStart}>SEE IT MOVE <ArrowRight /></button></div>
   </section>
 }
@@ -165,6 +165,7 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
   const [memory, setMemory] = useState<Record<string, string>>({})
   const [output, setOutput] = useState('')
   const [activeLine, setActiveLine] = useState<number | null>(null)
+  const [lineCursor, setLineCursor] = useState(0)
   const [phase, setPhase] = useState<'idle' | 'memory' | 'output'>('idle')
   const [running, setRunning] = useState(false)
   const [ranModes, setRanModes] = useState<string[]>([])
@@ -180,7 +181,7 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
 
   useEffect(() => () => { runVersion.current += 1 }, [])
 
-  const clearStage = () => { runVersion.current += 1; setRunning(false); setActiveLine(null); setPhase('idle'); setMemory({}); setOutput(''); setError('') }
+  const clearStage = () => { runVersion.current += 1; setRunning(false); setActiveLine(null); setLineCursor(0); setPhase('idle'); setMemory({}); setOutput(''); setError('') }
   const openMode = (index: number) => { clearStage(); setModeIndex(index); setQuizOpen(false); setIntroOpen(true) }
   const resetCurrent = () => { clearStage(); setDrafts((current) => ({ ...current, [mode.id]: mode.starter })); setInputs((current) => ({ ...current, [mode.id]: '' })) }
   const resetLevel = () => {
@@ -189,29 +190,33 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
     onProgress(resetActivityProgress(progress, 'memory-machine'))
   }
 
-  const runCode = async () => {
+  const executeLine = async () => {
     if (running) return
     if (mode.input && !input.trim()) { setError('Type a value first. Python is waiting for you.'); return }
-    const version = ++runVersion.current
     const lines = code.split('\n')
-    setRunning(true); setError(''); setMemory({}); setOutput('')
+    if (lineCursor >= lines.length) return
+    const version = ++runVersion.current
+    const index = lineCursor
+    const line = lines[index].trim()
+    if (index === 0) { setMemory({}); setOutput('') }
+    setRunning(true); setError(''); setActiveLine(index + 1)
+    setPhase(line.startsWith('print(') ? 'output' : line.includes('=') ? 'memory' : 'idle')
     try {
-      for (let index = 0; index < lines.length; index += 1) {
-        if (version !== runVersion.current) return
-        const line = lines[index].trim()
-        setActiveLine(index + 1); setPhase(line.startsWith('print(') ? 'output' : 'memory')
-        const result = await pythonRunner.runScript(lines.slice(0, index + 1).join('\n'), mode.input ? [input] : [])
-        if (version !== runVersion.current) return
-        setMemory(Object.fromEntries(Object.entries(result.variables).map(([name, value]) => [name, String(value)]))); setOutput(result.stdout)
-        await wait(560)
-      }
+      const result = await pythonRunner.runScript(lines.slice(0, index + 1).join('\n'), mode.input ? [input] : [])
       if (version !== runVersion.current) return
-      setRanModes((current) => current.includes(mode.id) ? current : [...current, mode.id])
-      if (code !== mode.starter) setTestedModes((current) => current.includes(mode.id) ? current : [...current, mode.id])
+      setMemory(Object.fromEntries(Object.entries(result.variables).map(([name, value]) => [name, String(value)]))); setOutput(result.stdout)
+      await wait(460)
+      if (version !== runVersion.current) return
+      const nextLine = index + 1
+      setLineCursor(nextLine)
+      if (nextLine === lines.length) {
+        setRanModes((current) => current.includes(mode.id) ? current : [...current, mode.id])
+        if (code !== mode.starter) setTestedModes((current) => current.includes(mode.id) ? current : [...current, mode.id])
+      }
     } catch (caught) {
       if (version === runVersion.current) setError(caught instanceof Error ? caught.message : 'Python could not run that code.')
     } finally {
-      if (version === runVersion.current) { setRunning(false); setActiveLine(null); setPhase('idle') }
+      if (version === runVersion.current) setRunning(false)
     }
   }
 
@@ -223,33 +228,47 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
     if (modeIndex === modes.length - 1) { setQuizOpen(false); onBack() } else openMode(modeIndex + 1)
   }
 
-  const coach = !hasRun ? (mode.input && !input.trim() ? 'input' : 'run') : !tested ? 'code' : !running ? 'quiz' : null
+  const lines = code.split('\n')
+  const programComplete = lineCursor >= lines.length
+  const coach = !hasRun ? (mode.input && !input.trim() ? 'input' : 'run') : !tested ? (code === mode.starter ? 'code' : 'rerun') : !running ? 'quiz' : null
+  const coachTitle = coach === 'quiz' ? 'READY FOR THE NEXT STEP' : coach === 'rerun' ? 'TEST YOUR CHANGE' : coach === 'run' ? (lineCursor ? 'KEEP THE FLOW MOVING' : 'START THE FLOW') : coach === 'input' ? 'YOU GO FIRST' : 'TRY THIS'
+  const coachCopy = coach === 'quiz' ? 'The value made the whole trip. Open the Quick Quiz.' : coach === 'rerun' ? `Execute line ${lineCursor + 1}. Follow your changed value.` : coach === 'run' ? `Execute line ${lineCursor + 1}. Watch where that line sends the value.` : coach === 'input' ? 'Type a value here. Then Python can remember it.' : mode.mission
 
   return <ExperienceShell order="05" title="Memory Machine" question="Where does a variable's value go?" accent="#a994ff" hints={['Watch the glowing code line.', 'The middle window shows what Python remembers now.', 'print() sends a remembered value to output.']} completed={completed} objective="Send values from code to memory, then reveal them in output." onBack={onBack} onReset={resetLevel} className="memory-experience memory-story-experience">
     {storyOpen ? <MemoryStory onDone={() => { setStoryOpen(false); setIntroOpen(true) }} /> : quizOpen ? <MemoryQuiz mode={mode} index={modeIndex} onBack={() => setQuizOpen(false)} onFinish={finishQuiz} /> : introOpen ? <ModeIntro mode={mode} index={modeIndex} done={progress.memoryExamples.includes(mode.id)} onBack={() => modeIndex === 0 ? setStoryOpen(true) : openMode(modeIndex - 1)} onStart={() => setIntroOpen(false)} /> :
       <section className={`memory-lab memory-lab--${phase} ${running ? 'is-running' : ''}`}>
         <div className="memory-lab-nav"><span>MEMORY MOVE {modeIndex + 1} / {modes.length}</span><button onClick={() => modeIndex === 0 ? setStoryOpen(true) : openMode(modeIndex - 1)}><ArrowLeft /> BACK</button><button onClick={() => setIntroOpen(true)}>VIEW INTRO</button></div>
-        <div className="memory-desktop">
-          <section className="memory-desktop-window memory-code-window">
+        <div className="memory-action-map">
+          <svg className="memory-flow-paths" viewBox="0 0 1000 520" preserveAspectRatio="none" aria-hidden="true">
+            <defs><marker id="memory-flow-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker></defs>
+            <path className="memory-flow-path memory-flow-path--store" d="M 275 155 C 145 175 145 280 245 330" markerEnd="url(#memory-flow-arrow)" />
+            <path className="memory-flow-path memory-flow-path--show" d="M 355 410 C 500 486 650 474 735 350" markerEnd="url(#memory-flow-arrow)" />
+            <text className="memory-flow-label memory-flow-label--store" x="150" y="235">STORE</text>
+            <text className="memory-flow-label memory-flow-label--show" x="540" y="462">SHOW</text>
+            {phase === 'memory' && <circle className="memory-flow-dot" r="7"><animateMotion dur="0.8s" repeatCount="indefinite" path="M 275 155 C 145 175 145 280 245 330" /></circle>}
+            {phase === 'output' && <circle className="memory-flow-dot" r="7"><animateMotion dur="0.9s" repeatCount="indefinite" path="M 355 410 C 500 486 650 474 735 350" /></circle>}
+          </svg>
+
+          <section className={`memory-desktop-window memory-code-window memory-code-node ${mode.input ? 'has-input' : ''}`}>
             <header><span><Code2 /> CODE</span><small>REAL PYTHON</small></header>
-            <div className="memory-editor-wrap"><CodeEditor value={code} onChange={(value) => { setDrafts((current) => ({ ...current, [mode.id]: value })); setError('') }} label={`${mode.label} Python code`} activeLine={activeLine} attentionLine={coach === 'code' ? mode.editLine : null} /></div>
-            {coach === 'code' && <aside className="memory-try-popup memory-try-panel" role="status"><Sparkles /><div><strong>TRY THIS</strong><p>{mode.mission}</p></div></aside>}
-            {mode.input && <label className={`memory-input-control memory-input-control--new ${coach === 'input' ? 'needs-attention' : ''}`}>{mode.input.label}<div><input type="number" value={input} placeholder={mode.input.placeholder} onChange={(event) => { setInputs((current) => ({ ...current, [mode.id]: event.target.value })); setError('') }} />{coach === 'input' && <span>TYPE HERE FIRST</span>}</div></label>}
+            <div className="memory-editor-wrap"><CodeEditor value={code} onChange={(value) => { setDrafts((current) => ({ ...current, [mode.id]: value })); runVersion.current += 1; setRunning(false); setLineCursor(0); setActiveLine(null); setPhase('idle'); setMemory({}); setOutput(''); setError('') }} label={`${mode.label} Python code`} activeLine={activeLine} attentionLine={coach === 'code' ? mode.editLine : null} /></div>
+            {mode.input && <label className={`memory-input-control memory-input-control--new ${coach === 'input' ? 'needs-attention' : ''}`}>{mode.input.label}<div><input type="number" value={input} placeholder={mode.input.placeholder} onChange={(event) => { setInputs((current) => ({ ...current, [mode.id]: event.target.value })); runVersion.current += 1; setRunning(false); setLineCursor(0); setActiveLine(null); setPhase('idle'); setMemory({}); setOutput(''); setError('') }} />{coach === 'input' && <span>TYPE HERE FIRST</span>}</div></label>}
             {error && <p className="memory-run-error" role="alert">{error}</p>}
-            <div className="memory-run-actions"><button className="secondary-action" onClick={resetCurrent}><RotateCcw /> RESET</button><button className={`primary-action memory-run ${coach === 'run' || (hasRun && code !== mode.starter && !tested) ? 'needs-attention' : ''}`} disabled={running} onClick={runCode}>{running ? <><i /> RUNNING LINE {activeLine}</> : <><Play fill="currentColor" /> RUN CODE</>}</button></div>
+            <div className="memory-run-actions"><button className="secondary-action" onClick={resetCurrent}><RotateCcw /> RESET</button><button className={`primary-action memory-run ${coach === 'run' || coach === 'rerun' ? 'needs-attention' : ''}`} disabled={running || programComplete} onClick={executeLine}>{running ? <><i /> EXECUTING LINE {activeLine}</> : programComplete ? <><Check /> ALL LINES RAN</> : <><Play fill="currentColor" /> EXECUTE LINE {lineCursor + 1}</>}</button></div>
           </section>
 
-          <div className={`memory-transfer memory-transfer--store ${phase === 'memory' ? 'is-active' : ''}`} aria-hidden="true"><small>STORE</small><span><i /><i /><i /><ArrowRight /></span></div>
-
-          <section className={`memory-desktop-window memory-memory-window ${Object.keys(memory).length ? 'has-value' : ''} ${phase === 'memory' ? 'is-receiving' : ''}`}>
-            <header><span><Lightbulb /> MEMORY</span><small>WHAT PYTHON KNOWS</small></header>
-            <div className="memory-value-screen">{Object.keys(memory).length ? Object.entries(memory).map(([name, value]) => <article key={name}><small>NAME</small><b>{name}</b><i>=</i><small>VALUE</small><strong>{value}</strong></article>) : <div className="memory-empty"><Lightbulb /><b>EMPTY</b><span>Run an assignment.</span></div>}</div>
-            <footer><i />{phase === 'memory' ? 'STORING NOW…' : Object.keys(memory).length ? 'VALUE REMEMBERED' : 'WAITING FOR CODE'}</footer>
+          <section className={`memory-monitor-node ${Object.keys(memory).length ? 'has-value' : ''} ${phase === 'memory' ? 'is-receiving' : ''}`}>
+            <div className="memory-monitor-shell">
+              <header><span><Lightbulb /> WORKING MEMORY</span><small>{phase === 'memory' ? 'RECEIVING' : 'LIVE'}</small></header>
+              <div className="memory-monitor-screen">{Object.keys(memory).length ? Object.entries(memory).map(([name, value]) => <article key={name}><small>VARIABLE</small><b>{name}</b><i>=</i><small>CURRENT VALUE</small><strong>{value}</strong></article>) : <div className="memory-monitor-empty"><Lightbulb /><b>EMPTY MEMORY</b><span>Run an assignment to store a value.</span></div>}</div>
+              <footer><i />{phase === 'memory' ? 'STORING THE NEW VALUE…' : Object.keys(memory).length ? 'PYTHON REMEMBERS THIS' : 'WAITING FOR CODE'}</footer>
+            </div>
+            <div className="memory-monitor-stand" aria-hidden="true"><i /><span /></div>
           </section>
 
-          <div className={`memory-transfer memory-transfer--show ${phase === 'output' ? 'is-active' : ''}`} aria-hidden="true"><small>SHOW</small><span><i /><i /><i /><ArrowRight /></span></div>
+          <section className={`memory-desktop-window memory-output-window memory-output-node ${phase === 'output' ? 'is-receiving' : ''}`}><header><span><MonitorUp /> OUTPUT</span><small>WHAT PYTHON SHOWS</small></header><pre className={output ? 'has-output' : 'is-empty'}>{output || 'Nothing printed yet.'}</pre><p>{tested ? 'You changed the code and traced the new value.' : hasRun ? 'Now change the highlighted line in the code.' : 'Run the code to wake up the machine.'}</p><button className={`memory-quiz-call ${coach === 'quiz' ? 'is-ready' : ''}`} disabled={!tested || running} onClick={() => setQuizOpen(true)}>{tested ? 'QUICK QUIZ' : 'EXPERIMENT FIRST'} <ArrowRight /></button></section>
 
-          <section className={`memory-desktop-window memory-output-window ${phase === 'output' ? 'is-receiving' : ''}`}><header><span><MonitorUp /> OUTPUT</span><small>WHAT PYTHON SHOWS</small></header><pre>{output || 'Nothing printed yet.'}</pre><p>{tested ? 'You changed the code and traced the new value.' : hasRun ? 'Now change the highlighted line in the code.' : 'Run the code to wake up the machine.'}</p><button className={`memory-quiz-call ${coach === 'quiz' ? 'is-ready' : ''}`} disabled={!tested || running} onClick={() => setQuizOpen(true)}>{tested ? 'QUICK QUIZ' : 'EXPERIMENT FIRST'} <ArrowRight /></button></section>
+          {coach && !running && <aside className={`memory-try-popup memory-flow-coach memory-flow-coach--${coach}`} role="status"><Sparkles /><div><strong>{coachTitle}</strong><p>{coachCopy}</p></div></aside>}
         </div>
       </section>}
   </ExperienceShell>

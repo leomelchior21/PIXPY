@@ -128,7 +128,10 @@ it('traces code through memory, requires an experiment, and opens a three-questi
   fireEvent.click(screen.getByRole('button', { name: /see it move/i }))
 
   vi.useFakeTimers()
-  fireEvent.click(screen.getByRole('button', { name: /run code/i }))
+  fireEvent.click(screen.getByRole('button', { name: /execute line 1/i }))
+  await act(async () => vi.runAllTimersAsync())
+  expect(screen.getByRole('button', { name: /execute line 2/i })).toBeEnabled()
+  fireEvent.click(screen.getByRole('button', { name: /execute line 2/i }))
   await act(async () => vi.runAllTimersAsync())
   vi.useRealTimers()
   expect(screen.getByText('TRY THIS')).toBeInTheDocument()
@@ -136,7 +139,9 @@ it('traces code through memory, requires an experiment, and opens a three-questi
 
   fireEvent.change(screen.getByLabelText('Python code editor'), { target: { value: 'x = 9  # Try another number\nprint(x)' } })
   vi.useFakeTimers()
-  fireEvent.click(screen.getByRole('button', { name: /run code/i }))
+  fireEvent.click(screen.getByRole('button', { name: /execute line 1/i }))
+  await act(async () => vi.runAllTimersAsync())
+  fireEvent.click(screen.getByRole('button', { name: /execute line 2/i }))
   await act(async () => vi.runAllTimersAsync())
   vi.useRealTimers()
 

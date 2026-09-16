@@ -89,7 +89,7 @@ Four chapters—Raw Input, Double, Ten More, and Age Machine—each begin with a
 
 ### Memory Machine
 
-A three-screen visual prologue introduces variables as named spots in Python's memory. Five sequential chapters—Create, Change, Two Values, Reuse, and Input Memory—then place editable code, a clear working-memory window, and output in one balanced desktop. Code lines illuminate as they run: assignments travel through the Store lane into memory and `print()` sends the remembered value through the Show lane to output. Each chapter asks the student to change real Python, test the new value, and complete a three-question full-screen checkpoint.
+A three-screen visual prologue introduces variables as named spots in Python's memory. Five sequential chapters—Create, Change, Two Values, Reuse, and Input Memory—then arrange editable code at the top, a monitor-style working memory at bottom-left, and output at bottom-right. Students execute one code line per click: assignment lines activate a curved Store path into the monitor, while `print()` activates the Show path to output. A pinned coach moves beside the current action without covering code, then points to the quiz when the value completes its trip. Each chapter ends with a three-question full-screen checkpoint.
 
 ### Build a Black Box
 
@@ -188,7 +188,7 @@ The Variables collection now has readable experiment previews, larger code and t
 
 - **Input Machine:** move through the age demo and prediction story, send with Enter, edit real Python beside a phone-style output, reset the active machine, keep drafts when switching, and see distinct input, output, and error states.
 - **Black Box:** keep clues after a wrong guess, inspect the revealed Python, and revisit the boxes after unlocking the quiz.
-- **Memory Machine:** choose a value in the visual intro, trace highlighted code across the Code → Memory → Output desktop, edit real Python, and complete a short checkpoint after each chapter.
+- **Memory Machine:** choose a value in the visual intro, trace it from top-center code through a live memory monitor to output, follow the moving coach, edit real Python, and complete a short checkpoint after each chapter.
 - **Both quizzes:** read feedback at your own pace and press Next to continue.
 - **Build a Black Box:** changing the rule clears old clues; two different inputs must test the same rule. Classmate mode keeps the code hidden while the machine remains usable.
 - **Final Bosses:** named challenge buttons, reset controls, readable result feedback, and drafts that survive switching challenges within the activity.
