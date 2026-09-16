@@ -62,11 +62,20 @@ describe('PixPy classroom session', () => {
     expect(screen.queryByLabelText('Enter your PixPy login')).not.toBeInTheDocument()
   })
 
-  it('opens the teacher progress view for leleomaker', async () => {
+  it('gives the teacher both the progress dashboard and the complete PixPy site', async () => {
     const user = userEvent.setup()
     render(<App />)
     await user.type(screen.getByLabelText('Enter your PixPy login'), 'leleomaker')
     await user.click(screen.getByRole('button', { name: /log in to pixpy/i }))
+    expect(await screen.findByRole('heading', { name: 'Class progress' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /dashboard/i })).toHaveAttribute('aria-current', 'page')
+
+    await user.click(screen.getByRole('button', { name: /explore/i }))
+    expect(await screen.findByRole('heading', { name: /ready, leo/i })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Open Variables' }))
+    expect(await screen.findByRole('heading', { name: 'Variables' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /dashboard/i }))
     expect(await screen.findByRole('heading', { name: 'Class progress' })).toBeInTheDocument()
   })
 })

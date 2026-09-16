@@ -11,7 +11,7 @@ from pypdf import PdfReader
 
 
 ROW = re.compile(
-    r"^EF\s+(7[A-Z])\s+\d+\s+(.+?)\s+(?:amarelo|branco|\?)\s+\d+\s+\S+@\S+\s*$",
+    r"^EF\s+(7[A-Z])\s+\d+\s+(.+?)\s+(amarelo|branco|\?)\s+\d+\s+\S+@\S+\s*$",
     re.IGNORECASE,
 )
 
@@ -45,20 +45,21 @@ def main() -> None:
 
     source = Path(sys.argv[1]).resolve()
     target = Path(__file__).resolve().parents[1] / "supabase" / "roster.seed.local.sql"
-    rows: list[tuple[str, str, str]] = []
+    rows: list[tuple[str, str, str, str | None]] = []
 
     for page in PdfReader(source).pages:
         for line in (page.extract_text() or "").splitlines():
             match = ROW.match(line.strip())
             if not match:
                 continue
-            class_name, full_name = match.groups()
+            class_name, full_name, source_group = match.groups()
             parts = full_name.split()
             access_id = ascii_token(parts[0] + parts[-1])
             display_name = f"{parts[0].title()} {ascii_token(parts[-1])[:1].upper()}."
-            rows.append((access_id, display_name, class_name.upper()))
+            group_name = {"amarelo": "yellow", "branco": "white"}.get(source_group.lower())
+            rows.append((access_id, display_name, class_name[-1].upper(), group_name))
 
-    duplicates = sorted({access for access, _, _ in rows if sum(row[0] == access for row in rows) > 1})
+    duplicates = sorted({access for access, _, _, _ in rows if sum(row[0] == access for row in rows) > 1})
     if duplicates:
         raise SystemExit(f"Duplicate access IDs need manual review: {', '.join(duplicates)}")
     if not rows:
@@ -68,8 +69,8 @@ def main() -> None:
         "-- PRIVATE LOCAL FILE. DO NOT COMMIT.",
         "begin;",
         *[
-            f"select private.pixpy_seed_student({sql_text(access)}, {sql_text(display)}, {sql_text(class_name)});"
-            for access, display, class_name in rows
+            f"select private.pixpy_seed_student({sql_text(access)}, {sql_text(display)}, {sql_text(class_name)}, {sql_text(group_name) if group_name else 'null'});"
+            for access, display, class_name, group_name in rows
         ],
         "commit;",
         "",

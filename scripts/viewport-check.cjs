@@ -169,7 +169,7 @@ async function checkNameEntry(send, size) {
 async function checkTeacherDashboard(send, size) {
   const teacherSession = { ...session, name: 'Leo', username: 'leleomaker', isTeacher: true }
   await send('Emulation.setDeviceMetricsOverride', { width: size.width, height: size.height, deviceScaleFactor: 1, mobile: false })
-  await send('Page.navigate', { url: appUrl })
+  await send('Page.navigate', { url: `${appUrl}#/teacher` })
   await waitFor(send, 'document.readyState === "complete"')
   await send('Runtime.evaluate', { expression: `sessionStorage.setItem('pixpy.session.v3', ${JSON.stringify(JSON.stringify(teacherSession))})` })
   await send('Page.reload', { ignoreCache: true })
@@ -185,6 +185,7 @@ async function checkTeacherDashboard(send, size) {
         rootInsideViewport: rect.top >= -1 && rect.bottom <= innerHeight + 1,
         headerVisible: ${visibleRectExpression('.teacher-header')},
         summaryVisible: ${visibleRectExpression('.teacher-summary')},
+        cohortsVisible: ${visibleRectExpression('.teacher-cohorts')},
         rosterVisible: ${visibleRectExpression('.teacher-roster')},
         rosterCount: document.querySelectorAll('.teacher-table-wrap tbody tr').length,
       };
@@ -641,7 +642,7 @@ async function main() {
     const quizFailures = quizChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.quizVisible || !item.codeVisible || !item.contentFits || !item.optionsClearFeedback || item.optionCount !== 3 || !item.advanced)
     const blackBoxQuizFailures = blackBoxQuizChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.quizVisible || !item.codeVisible || !item.contentFits || !item.optionsClearFeedback || item.optionCount !== 4 || !item.advanced)
     const nameFailures = nameChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.formVisible || !item.inputVisible || !item.placeholderCorrect)
-    const teacherFailures = teacherChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.headerVisible || !item.summaryVisible || !item.rosterVisible || item.rosterCount < 80)
+    const teacherFailures = teacherChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.headerVisible || !item.summaryVisible || !item.cohortsVisible || !item.rosterVisible || item.rosterCount < 80)
     const printFailed = !printCheck.printVisible || !printCheck.websiteHidden || !printCheck.studentVisible || !printCheck.progressVisible || printCheck.pdfBytes < 1000
     const interactionFailures = interactionChecks.filter((item) => !item.passed)
     console.log(JSON.stringify({ outputDir, checked: metrics.length + quizChecks.length + blackBoxQuizChecks.length + nameChecks.length + teacherChecks.length, interactionChecks: interactionChecks.length, failures, quizFailures, blackBoxQuizFailures, nameFailures, teacherFailures, interactionFailures, printCheck }, null, 2))

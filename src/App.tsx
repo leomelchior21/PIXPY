@@ -18,7 +18,7 @@ const MemoryMachine = lazy(() => import('./experiences/variables/MemoryMachine')
 const BuildBlackBox = lazy(() => import('./experiences/variables/BuildBlackBox').then((module) => ({ default: module.BuildBlackBox })))
 const FinalBosses = lazy(() => import('./experiences/variables/FinalBosses').then((module) => ({ default: module.FinalBosses })))
 
-const validRoutes: AppRoute[] = ['home', 'variables', 'conditionals', 'functions', ...activityIds]
+const validRoutes: AppRoute[] = ['home', 'teacher', 'variables', 'conditionals', 'functions', ...activityIds]
 
 function routeFromHash(): AppRoute {
   const candidate = window.location.hash.replace(/^#\/?/, '') as AppRoute
@@ -59,7 +59,7 @@ export default function App() {
       ? createSession(login.displayName, login.username, true)
       : restoreProgress(login.username, login.displayName, login.progress)
     setProgress(next)
-    navigate('home')
+    navigate(login.isTeacher ? 'teacher' : 'home')
   }
 
   const logout = () => {
@@ -70,26 +70,26 @@ export default function App() {
   }
 
   if (!progress) return <NameEntryScreen onStart={start} />
-  if (progress.isTeacher) return <TeacherDashboard username={progress.username} onLogout={logout} />
-
   const experienceProps = { progress, onProgress: setProgress, onBack: () => navigate('variables') }
+  const visibleRoute = route === 'teacher' && !progress.isTeacher ? 'home' : route
 
   return (
-    <div className={`app-shell route-${route}`}>
-      <AppHeader route={route} progress={progress} syncState={syncState} onNavigate={navigate} onLogout={logout} />
+    <div className={`app-shell route-${visibleRoute}`}>
+      <AppHeader route={visibleRoute} progress={progress} syncState={syncState} onNavigate={navigate} onLogout={logout} />
       <div className="app-content">
         <Suspense fallback={<div className="route-loader" role="status"><span /> Loading experiment...</div>}>
-          {route === 'home' && <PlaygroundHome progress={progress} onNavigate={navigate} />}
-          {route === 'variables' && <VariablesHome progress={progress} onNavigate={navigate} />}
-          {route === 'conditionals' && <ComingSoonScreen area="conditionals" onNavigate={navigate} />}
-          {route === 'functions' && <ComingSoonScreen area="functions" onNavigate={navigate} />}
-          {route === 'dino-variables' && <DinoVariables {...experienceProps} />}
-          {route === 'print-playground' && <PrintPlayground {...experienceProps} />}
-          {route === 'black-box' && <BlackBox {...experienceProps} />}
-          {route === 'input-machine' && <InputMachine {...experienceProps} />}
-          {route === 'memory-machine' && <MemoryMachine {...experienceProps} />}
-          {route === 'build-black-box' && <BuildBlackBox {...experienceProps} />}
-          {route === 'final-bosses' && <FinalBosses {...experienceProps} />}
+          {visibleRoute === 'teacher' && progress.isTeacher && <TeacherDashboard username={progress.username} />}
+          {visibleRoute === 'home' && <PlaygroundHome progress={progress} onNavigate={navigate} />}
+          {visibleRoute === 'variables' && <VariablesHome progress={progress} onNavigate={navigate} />}
+          {visibleRoute === 'conditionals' && <ComingSoonScreen area="conditionals" onNavigate={navigate} />}
+          {visibleRoute === 'functions' && <ComingSoonScreen area="functions" onNavigate={navigate} />}
+          {visibleRoute === 'dino-variables' && <DinoVariables {...experienceProps} />}
+          {visibleRoute === 'print-playground' && <PrintPlayground {...experienceProps} />}
+          {visibleRoute === 'black-box' && <BlackBox {...experienceProps} />}
+          {visibleRoute === 'input-machine' && <InputMachine {...experienceProps} />}
+          {visibleRoute === 'memory-machine' && <MemoryMachine {...experienceProps} />}
+          {visibleRoute === 'build-black-box' && <BuildBlackBox {...experienceProps} />}
+          {visibleRoute === 'final-bosses' && <FinalBosses {...experienceProps} />}
         </Suspense>
       </div>
       <PrintProgress progress={progress} />

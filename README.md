@@ -33,7 +33,7 @@ Students use their first and last names together, without spaces. The accepted r
 
 Progress is cached in `sessionStorage` for fast refresh recovery and synchronized to Supabase after each change. The browser uses only the project publishable key. Roster tables are private and protected by RLS; public database functions expose only login, progress-save, and teacher-summary operations.
 
-The teacher login `leleomaker` opens a roster dashboard with activity completion, Final Boss mission progress, last update, search, and summary totals.
+The teacher login `leleomaker` opens the full PixPy website with a teacher-only **Dashboard** tab. The dashboard shows activity completion, Final Boss mission progress, last update, search, and summary totals, with filters for classes A/B/C and the White/Yellow teams. Students without a team in the source roster remain visible as **No team**.
 
 The app header has a **QUICK LIST** for jumping directly to any activity in the current group. It stays focused on navigation and contains no screenshot, print, or session-reset actions.
 
@@ -176,7 +176,7 @@ The playground includes:
 
 - roster-based `firstnamelastname` login;
 - Supabase-backed progress with a local session cache;
-- a teacher progress dashboard;
+- a teacher progress dashboard with class and team filters plus access to every experiment;
 - the three-area home screen;
 - simplified navigation;
 - a reusable no-scroll experience shell;
@@ -207,7 +207,7 @@ npm install
 npm run dev
 ```
 
-PixPy connects to its classroom Supabase project with a browser-safe publishable key. Database schema changes live in `supabase/migrations` and can be deployed with the Supabase CLI.
+PixPy connects to its classroom Supabase project with a browser-safe publishable key. Database schema changes live in `supabase/migrations` and can be deployed with the Supabase CLI. Private roster metadata includes only the display name, login handle, class, and White/Yellow team; the local generated seed stays ignored by Git.
 
 ## Quality checks
 

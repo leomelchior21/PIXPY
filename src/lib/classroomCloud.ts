@@ -17,9 +17,14 @@ export interface ClassroomLogin {
   progress: unknown
 }
 
+export type RosterClass = 'A' | 'B' | 'C'
+export type RosterTeam = 'white' | 'yellow'
+
 export interface ClassProgressRow {
   username: string
   displayName: string
+  className: RosterClass | null
+  team: RosterTeam | null
   progress: SessionProgress | null
   updatedAt: string | null
   lastLoginAt: string | null
@@ -36,6 +41,8 @@ interface LoginPayload {
 interface ProgressPayload {
   username?: string
   display_name?: string
+  class_name?: string | null
+  group_name?: string | null
   progress?: SessionProgress | null
   updated_at?: string | null
   last_login_at?: string | null
@@ -76,6 +83,8 @@ export async function loadClassProgress(teacherUsername: string): Promise<ClassP
   return (data as ProgressPayload[]).flatMap((row) => row.username && row.display_name ? [{
     username: cleanUsername(row.username),
     displayName: row.display_name,
+    className: row.class_name === 'A' || row.class_name === 'B' || row.class_name === 'C' ? row.class_name : null,
+    team: row.group_name === 'white' || row.group_name === 'yellow' ? row.group_name : null,
     progress: row.progress && typeof row.progress === 'object' ? row.progress : null,
     updatedAt: typeof row.updated_at === 'string' ? row.updated_at : null,
     lastLoginAt: typeof row.last_login_at === 'string' ? row.last_login_at : null,
