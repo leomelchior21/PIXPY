@@ -415,3 +415,178 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
   html, body, #root { height: auto; overflow: visible; }
   .landscape-app { visibility: visible; width: 100%; height: auto; overflow: visible; transform: none; }
 }
+
+/* Final missions: a slim trail, one focused coding surface, and a live test phone. */
+.boss-experience .experience-body { display: block; min-height: 0; }
+.boss-layout { display: grid; grid-template-columns: 176px minmax(430px, 1.15fr) minmax(300px, .72fr); gap: 14px; width: 100%; height: 100%; min-height: 0; }
+
+.boss-trail { position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; min-height: 0; padding: 11px 9px; overflow: hidden; background: #fffaf2; }
+.boss-trail > header { display: flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 4px 9px; border-bottom: 1px solid #ddd5c8; }
+.boss-trail > header > span { display: grid; place-items: center; flex: 0 0 auto; width: 30px; height: 30px; border: 2px solid var(--ink); border-radius: 8px; background: var(--orange); box-shadow: 2px 2px 0 var(--ink); }
+.boss-trail > header div { display: grid; gap: 2px; min-width: 0; }
+.boss-trail > header small { color: #725b4d; font-size: 8px; font-weight: 900; letter-spacing: .08em; }
+.boss-trail > header strong { font-size: 15px; line-height: 1; }
+.boss-trail-meter { position: absolute; z-index: 0; top: 65px; bottom: 18px; left: 25px; width: 5px; overflow: hidden; border: 1px solid #b7aa9a; border-radius: 99px; background: #e9e1d7; }
+.boss-trail-meter i { position: absolute; inset: 0 0 auto; min-height: 0; border-radius: inherit; background: #3baa74; transition: height .35s ease; }
+.boss-grid { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr; grid-template-rows: repeat(15, minmax(0, 1fr)); align-content: stretch; gap: 3px; min-height: 0; padding-top: 6px; }
+.boss-grid button { display: grid; grid-template-columns: 34px minmax(0, 1fr); place-items: center start; gap: 6px; min-width: 0; min-height: 0 !important; padding: 2px 5px 2px 0; border: 1px solid transparent; border-radius: 8px; color: #66635e; background: transparent; box-shadow: none; font-family: 'IBM Plex Mono', monospace; text-align: left; }
+.boss-grid button:hover:not(:disabled) { border-color: #b9aa9a; background: #fff; }
+.boss-grid button.is-active { color: var(--ink); border: 2px solid var(--ink); background: #ffe1d5; box-shadow: 2px 2px 0 var(--ink); }
+.boss-grid button.is-done:not(.is-active) { color: #205a3d; border-color: transparent; background: #e4f3e9; }
+.boss-grid button.is-mystery { grid-template-columns: 34px; }
+.boss-trail-dot { display: grid; place-items: center; width: 28px; height: 28px; border: 2px solid #9d9286; border-radius: 50%; background: #fff; font-size: 10px; font-weight: 900; line-height: 1; }
+.boss-trail-dot svg { width: 14px !important; height: 14px; }
+.boss-grid button.is-active .boss-trail-dot { border-color: var(--ink); color: #fff; background: var(--orange); }
+.boss-grid button.is-done .boss-trail-dot { border-color: #347458; color: #fff; background: #3baa74; }
+.boss-grid button.is-mystery .boss-trail-dot { border-style: dashed; border-color: #c3b7aa; color: #726c64; background: #f1ece4; font-size: 12px; filter: grayscale(.25); }
+.boss-trail-copy { display: grid; gap: 1px; min-width: 0; }
+.boss-trail-copy small { color: #8b7769; font-size: 7px; font-weight: 900; letter-spacing: .08em; }
+.boss-trail-copy strong { overflow: hidden; font-size: 9px; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
+.boss-grid button.is-done:not(.is-active) .boss-trail-copy strong { display: none; }
+.boss-grid button.is-mystery .boss-trail-copy { display: none; }
+
+.boss-stage.code-workbench { display: grid; grid-template-rows: minmax(130px, auto) minmax(0, 1fr); gap: 12px; min-width: 0; min-height: 0; padding: 12px; background: #fff; }
+.boss-mission-card { display: grid; grid-template-columns: 86px minmax(0, 1fr) auto; align-items: center; gap: 15px; min-height: 132px; padding: 16px; border: 2px solid var(--ink); border-radius: 11px; background: linear-gradient(135deg, #fff7f0, #fff 72%); box-shadow: 3px 3px 0 #e5a083; }
+.boss-mission-number { display: grid; place-items: center; align-content: center; align-self: stretch; min-height: 90px; border: 2px solid var(--ink); border-radius: 10px; background: var(--orange); box-shadow: 3px 3px 0 var(--ink); }
+.boss-mission-number small { font-size: 8px; font-weight: 900; letter-spacing: .08em; }
+.boss-mission-number strong { font-size: 31px; line-height: 1; }
+.boss-mission-copy { min-width: 0; }
+.boss-mission-copy > span { color: #9a482c; font-size: 9px; font-weight: 900; letter-spacing: .12em; }
+.boss-mission-copy h2 { margin: 5px 0 8px; font-size: clamp(22px, 2.1vw, 31px); line-height: 1; letter-spacing: -.7px; }
+.boss-mission-copy p { max-width: 660px; color: #4f514d; font-size: 13px; font-weight: 600; line-height: 1.5; }
+.boss-mission-nav { display: grid; gap: 7px; }
+.boss-mission-nav button { display: grid; place-items: center; width: 42px; height: 42px; border: 2px solid var(--ink); border-radius: 8px; color: var(--ink); background: #fff; box-shadow: 2px 2px 0 var(--ink); }
+.boss-mission-nav button:hover:not(:disabled) { background: var(--orange); transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
+.boss-mission-nav svg { width: 18px; }
+
+.boss-editor-shell { position: relative; display: grid; grid-template-rows: minmax(0, 1fr) 64px; min-width: 0; min-height: 0; overflow: hidden; border: 3px solid var(--ink); border-radius: 12px; background: #111927; box-shadow: 4px 4px 0 var(--ink); }
+.boss-editor-shell .pixpy-editor { min-height: 0; border: 0; border-radius: 0; box-shadow: none; }
+.boss-editor-shell .editor-titlebar { border-radius: 0; }
+.boss-editor-shell .cm-editor { font-size: clamp(14px, 1.25vw, 17px); }
+.boss-editor-shell .cm-scroller { padding-bottom: 8px; }
+.boss-editor-actions { display: grid; grid-template-columns: 126px minmax(0, 1fr); gap: 9px; padding: 9px; border-top: 2px solid #344155; background: #172131; }
+.boss-code-reset, .boss-run { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 2px solid var(--ink); border-radius: 8px; color: var(--ink); font-size: 11px; font-weight: 900; }
+.boss-code-reset { background: #fff; }
+.boss-code-reset:hover:not(:disabled) { background: #f0ece3; }
+.boss-run { background: var(--orange); box-shadow: 3px 3px 0 #04070c; font-size: 13px; letter-spacing: .03em; }
+.boss-run:hover:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #04070c; }
+.boss-code-reset svg, .boss-run svg { width: 18px; }
+
+.boss-try-popup { position: absolute; z-index: 8; right: 16px; display: grid; grid-template-columns: 28px minmax(0, 1fr) 24px; align-items: start; gap: 8px; width: min(290px, 49%); padding: 11px; border: 3px solid var(--ink); border-radius: 10px; color: var(--ink); background: var(--yellow); box-shadow: 6px 6px 0 rgba(0,0,0,.62); animation: coachmark-pop .25s ease-out both, boss-guide-glow 1.35s .25s ease-in-out infinite; }
+.boss-try-popup::before { position: absolute; top: 50%; left: -11px; width: 17px; height: 17px; border-bottom: 3px solid var(--ink); border-left: 3px solid var(--ink); content: ''; background: var(--yellow); transform: translateY(-50%) rotate(45deg); }
+.boss-try-popup--line-3 { top: 95px; }
+.boss-try-popup--line-4 { top: 123px; }
+.boss-try-popup--line-5 { top: 151px; }
+.boss-try-popup--editor { top: 56px; }
+.boss-try-popup > svg { width: 25px; color: #6c4b00; }
+.boss-try-popup strong { display: block; color: #5a4100; font-size: 9px; letter-spacing: .1em; }
+.boss-try-popup p { margin-top: 3px; font-size: 10px; font-weight: 800; line-height: 1.35; }
+.boss-try-popup > button { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 1px solid #6d5214; border-radius: 5px; color: var(--ink); background: rgba(255,255,255,.45); }
+.boss-try-popup > button svg { width: 14px; }
+@keyframes boss-guide-glow { 50% { box-shadow: 6px 6px 0 rgba(0,0,0,.62), 0 0 18px rgba(255,203,71,.8); } }
+
+.boss-phone-stage { display: grid; place-items: center; min-width: 0; min-height: 0; padding: 2px 4px; }
+.boss-phone { display: grid; grid-template-rows: 24px minmax(0, 1fr) 25px; width: min(100%, 390px); height: min(100%, 720px); min-height: 470px; padding: 8px 10px; overflow: hidden; border: 5px solid var(--ink); border-radius: 38px; color: var(--ink); background: #222a36; box-shadow: 9px 9px 0 rgba(8,16,26,.24), inset 0 0 0 2px #536071; }
+.boss-phone-hardware { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.boss-phone-hardware span { width: 55px; height: 5px; border-radius: 10px; background: #05080d; }
+.boss-phone-hardware i { width: 7px; height: 7px; border-radius: 50%; background: #080d14; }
+.boss-phone-screen { display: grid; grid-template-rows: 78px minmax(0, 1fr); min-height: 0; overflow: hidden; border: 2px solid #05080d; border-radius: 21px; background: #f4f0e7; }
+.boss-test-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 8px; border-bottom: 2px solid var(--ink); background: #fff; }
+.boss-test-slots > div { display: grid; grid-template-columns: 24px minmax(0, 1fr); grid-template-rows: 1fr 1fr; align-items: center; min-width: 0; padding: 5px; border: 1px solid #bdb7ae; border-radius: 8px; color: #77736d; background: #eeeae3; }
+.boss-test-slots > div > span { display: grid; grid-row: 1 / -1; place-items: center; width: 21px; height: 21px; border-radius: 50%; background: #ddd8d0; }
+.boss-test-slots svg { width: 13px; height: 13px; }
+.boss-test-slots small { overflow: hidden; font-size: 7px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.boss-test-slots strong { overflow: hidden; font-size: 7px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
+.boss-test-slots > div.is-running { border-color: #9b6d00; color: #654900; background: #fff1b8; box-shadow: inset 0 0 0 1px var(--yellow); }
+.boss-test-slots > div.is-running > span { background: var(--yellow); }
+.boss-test-slots > div.is-passed { border-color: #2b7852; color: #175539; background: #daf1e2; }
+.boss-test-slots > div.is-passed > span { color: #fff; background: #36a36d; }
+.boss-test-slots > div.is-failed { border-color: #a73550; color: #84243b; background: #ffe1e7; }
+.boss-test-slots > div.is-failed > span { color: #fff; background: #cf4966; }
+
+.boss-phone-content { display: grid; grid-template-rows: auto auto minmax(78px, .8fr) minmax(58px, auto) auto; align-content: stretch; gap: 10px; min-height: 0; padding: 13px; overflow: auto; background: linear-gradient(#eef8f6, #f8f4ed); }
+.boss-phone-appbar { display: grid; grid-template-columns: 38px minmax(0, 1fr) 8px; align-items: center; gap: 8px; padding-bottom: 9px; border-bottom: 1px solid #c9d8d4; }
+.boss-phone-appbar > svg { width: 34px; height: 34px; padding: 7px; border: 2px solid var(--ink); border-radius: 10px; background: var(--lime); box-shadow: 2px 2px 0 var(--ink); }
+.boss-phone-appbar > span { display: grid; gap: 2px; min-width: 0; }
+.boss-phone-appbar small { color: #60706b; font-size: 8px; font-weight: 900; letter-spacing: .05em; }
+.boss-phone-appbar small span { color: #168563; }
+.boss-phone-appbar strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.boss-phone-appbar > i { width: 7px; height: 7px; border-radius: 50%; background: #3baa74; box-shadow: 0 0 0 3px rgba(59,170,116,.16); }
+.boss-phone-fields { display: grid; gap: 6px; }
+.boss-phone-fields > small, .boss-phone-output > small { color: #61716c; font-size: 8px; font-weight: 900; letter-spacing: .08em; }
+.boss-input-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.boss-input-fields.count-1 { grid-template-columns: 1fr; }
+.boss-input-fields.count-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.boss-phone-field { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; min-width: 0; min-height: 44px; padding: 7px 9px; border: 2px solid var(--ink); border-radius: 8px; background: #fff; box-shadow: 2px 2px 0 #9db7af; }
+.boss-phone-field span { overflow: hidden; color: #597069; font-size: 9px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.boss-phone-field strong { color: #087c5d; font-size: 16px; }
+.boss-phone-output { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; min-height: 0; padding: 10px; border: 2px solid var(--ink); border-radius: 10px; background: #121b27; box-shadow: 3px 3px 0 var(--ink); }
+.boss-phone-output > small { color: #9daab8; }
+.boss-phone-output pre { display: grid; place-items: center; min-height: 0; margin: 0; overflow: auto; color: var(--lime); font-size: clamp(21px, 2.4vw, 34px); font-weight: 800; line-height: 1.25; text-align: center; white-space: pre-wrap; overflow-wrap: anywhere; }
+.boss-phone-output.is-error pre { place-items: start; color: #ff9caf; font-size: 11px; text-align: left; }
+.boss-phone-result { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; gap: 8px; min-height: 58px; padding: 9px; border: 1px solid #b9c8c3; border-radius: 9px; color: #40504b; background: rgba(255,255,255,.72); }
+.boss-phone-result svg { width: 22px; }
+.boss-phone-result p { font-size: 10px; font-weight: 800; line-height: 1.35; }
+.boss-phone.is-testing .boss-phone-result { border-color: #c39a31; background: #fff4cd; }
+.boss-phone.is-victory .boss-phone-result { border: 2px solid #26734e; color: #195438; background: #dff3e6; }
+.boss-phone.is-failed .boss-phone-result { border-color: #bd5b71; color: #7d263b; background: #ffe8ed; }
+.boss-phone-next { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; border: 2px solid var(--ink); border-radius: 8px; color: var(--ink); background: var(--lime); box-shadow: 2px 2px 0 var(--ink); font-size: 10px; font-weight: 900; }
+.boss-phone-next svg { width: 16px; }
+.boss-phone-home { align-self: center; justify-self: center; width: 72px; height: 5px; border-radius: 10px; background: #090d13; }
+
+@media screen and (orientation: landscape) and (max-width: 1100px) {
+  .boss-layout { grid-template-columns: 140px minmax(355px, 1fr) minmax(250px, .68fr); gap: 9px; }
+  .boss-trail { padding-inline: 7px; }
+  .boss-trail > header { gap: 5px; }
+  .boss-trail > header > span { width: 27px; height: 27px; }
+  .boss-trail > header small { font-size: 7px; }
+  .boss-trail-meter { left: 21px; }
+  .boss-grid button { grid-template-columns: 29px minmax(0, 1fr); gap: 4px; }
+  .boss-grid button.is-mystery { grid-template-columns: 29px; }
+  .boss-trail-dot { width: 25px; height: 25px; font-size: 9px; }
+  .boss-trail-copy strong { font-size: 8px; }
+  .boss-mission-card { grid-template-columns: 72px minmax(0, 1fr) auto; gap: 11px; padding: 12px; }
+  .boss-mission-copy p { font-size: 11px; line-height: 1.4; }
+  .boss-phone { min-height: 440px; }
+  .boss-phone-content { gap: 7px; padding: 9px; }
+  .boss-test-slots { gap: 3px; padding: 6px; }
+  .boss-test-slots > div { grid-template-columns: 19px minmax(0, 1fr); padding: 4px; }
+  .boss-test-slots > div > span { width: 17px; height: 17px; }
+  .boss-try-popup { width: min(250px, 55%); }
+}
+
+@media screen and (orientation: landscape) and (max-height: 740px) and (min-width: 641px) {
+  .boss-layout { gap: 8px; }
+  .boss-trail { padding-block: 7px; }
+  .boss-trail > header { min-height: 39px; padding-bottom: 6px; }
+  .boss-trail-meter { top: 53px; bottom: 13px; }
+  .boss-grid { gap: 2px; padding-top: 4px; }
+  .boss-trail-dot { width: 24px; height: 24px; }
+  .boss-stage.code-workbench { grid-template-rows: minmax(104px, auto) minmax(0, 1fr); gap: 8px; padding: 8px; }
+  .boss-mission-card { min-height: 104px; padding: 9px 11px; }
+  .boss-mission-number { min-height: 74px; }
+  .boss-mission-copy h2 { margin-block: 3px 5px; font-size: 21px; }
+  .boss-mission-copy p { font-size: 10px; line-height: 1.35; }
+  .boss-mission-nav button { width: 38px; height: 38px; }
+  .boss-editor-shell { grid-template-rows: minmax(0, 1fr) 66px; }
+  .boss-editor-actions { padding: 6px; }
+  .boss-code-reset, .boss-run { min-height: 50px !important; }
+  .boss-try-popup { padding: 8px; }
+  .boss-try-popup--line-3 { top: 91px; }
+  .boss-try-popup--line-4 { top: 117px; }
+  .boss-try-popup--line-5 { top: 143px; }
+  .boss-phone { grid-template-rows: 18px minmax(0, 1fr) 19px; min-height: 400px; padding: 6px 8px; border-width: 4px; border-radius: 30px; }
+  .boss-phone-screen { grid-template-rows: 62px minmax(0, 1fr); }
+  .boss-test-slots small, .boss-test-slots strong { font-size: 6px; }
+  .boss-phone-appbar { padding-bottom: 5px; }
+  .boss-phone-appbar > svg { width: 29px; height: 29px; }
+  .boss-phone-field { min-height: 36px; padding-block: 4px; }
+  .boss-phone-output { min-height: 62px; padding: 7px; }
+  .boss-phone-result { min-height: 47px; padding: 6px 8px; }
+  .boss-phone-result p { font-size: 9px; }
+  .boss-phone-next { min-height: 37px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boss-try-popup, .boss-trail-meter i { animation: none; transition: none; }
+}

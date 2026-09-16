@@ -32,7 +32,7 @@ const routes = [
   { name: 'input', route: 'input-machine', selector: '.input-experience', experience: true, surface: '.input-story', panels: [] },
   { name: 'memory', route: 'memory-machine', selector: '.memory-experience', experience: true, surface: '.memory-story', panels: [] },
   { name: 'build', route: 'build-black-box', selector: '.buildbox-experience', experience: true, surface: '.pixpy-editor', panels: ['.build-reference-panel', '.build-editor-panel'] },
-  { name: 'bosses', route: 'final-bosses', selector: '.boss-experience', experience: true, surface: '.boss-grid', panels: ['.boss-stage', '.code-workbench'] },
+  { name: 'bosses', route: 'final-bosses', selector: '.boss-experience', experience: true, surface: '.boss-phone-screen', panels: ['.boss-stage', '.boss-phone-stage'] },
 ]
 
 const outputDir = path.join(os.tmpdir(), 'pixpy-viewport-checks')
@@ -546,9 +546,9 @@ async function checkClassroomInteractions(send, size) {
 
   await go('final-bosses', '.boss-grid')
   await type('.cm-content', 'a = int(input())\nb = int(input())\nresult = a + b\nprint(result)')
-  await click('.code-workbench .primary-action')
-  await waitFor(send, `Boolean(document.querySelector('.boss-result.is-victory'))`, 15000)
-  await check('Boss evaluates a real Python solution', `document.querySelector('.boss-result').innerText.includes('12')`)
+  await click('.boss-run')
+  await waitFor(send, `Boolean(document.querySelector('.boss-phone.is-victory'))`, 20000)
+  await check('Boss evaluates a real Python solution three times', `document.querySelectorAll('.boss-test-slots .is-passed').length === 3 && document.querySelector('.boss-phone-output').innerText.length > 0`)
   await capture('boss-victory')
   await click('.boss-grid button:nth-child(2)')
   await click('.boss-grid button:nth-child(1)')

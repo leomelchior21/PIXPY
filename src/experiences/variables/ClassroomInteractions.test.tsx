@@ -167,3 +167,25 @@ it('preserves a boss solution when exploring another challenge', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Boss 1: Two Numbers' }))
   expect(screen.getByLabelText('Python code editor')).toHaveValue('result = a + b')
 })
+
+it('runs three surprise phone tests before completing a boss mission', async () => {
+  runScript.mockImplementation((_code: string, inputs: string[] = []) => Promise.resolve({
+    stdout: inputs.length === 2 ? String(Number(inputs[0]) + Number(inputs[1])) : '',
+    variables: {},
+  }))
+  vi.useFakeTimers()
+  try {
+    render(<Harness activity="bosses" />)
+    fireEvent.change(screen.getByLabelText('Python code editor'), { target: { value: 'a = int(input())\nb = int(input())\nresult = a + b\nprint(result)' } })
+    fireEvent.click(screen.getByRole('button', { name: /run 3 tests/i }))
+
+    await act(async () => vi.runAllTimersAsync())
+
+    expect(runScript).toHaveBeenCalledTimes(3)
+    expect(screen.getAllByText('PASSED')).toHaveLength(3)
+    expect(screen.getByText('All 3 tests passed. Mission complete!')).toBeInTheDocument()
+    expect(screen.queryByText(/expected/i)).not.toBeInTheDocument()
+  } finally {
+    vi.useRealTimers()
+  }
+})

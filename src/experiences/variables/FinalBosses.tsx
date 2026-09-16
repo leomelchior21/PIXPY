@@ -1,49 +1,102 @@
-import { ArrowLeft, ArrowRight, Check, LoaderCircle, Play, RotateCcw, Skull, Trophy } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Circle,
+  LoaderCircle,
+  Play,
+  RotateCcw,
+  Smartphone,
+  Sparkles,
+  Trophy,
+  X,
+} from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
 import { ExperienceShell } from '../../components/ExperienceShell'
-import { variableBosses } from '../../data/bosses'
+import { variableBosses, type BossTestCase } from '../../data/bosses'
 import { pythonRunner } from '../../lib/pythonRunner'
 import { completeActivity, resetActivityProgress } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
 
 interface Props { progress: SessionProgress; onProgress: (progress: SessionProgress) => void; onBack: () => void }
+type TestStatus = 'waiting' | 'running' | 'passed' | 'failed'
+interface TestRun extends BossTestCase { number: number; output: string; status: TestStatus; error?: string }
+
+const mysteryEmoji = ['❔', '🔒', '🕵️', '🌫️']
 
 export function FinalBosses({ progress, onProgress, onBack }: Props) {
   const [bossIndex, setBossIndex] = useState(0)
   const boss = variableBosses[bossIndex]
   const [code, setCode] = useState(boss.code)
   const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState('Change the code. Defeat the boss.')
-  const [victory, setVictory] = useState(false)
+  const [result, setResult] = useState(() => progress.bossProgress.includes(boss.id) ? 'Mission already cleared. You can test another solution.' : 'Your phone is ready for three surprise tests.')
+  const [victory, setVictory] = useState(() => progress.bossProgress.includes(boss.id))
+  const [testRuns, setTestRuns] = useState<TestRun[]>(makeEmptyRuns)
+  const [activeTest, setActiveTest] = useState<number | null>(null)
+  const [guideVisible, setGuideVisible] = useState(true)
   const drafts = useRef<Record<number, string>>({})
   const version = useRef(0)
   useEffect(() => () => { version.current += 1 }, [])
   const completed = progress.completed.includes('final-bosses')
+  const activeRun = activeTest === null ? null : testRuns[activeTest]
+  const phoneState = busy ? 'testing' : victory ? 'victory' : testRuns.some((test) => test.status === 'failed') ? 'failed' : 'ready'
 
   const run = async () => {
     if (busy) return
     const request = ++version.current
+    const selected = chooseRandomTests(boss.testCases)
+    const runs: TestRun[] = selected.map((test, index) => ({ ...test, number: index + 1, output: '', status: 'waiting' }))
+    let allPassed = true
     setBusy(true)
+    setVictory(false)
+    setGuideVisible(false)
+    setResult('Testing your rule with three surprise inputs…')
+    setTestRuns(runs.map((test) => ({ ...test })))
+
     try {
-      const output = await pythonRunner.runScript(code, boss.inputs)
+      for (let index = 0; index < runs.length; index += 1) {
+        if (request !== version.current) return
+        runs[index] = { ...runs[index], status: 'running' }
+        setActiveTest(index)
+        setTestRuns(runs.map((test) => ({ ...test })))
+        await pause(260)
+
+        try {
+          const output = await pythonRunner.runScript(code, runs[index].inputs)
+          if (request !== version.current) return
+          const expected = runs[index].expected
+          const passed = expected === undefined
+            ? output.stdout.trim().length > 0
+            : matches(output.stdout, expected)
+          allPassed = allPassed && passed
+          runs[index] = { ...runs[index], output: output.stdout.trim(), status: passed ? 'passed' : 'failed' }
+        } catch (error) {
+          allPassed = false
+          runs[index] = {
+            ...runs[index],
+            output: '',
+            status: 'failed',
+            error: error instanceof Error ? error.message : 'Python could not run that test.',
+          }
+        }
+        setTestRuns(runs.map((test) => ({ ...test })))
+        await pause(420)
+      }
+
       if (request !== version.current) return
-      const won = boss.expected === undefined ? output.stdout.trim().length > 0 : matches(output.stdout, boss.expected)
-      if (!won) {
-        setVictory(false)
-        setResult(`Python made ${output.stdout || 'nothing'}. The boss expected ${boss.expected}.`)
+      if (!allPassed) {
+        const failed = runs.find((test) => test.status === 'failed')
+        setResult(failed?.error ?? `Test ${failed?.number ?? 1} found a mismatch. Check the mission and adjust your formula.`)
         return
       }
+
       const defeated = [...new Set([...progress.bossProgress, boss.id])].sort((a, b) => a - b)
       let next = { ...progress, bossProgress: defeated }
       if (defeated.length === variableBosses.length) next = completeActivity(next, 'final-bosses')
       onProgress(next)
       setVictory(true)
-      setResult(boss.expected === undefined ? `YOUR FORMULA MADE ${output.stdout}. BOSS DEFEATED.` : `OUTPUT ${output.stdout}. BOSS DEFEATED.`)
-    } catch (error) {
-      if (request !== version.current) return
-      setVictory(false)
-      setResult(error instanceof Error ? error.message : 'The boss blocked that run.')
+      setResult('All 3 tests passed. Mission complete!')
     } finally {
       if (request === version.current) setBusy(false)
     }
@@ -54,10 +107,33 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
     drafts.current[boss.id] = code
     const nextIndex = Math.max(0, Math.min(variableBosses.length - 1, index))
     const nextBoss = variableBosses[nextIndex]
+    const savedDraft = drafts.current[nextBoss.id]
     setBossIndex(nextIndex)
-    setCode(drafts.current[nextBoss.id] ?? nextBoss.code)
-    setResult(progress.bossProgress.includes(nextBoss.id) ? 'Already defeated. Try a different solution!' : 'Change the code. Defeat the boss.')
-    setVictory(progress.bossProgress.includes(nextBoss.id))
+    setCode(savedDraft ?? nextBoss.code)
+    setTestRuns(makeEmptyRuns())
+    setActiveTest(null)
+    setGuideVisible(savedDraft === undefined)
+    const alreadyDefeated = progress.bossProgress.includes(nextBoss.id)
+    setResult(alreadyDefeated ? 'Mission already cleared. You can test another solution.' : 'Your phone is ready for three surprise tests.')
+    setVictory(alreadyDefeated)
+  }
+
+  const editCode = (value: string) => {
+    setCode(value)
+    setVictory(false)
+    setGuideVisible(false)
+    setTestRuns(makeEmptyRuns())
+    setActiveTest(null)
+    setResult('New code loaded. Run three tests when you are ready.')
+  }
+
+  const resetMission = () => {
+    setCode(boss.code)
+    setVictory(false)
+    setGuideVisible(true)
+    setTestRuns(makeEmptyRuns())
+    setActiveTest(null)
+    setResult('Starter code restored. Find the line that needs your formula.')
   }
 
   const resetLevel = () => {
@@ -66,27 +142,164 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
     setBusy(false)
     setBossIndex(0)
     setCode(variableBosses[0].code)
-    setResult('Change the code. Defeat the boss.')
+    setTestRuns(makeEmptyRuns())
+    setActiveTest(null)
+    setGuideVisible(true)
+    setResult('Your phone is ready for three surprise tests.')
     setVictory(false)
     onProgress(resetActivityProgress(progress, 'final-bosses'))
   }
 
   return (
-    <ExperienceShell order="07" title="Final Bosses" question="Can you use what you discovered?" accent="#ff855e" hints={['Look at the input names above result.', 'Build the formula using those variables.', `This boss gives input: ${boss.inputs.join(', ')}.`]} completed={completed} objective="No lesson. No locks. Pick any boss and make the expected output." onBack={onBack} onReset={resetLevel} onComplete={() => onProgress(completeActivity(progress, 'final-bosses'))} className="boss-experience">
-      <section className="boss-stage panel-surface">
-        <div className="boss-title"><span><Skull /></span><div><small>BOSS {String(boss.id).padStart(2, '0')} / {variableBosses.length}</small><h2>{boss.title}</h2><p>{boss.prompt}</p></div></div>
-        <div className="boss-io"><article><small>INPUT</small><strong>{boss.inputs.join('  ·  ')}</strong></article><i>VS</i><article><small>EXPECTED</small><strong>{boss.expected ?? 'YOUR RULE'}</strong></article></div>
-        <div className={`boss-result ${victory ? 'is-victory' : ''}`} role="status">{victory ? <Trophy /> : <Skull />}<span><small>{victory ? 'VICTORY' : 'RESULT'}</small><strong>{result}</strong></span></div>
-        <div className="boss-grid" aria-label="Choose a boss">{variableBosses.map((item, index) => <button key={item.id} disabled={busy} aria-label={`Boss ${item.id}: ${item.title}${progress.bossProgress.includes(item.id) ? ', defeated' : ''}`} aria-pressed={index === bossIndex} className={`${index === bossIndex ? 'is-active' : ''} ${progress.bossProgress.includes(item.id) ? 'is-done' : ''}`} onClick={() => choose(index)}>{progress.bossProgress.includes(item.id) ? <Check /> : String(item.id).padStart(2, '0')}<span>{item.title}</span></button>)}</div>
-      </section>
-      <section className="code-workbench panel-surface">
-        <header className="workbench-heading"><span>YOUR SOLUTION</span><h2>Make the values work together.</h2><p>Edit the formula below, then test your code.</p></header>
-        <CodeEditor value={code} readOnly={busy} onChange={(value) => { setCode(value); setVictory(false); setResult('Code changed. Run it to see your new result.') }} minHeight="180px" />
-        <div className="run-row"><button className="secondary-action" disabled={busy} onClick={() => { setCode(boss.code); setVictory(false); setResult('Starter code restored. Try a new formula.') }}><RotateCcw /> Reset</button><button className="primary-action full-action" onClick={run} disabled={busy}>{busy ? <LoaderCircle className="spin" /> : <Play fill="currentColor" />} TEST MY CODE</button></div>
-        <div className="boss-navigation"><button onClick={() => choose(bossIndex - 1)} disabled={busy || bossIndex === 0}><ArrowLeft /> PREVIOUS</button><span>{progress.bossProgress.length} / {variableBosses.length} DEFEATED</span><button onClick={() => choose(bossIndex + 1)} disabled={busy || bossIndex === variableBosses.length - 1}>NEXT <ArrowRight /></button></div>
-      </section>
+    <ExperienceShell
+      order="07"
+      title="Final Bosses"
+      question="Can your code pass every surprise test?"
+      accent="#ff855e"
+      hints={[
+        'Read the mission carefully, then change only the formula line.',
+        `Build your formula with ${boss.inputNames.join(' and ')}. Keep input() and print() in place.`,
+        'One example is not enough: your rule must work with every number the phone tries.',
+      ]}
+      completed={completed}
+      objective="Solve each mission with a rule that works for three surprise tests."
+      onBack={onBack}
+      onReset={resetLevel}
+      onComplete={() => onProgress(completeActivity(progress, 'final-bosses'))}
+      className="boss-experience"
+    >
+      <div className="boss-layout">
+        <aside className="boss-trail panel-surface" aria-label="Mission trail">
+          <header>
+            <span><Trophy size={16} /></span>
+            <div><small>MISSION TRAIL</small><strong>{progress.bossProgress.length} / {variableBosses.length}</strong></div>
+          </header>
+          <div className="boss-trail-meter" aria-hidden="true"><i style={{ height: `${(progress.bossProgress.length / variableBosses.length) * 100}%` }} /></div>
+          <nav className="boss-grid" aria-label="Choose a mission">
+            {variableBosses.map((item, index) => {
+              const done = progress.bossProgress.includes(item.id)
+              const current = index === bossIndex
+              const titleVisible = current || (!done && index >= bossIndex && index < bossIndex + 3)
+              return (
+                <button
+                  key={item.id}
+                  disabled={busy}
+                  aria-label={`Boss ${item.id}: ${item.title}${done ? ', defeated' : ''}`}
+                  aria-pressed={current}
+                  className={`${current ? 'is-active' : ''} ${done ? 'is-done' : ''} ${titleVisible ? 'is-revealed' : 'is-mystery'}`}
+                  onClick={() => choose(index)}
+                >
+                  <span className="boss-trail-dot" aria-hidden="true">
+                    {done ? <Check /> : titleVisible ? String(item.id).padStart(2, '0') : mysteryEmoji[index % mysteryEmoji.length]}
+                  </span>
+                  <span className="boss-trail-copy">
+                    <small>{current ? 'NOW' : done ? 'CLEARED' : titleVisible ? `MISSION ${String(item.id).padStart(2, '0')}` : 'MYSTERY'}</small>
+                    {titleVisible && <strong>{item.title}</strong>}
+                  </span>
+                </button>
+              )
+            })}
+          </nav>
+        </aside>
+
+        <section className="boss-stage code-workbench panel-surface">
+          <article className="boss-mission-card">
+            <div className="boss-mission-number"><small>MISSION</small><strong>{String(boss.id).padStart(2, '0')}</strong></div>
+            <div className="boss-mission-copy">
+              <span>YOUR TASK</span>
+              <h2>{boss.title}</h2>
+              <p>{boss.prompt}</p>
+            </div>
+            <div className="boss-mission-nav">
+              <button onClick={() => choose(bossIndex - 1)} disabled={busy || bossIndex === 0} aria-label="Previous mission"><ArrowLeft /></button>
+              <button onClick={() => choose(bossIndex + 1)} disabled={busy || bossIndex === variableBosses.length - 1} aria-label="Next mission"><ArrowRight /></button>
+            </div>
+          </article>
+
+          <div className="boss-editor-shell">
+            <CodeEditor
+              value={code}
+              readOnly={busy}
+              onChange={editCode}
+              minHeight="180px"
+              attentionLine={guideVisible && boss.id <= 5 ? boss.editLine : null}
+            />
+            {guideVisible && (
+              <aside className={`boss-try-popup ${boss.id <= 5 ? `boss-try-popup--line-${boss.editLine}` : 'boss-try-popup--editor'}`} role="status">
+                <Sparkles />
+                <div><strong>TRY THIS</strong><p>{boss.id <= 5 ? `Start on line ${boss.editLine}. Replace 0 with your formula.` : 'Scan the editor, find the unfinished formula, and make it match the mission.'}</p></div>
+                <button onClick={() => setGuideVisible(false)} aria-label="Dismiss coding tip"><X /></button>
+              </aside>
+            )}
+            <div className="boss-editor-actions">
+              <button className="boss-code-reset" disabled={busy} onClick={resetMission}><RotateCcw /> Reset code</button>
+              <button className="primary-action boss-run" onClick={run} disabled={busy}>
+                {busy ? <LoaderCircle className="spin" /> : <Play fill="currentColor" />}
+                {busy ? `RUNNING TEST ${(activeTest ?? 0) + 1} / 3` : 'RUN 3 TESTS'}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="boss-phone-stage" aria-label="Test phone">
+          <div className={`boss-phone is-${phoneState}`}>
+            <div className="boss-phone-hardware"><i /><span /><i /></div>
+            <div className="boss-phone-screen">
+              <header className="boss-test-slots" aria-label="Test progress">
+                {testRuns.map((test) => (
+                  <div key={test.number} className={`is-${test.status}`}>
+                    <span>{test.status === 'passed' ? <Check /> : test.status === 'failed' ? <X /> : test.status === 'running' ? <LoaderCircle className="spin" /> : <Circle />}</span>
+                    <small>TEST {test.number}</small>
+                    <strong>{test.status === 'waiting' ? 'WAITING' : test.status.toUpperCase()}</strong>
+                  </div>
+                ))}
+              </header>
+
+              <div className="boss-phone-content" aria-live="polite">
+                <div className="boss-phone-appbar"><Smartphone /><span><small>PIX<span>PY</span> TEST LAB</small><strong>{busy ? 'Checking your rule…' : victory ? 'Mission passed!' : 'Ready to test'}</strong></span><i /></div>
+                <div className="boss-phone-fields">
+                  <small>INPUTS SENT TO PYTHON</small>
+                  <div className={`boss-input-fields count-${boss.inputNames.length}`}>
+                    {boss.inputNames.map((name, index) => (
+                      <div className="boss-phone-field" key={name}>
+                        <span>{name}</span>
+                        <strong>{activeRun?.inputs[index] ?? '?'}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className={`boss-phone-output ${activeRun?.status === 'failed' ? 'is-error' : ''}`}>
+                  <small>PYTHON OUTPUT</small>
+                  <pre>{activeRun?.error ?? (activeRun?.output || '—')}</pre>
+                </div>
+                <div className="boss-phone-result" role="status">
+                  {victory ? <Trophy /> : testRuns.some((test) => test.status === 'failed') ? <X /> : busy ? <LoaderCircle className="spin" /> : <Sparkles />}
+                  <p>{result}</p>
+                </div>
+                {victory && bossIndex < variableBosses.length - 1 && <button className="boss-phone-next" onClick={() => choose(bossIndex + 1)}>NEXT MISSION <ArrowRight /></button>}
+              </div>
+            </div>
+            <div className="boss-phone-home" />
+          </div>
+        </section>
+      </div>
     </ExperienceShell>
   )
+}
+
+function makeEmptyRuns(): TestRun[] {
+  return [1, 2, 3].map((number) => ({ number, inputs: [], output: '', status: 'waiting' }))
+}
+
+function chooseRandomTests(testCases: BossTestCase[]): BossTestCase[] {
+  const shuffled = testCases.map((test) => ({ ...test, inputs: [...test.inputs] }))
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    const current = shuffled[index]
+    shuffled[index] = shuffled[swapIndex]
+    shuffled[swapIndex] = current
+  }
+  return shuffled.slice(0, 3)
 }
 
 function matches(actual: string, expected: string): boolean {
@@ -100,4 +313,8 @@ function matches(actual: string, expected: string): boolean {
     return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 0.000001
   }
   return false
+}
+
+function pause(milliseconds: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 }
