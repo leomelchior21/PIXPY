@@ -7,6 +7,12 @@ describe('guided Python fallback', () => {
     expect(result.variables.result).toBe(23)
   })
 
+  it('prints a text value stored from raw input', () => {
+    const result = runGuidedPython('message = input()\nprint(message)', ['hello'])
+    expect(result.stdout).toBe('hello')
+    expect(result.variables.message).toBe('hello')
+  })
+
   it('supports Python arithmetic operators safely', () => {
     expect(evaluateMath('seconds // 60', { seconds: 125 })).toBe(2)
     expect(evaluateMath('seconds % 60', { seconds: 125 })).toBe(5)

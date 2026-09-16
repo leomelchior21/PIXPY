@@ -117,21 +117,42 @@ it('does not treat empty output as the number zero', async () => {
   expect(screen.getByText(/use print\(result\) to send one number/i)).toBeInTheDocument()
 })
 
-it('keeps quiz feedback until Next, and allows revisiting examples without erasing quiz progress', () => {
-  render(<Harness activity="memory" initial={{ ...createSession('Maya'), memoryExamples: ['create', 'change', 'two', 'reuse', 'input'] }} />)
-  expect(screen.getByText(/quiz unlocked/i)).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: /start quiz/i }))
+it('traces code through memory, requires an experiment, and opens a three-question checkpoint', async () => {
+  runScript.mockResolvedValue({ stdout: '9', variables: { x: 9 } })
+  render(<Harness activity="memory" />)
+
+  fireEvent.click(screen.getByRole('button', { name: /^next/i }))
+  fireEvent.click(screen.getByRole('button', { name: /x = 3/i }))
+  fireEvent.click(screen.getByRole('button', { name: /^next/i }))
+  fireEvent.click(screen.getByRole('button', { name: /start the machine/i }))
+  fireEvent.click(screen.getByRole('button', { name: /see it move/i }))
+
+  vi.useFakeTimers()
+  fireEvent.click(screen.getByRole('button', { name: /run code/i }))
+  await act(async () => vi.runAllTimersAsync())
+  vi.useRealTimers()
+  expect(screen.getByText('TRY THIS')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /experiment first/i })).toBeDisabled()
+
+  fireEvent.change(screen.getByLabelText('Python code editor'), { target: { value: 'x = 9  # Try another number\nprint(x)' } })
+  vi.useFakeTimers()
+  fireEvent.click(screen.getByRole('button', { name: /run code/i }))
+  await act(async () => vi.runAllTimersAsync())
+  vi.useRealTimers()
+
+  expect(screen.getByText('x')).toBeInTheDocument()
+  expect(screen.getAllByText('9').length).toBeGreaterThan(0)
+  const quiz = screen.getByRole('button', { name: /quick quiz/i })
+  expect(quiz).toBeEnabled()
+  fireEvent.click(quiz)
+
   const next = screen.getByRole('button', { name: /next question/i })
   expect(next).toBeDisabled()
-  fireEvent.click(document.querySelector('.memory-quiz-options button')!)
+  fireEvent.click(document.querySelector('.chapter-quiz-options button')!)
+  expect(screen.getByText(/x is the name/i)).toBeInTheDocument()
   expect(next).toBeEnabled()
-  expect(document.querySelector('.memory-quiz-header > strong')).toHaveTextContent('1/10')
   fireEvent.click(next)
-  expect(document.querySelector('.memory-quiz-header > strong')).toHaveTextContent('2/10')
-  fireEvent.click(screen.getByRole('button', { name: /revisit the examples/i }))
-  expect(screen.getByRole('button', { name: /execute line 1/i })).toBeEnabled()
-  fireEvent.click(screen.getByRole('button', { name: /return to quiz/i }))
-  expect(document.querySelector('.memory-quiz-header > strong')).toHaveTextContent('2/10')
+  expect(screen.getByText('What value is stored in x?')).toBeInTheDocument()
 })
 
 it('preserves a boss solution when exploring another challenge', () => {

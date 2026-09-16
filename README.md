@@ -89,7 +89,7 @@ Four chapters—Raw Input, Double, Ten More, and Age Machine—each begin with a
 
 ### Memory Machine
 
-Students press **EXECUTE LINE** and follow one fading, scanning line at a time while code, memory, and output remain visible side by side. Traveling dots show a value entering memory and moving from memory to output. After completing all five examples, students advance through a ten-question code-output quiz before the activity is marked complete.
+A three-screen visual prologue introduces variables as named spots in Python's memory. Five sequential chapters—Create, Change, Two Values, Reuse, and Input Memory—then place editable code, a clear working-memory window, and output in one balanced desktop. Code lines illuminate as they run: assignments travel through the Store lane into memory and `print()` sends the remembered value through the Show lane to output. Each chapter asks the student to change real Python, test the new value, and complete a three-question full-screen checkpoint.
 
 ### Build a Black Box
 
@@ -188,7 +188,7 @@ The Variables collection now has readable experiment previews, larger code and t
 
 - **Input Machine:** move through the age demo and prediction story, send with Enter, edit real Python beside a phone-style output, reset the active machine, keep drafts when switching, and see distinct input, output, and error states.
 - **Black Box:** keep clues after a wrong guess, inspect the revealed Python, and revisit the boxes after unlocking the quiz.
-- **Memory Machine:** read an explanation for each executed line, see multiple stored values, and revisit examples or replay the quiz.
+- **Memory Machine:** choose a value in the visual intro, trace highlighted code across the Code → Memory → Output desktop, edit real Python, and complete a short checkpoint after each chapter.
 - **Both quizzes:** read feedback at your own pace and press Next to continue.
 - **Build a Black Box:** changing the rule clears old clues; two different inputs must test the same rule. Classmate mode keeps the code hidden while the machine remains usable.
 - **Final Bosses:** named challenge buttons, reset controls, readable result feedback, and drafts that survive switching challenges within the activity.

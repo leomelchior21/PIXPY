@@ -30,7 +30,7 @@ const routes = [
   { name: 'print', route: 'print-playground', selector: '.print-experience', experience: true, surface: '.pixpy-editor', panels: ['.print-editor-stage', '.terminal-stage'] },
   { name: 'black-box', route: 'black-box', selector: '.blackbox-experience', experience: true, surface: '.real-black-box', panels: ['.blackbox-stage', '.hypothesis-panel'] },
   { name: 'input', route: 'input-machine', selector: '.input-experience', experience: true, surface: '.input-story', panels: [] },
-  { name: 'memory', route: 'memory-machine', selector: '.memory-experience', experience: true, surface: '.memory-code-lines', panels: ['.memory-code-panel', '.memory-result-panel'] },
+  { name: 'memory', route: 'memory-machine', selector: '.memory-experience', experience: true, surface: '.memory-story', panels: [] },
   { name: 'build', route: 'build-black-box', selector: '.buildbox-experience', experience: true, surface: '.pixpy-editor', panels: ['.build-reference-panel', '.build-editor-panel'] },
   { name: 'bosses', route: 'final-bosses', selector: '.boss-experience', experience: true, surface: '.boss-grid', panels: ['.boss-stage', '.code-workbench'] },
 ]
@@ -272,29 +272,46 @@ async function checkPrintView(send) {
 }
 
 async function checkMemoryQuiz(send, size) {
-  const quizSession = { ...session, memoryExamples: ['create', 'change', 'two', 'reuse', 'input'], memoryQuizAnswers: [] }
   await send('Emulation.setDeviceMetricsOverride', { width: size.width, height: size.height, deviceScaleFactor: 1, mobile: false })
-  await send('Runtime.evaluate', { expression: `sessionStorage.setItem('pixpy.session.v2', ${JSON.stringify(JSON.stringify(quizSession))})` })
+  await send('Runtime.evaluate', { expression: `sessionStorage.setItem('pixpy.session.v2', ${JSON.stringify(JSON.stringify(session))})` })
   await send('Page.navigate', { url: `${appUrl}#/memory-machine` })
   await send('Page.reload', { ignoreCache: true })
   await sleep(300)
-  await waitFor(send, 'Boolean(document.querySelector(".memory-quiz"))')
-  await send('Runtime.evaluate', { expression: `document.querySelector('.quiz-unlock .primary-action')?.click()` })
-  await waitFor(send, 'Boolean(document.querySelector(".memory-quiz-options button"))')
+  await waitFor(send, 'Boolean(document.querySelector(".memory-story"))')
+  await send('Runtime.evaluate', { expression: `document.querySelector('.memory-story-next')?.click()` })
+  await send('Runtime.evaluate', { expression: `document.querySelector('.memory-value-choices button')?.click()` })
+  await send('Runtime.evaluate', { expression: `document.querySelector('.memory-story-next')?.click()` })
+  await send('Runtime.evaluate', { expression: `document.querySelector('.memory-story-next')?.click()` })
+  await send('Runtime.evaluate', { expression: `document.querySelector('.memory-mode-intro .memory-story-next')?.click()` })
+  await waitFor(send, 'Boolean(document.querySelector(".memory-run"))')
+  await send('Runtime.evaluate', { expression: `document.querySelector('.memory-run')?.click()` })
+  await waitFor(send, `Boolean(document.querySelector('.memory-try-popup'))`, 30000)
+  const coachScreenshot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+  fs.writeFileSync(path.join(outputDir, `memory-coach-${size.name}.png`), Buffer.from(coachScreenshot.data, 'base64'))
+  await send('Runtime.evaluate', { expression: `document.querySelector('.cm-content')?.focus()` })
+  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 })
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 })
+  await send('Input.insertText', { text: 'x = 9  # Try another number\nprint(x)' })
+  await send('Runtime.evaluate', { expression: `document.querySelector('.memory-run')?.click()` })
+  await waitFor(send, `!document.querySelector('.memory-quiz-call').disabled`, 30000)
+  const labScreenshot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+  fs.writeFileSync(path.join(outputDir, `memory-lab-${size.name}.png`), Buffer.from(labScreenshot.data, 'base64'))
+  await send('Runtime.evaluate', { expression: `document.querySelector('.memory-quiz-call')?.click()` })
+  await waitFor(send, 'Boolean(document.querySelector(".memory-chapter-quiz .chapter-quiz-options button"))')
   await sleep(250)
   const result = await send('Runtime.evaluate', {
     expression: `(() => {
-      const root = document.querySelector('.memory-quiz-experience');
+      const root = document.querySelector('.memory-story-experience');
       const rect = root.getBoundingClientRect();
       return {
         size: ${JSON.stringify(size.name)},
         hasDocumentVerticalScroll: document.documentElement.scrollHeight > innerHeight + 1 || document.body.scrollHeight > innerHeight + 1,
         rootInsideViewport: rect.top >= -1 && rect.bottom <= innerHeight + 1,
-        quizVisible: ${visibleRectExpression('.memory-quiz')},
-        codeVisible: ${visibleRectExpression('.memory-quiz-code')},
-        optionCount: document.querySelectorAll('.memory-quiz-options button').length,
-        contentFits: document.querySelector('.memory-quiz').scrollHeight <= document.querySelector('.memory-quiz').clientHeight + 1,
-        optionsClearFeedback: document.querySelector('.memory-quiz-options').getBoundingClientRect().bottom <= document.querySelector('.quiz-response').getBoundingClientRect().top + 1,
+        quizVisible: ${visibleRectExpression('.memory-chapter-quiz')},
+        codeVisible: ${visibleRectExpression('.chapter-quiz-card pre')},
+        optionCount: document.querySelectorAll('.memory-chapter-quiz .chapter-quiz-options button').length,
+        contentFits: document.querySelector('.memory-chapter-quiz').scrollHeight <= document.querySelector('.memory-chapter-quiz').clientHeight + 1,
+        optionsClearFeedback: document.querySelector('.chapter-quiz-options').getBoundingClientRect().bottom <= document.querySelector('.chapter-quiz-feedback').getBoundingClientRect().top + 1,
       };
     })()`,
     returnByValue: true,
@@ -302,11 +319,11 @@ async function checkMemoryQuiz(send, size) {
   const screenshot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
   const screenshotPath = path.join(outputDir, `memory-quiz-${size.name}.png`)
   fs.writeFileSync(screenshotPath, Buffer.from(screenshot.data, 'base64'))
-  await send('Runtime.evaluate', { expression: `document.querySelector('.memory-quiz-options button')?.click()` })
-  await sleep(850)
-  await send('Runtime.evaluate', { expression: `document.querySelector('.quiz-next')?.click()` })
+  await send('Runtime.evaluate', { expression: `document.querySelector('.memory-chapter-quiz .chapter-quiz-options button')?.click()` })
+  await sleep(250)
+  await send('Runtime.evaluate', { expression: `document.querySelector('.memory-chapter-quiz .chapter-quiz-next')?.click()` })
   await sleep(150)
-  const advanced = await send('Runtime.evaluate', { expression: `document.querySelector('.memory-quiz-header > strong')?.innerText.startsWith('2') ?? false`, returnByValue: true })
+  const advanced = await send('Runtime.evaluate', { expression: `document.querySelector('.memory-chapter-quiz > header strong')?.innerText.startsWith('2') ?? false`, returnByValue: true })
   return { ...result.result.value, advanced: advanced.result.value, screenshotPath }
 }
 
@@ -448,15 +465,24 @@ async function checkClassroomInteractions(send, size) {
   await press('Escape', 'Escape', 27)
   await check('Escape closes activity list', `!document.querySelector('.quick-list')`)
 
-  await go('memory-machine', '.memory-code-lines')
-  await click('.memory-tabs button:nth-child(3)')
-  for (let i = 0; i < 4; i += 1) {
-    await click('.execute-line-button')
-    await waitFor(send, `!document.querySelector('.execute-line-button').disabled`)
-  }
-  await check('Both stored values remain visible', visible('.memory-result-row article'))
-  await check('Memory execution prints both values', `document.querySelector('.memory-result-row--output pre').textContent.replace(/\\r/g, '') === '5\\n8'`)
-  await capture('memory-two-values')
+  await go('memory-machine', '.memory-story')
+  await click('.memory-story-next')
+  await click('.memory-value-choices button')
+  await click('.memory-story-next')
+  await click('.memory-story-next')
+  await click('.memory-mode-intro .memory-story-next')
+  await click('.memory-run')
+  await waitFor(send, `Boolean(document.querySelector('.memory-try-popup'))`, 30000)
+  await check('The memory window shows the stored variable', `document.querySelector('.memory-memory-window').classList.contains('has-value') && document.querySelector('.memory-value-screen').innerText.includes('x')`)
+  await check('print sends the remembered value to output', `document.querySelector('.memory-output-window pre').innerText.trim() === '3'`)
+  await capture('memory-try-this')
+  await type('.cm-content', 'x = 9  # Try another number\nprint(x)')
+  await click('.memory-run')
+  await waitFor(send, `!document.querySelector('.memory-quiz-call').disabled`, 30000)
+  await check('A real code change unlocks the checkpoint', `document.querySelector('.memory-quiz-call').innerText.includes('QUICK QUIZ')`)
+  await capture('memory-value-journey')
+  await click('.memory-quiz-call')
+  await check('Memory checkpoint keeps all three answers visible', visible('.memory-chapter-quiz .chapter-quiz-options button'))
 
   await go('build-black-box', '.build-editor-panel')
   await type('.cm-content', 'number = int(input())\nresult = number * 2\nprint(result)')
@@ -525,6 +551,14 @@ async function main() {
     const { send, close } = await makeClient()
     await send('Page.enable')
     await send('Runtime.enable')
+    if (process.env.PIXPY_MEMORY_ONLY === '1') {
+      const memoryChecks = []
+      await seedSession(send)
+      for (const size of targetSizes.slice(0, 2)) memoryChecks.push(await checkMemoryQuiz(send, size))
+      close()
+      console.log(JSON.stringify({ memoryChecks, failures: memoryChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.quizVisible || !item.codeVisible || !item.contentFits || !item.optionsClearFeedback || item.optionCount !== 3 || !item.advanced) }, null, 2))
+      return
+    }
     if (process.env.PIXPY_INTERACTIONS_ONLY === '1') {
       const interactionChecks = []
       for (const size of targetSizes.slice(0, 2)) interactionChecks.push(...await checkClassroomInteractions(send, size))
@@ -547,7 +581,7 @@ async function main() {
     for (const size of targetSizes.slice(0, 2)) interactionChecks.push(...await checkClassroomInteractions(send, size))
     close()
     const failures = metrics.filter((item) => item.hasDocumentVerticalScroll || item.hasHorizontalScroll || !item.panelsSideBySide || !item.panelsFitWithoutScrolling || !item.contentFits || !item.criticalContentClear || !item.actionsInsideViewport || !item.rootInsideViewport || !item.navVisible || !item.quickListVisible || !item.experienceHeaderVisible || !item.hintVisible || !item.surfaceVisible)
-    const quizFailures = quizChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.quizVisible || !item.codeVisible || !item.contentFits || !item.optionsClearFeedback || item.optionCount !== 4 || !item.advanced)
+    const quizFailures = quizChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.quizVisible || !item.codeVisible || !item.contentFits || !item.optionsClearFeedback || item.optionCount !== 3 || !item.advanced)
     const blackBoxQuizFailures = blackBoxQuizChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.quizVisible || !item.codeVisible || !item.contentFits || !item.optionsClearFeedback || item.optionCount !== 4 || !item.advanced)
     const nameFailures = nameChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.formVisible || !item.inputVisible || !item.placeholderCorrect)
     const printFailed = !printCheck.printVisible || !printCheck.websiteHidden || !printCheck.studentVisible || !printCheck.progressVisible || printCheck.pdfBytes < 1000

@@ -68,6 +68,7 @@ function readValue(expression: string, variables: Record<string, Value>, inputs:
   if (source === 'True') return true
   if (source === 'False') return false
   if (source === 'None') return null
+  if (/^[A-Za-z_]\w*$/.test(source) && Object.prototype.hasOwnProperty.call(variables, source)) return variables[source]
   return evaluateMath(source, variables)
 }
 
