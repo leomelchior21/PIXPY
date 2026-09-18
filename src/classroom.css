@@ -176,33 +176,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid #14708c !importan
 .blackbox-quiz-timer > div span { color: #6d3646; border-color: #c79da8; }
 .blackbox-quiz-timer > button { margin-top: 18px; font-size: 11px; width: 100%; }
 
-/* Build: the code, operator reference and clues describe the same rule. */
-.build-workspace { grid-template-rows: 144px minmax(0, 1fr); gap: 16px; }
-.build-machine-strip { padding: 12px 24px; border: 1px solid #c6d7c9; border-radius: 14px; background: #e5f4e9; grid-template-columns: minmax(0, 1fr) minmax(220px, .65fr); }
-.custom-machine > span small { font-size: 10px; color: #476151; }
-.build-machine-strip .custom-machine > span { background: #fff; }
-.build-run-stack > p { background: transparent; font-size: 13px; padding: 2px 0; }
-.build-lower-grid { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 16px; }
-.build-reference-panel { padding: 18px; }
-.build-reference-panel > header h2 { font-size: 25px; }
-.build-reference-panel > header p { font-size: 14px; }
-.build-reference-panel .code-recipes { grid-template-columns: 1fr; gap: 8px; }
-.code-recipes article { grid-template-columns: 120px 1fr; grid-template-rows: 1fr; box-shadow: none; border-color: #c3cfc5; border-width: 1px; }
-.code-recipes article span { font-size: 10px; padding: 8px; background: #dcf5ea; }
-.code-recipes article code { font-size: 14px; padding: 12px; overflow: auto; text-overflow: clip; }
-.test-history { border-color: #c3cfc5; padding: 12px; }
-.test-history > small { color: #33654c; font-size: 10px; }
-.test-history span { color: #254937; font-size: 16px; }
-.test-history span i { color: #376a53; }
-.test-history p { font-size: 12px; }
-.build-editor-panel { padding: 14px; gap: 12px; }
-.hide-code-bar button { min-height: 44px; font-size: 11px; }
-.hide-code-bar span { font-size: 10px; }
-.operator-invitation { position: static; grid-row: 2; padding: 9px 12px; font-size: 11px; }
-.build-editor-attention.is-waiting { grid-template-rows: minmax(0, 1fr) auto; }
-.secret-code { border-radius: 10px; padding: 20px; gap: 10px; }
-.secret-code p { font-size: 14px; line-height: 1.6; }
-
 /* Final challenges are identifiable without opening each one. */
 .boss-stage { grid-template-rows: auto auto auto minmax(0, 1fr); padding: 18px; gap: 16px; }
 .boss-title > span { flex-shrink: 0; border: 2px solid var(--ink); border-radius: 12px; box-shadow: 3px 3px 0 #d48d6c; }
@@ -280,12 +253,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid #14708c !importan
   .memory-quiz { padding: 20px; gap: 12px; }
   .memory-quiz-code { font-size: 17px; padding: 16px; min-height: 80px; }
   .memory-quiz-options button { min-height: 54px; }
-  .build-workspace { grid-template-rows: 124px minmax(0, 1fr); gap: 12px; }
-  .build-reference-panel { padding: 14px; gap: 10px; }
-  .build-reference-panel > header h2 { font-size: 22px; }
-  .build-reference-panel > header p { font-size: 13px; }
-  .code-recipes article code { font-size: 13px; padding: 8px; }
-  .code-recipes article span { padding: 5px 8px; }
   .boss-title h2 { font-size: 23px; }
   .boss-grid button { min-height: 50px; }
   .print-editor-controls, .print-activity-navigation { min-height: 94px; padding: 10px; }
@@ -323,11 +290,6 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
   .dino-sliders code { font-size: 14px; }
   .print-activity-navigation { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 92px; gap: 6px; }
   .print-activity-dots { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-  .build-machine-strip { padding-inline: 16px; }
-  .build-reference-panel { padding: 12px; }
-  .code-recipes article { grid-template-columns: 108px minmax(0, 1fr); }
-  .code-recipes article code { font-size: 12px; padding: 10px 8px; }
-  .hide-code-bar span { font-size: 9px; }
   .blackbox-quiz-layout { grid-template-columns: minmax(0, 1fr) 210px; }
 }
 @media screen and (orientation: landscape) and (max-height: 740px) and (min-width: 641px) {
@@ -397,15 +359,6 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
   .memory-quiz-feedback { min-height: 44px; padding: 8px 10px; font-size: 12px; }
   .quiz-next, .quiz-explore { min-height: 44px; }
 
-  .build-reference-panel { gap: 6px; padding: 9px; }
-  .build-reference-panel > header h2 { margin-block: 2px; font-size: 18px; }
-  .build-reference-panel > header p { font-size: 10px; line-height: 1.25; }
-  .build-reference-panel .code-recipes { gap: 4px; }
-  .code-recipes article { min-height: 27px; }
-  .code-recipes article span { padding: 2px 6px; font-size: 9px; }
-  .code-recipes article span b { width: 20px; height: 20px; font-size: 15px; }
-  .code-recipes article code { padding: 4px 6px; overflow: hidden; font-size: 10px; }
-  .test-history { min-height: 44px; padding: 6px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }

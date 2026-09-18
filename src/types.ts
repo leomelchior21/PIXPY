@@ -4,7 +4,6 @@ export const activityIds = [
   'black-box',
   'input-machine',
   'memory-machine',
-  'build-black-box',
   'final-bosses',
 ] as const
 
@@ -34,8 +33,6 @@ export interface SessionProgress {
   memoryQuizAnswers: number[]
   memoryQuizCompleted: boolean
   bossProgress: number[]
-  blackBoxCode: string
-  blackBoxTests: Array<{ input: number; output: number }>
   interestingValues: string[]
   printPlaygroundActivity: PrintActivityId
   printPlaygroundCode: Partial<Record<PrintActivityId, string>>

@@ -50,7 +50,7 @@ export function ExperienceShell({ order, title, question, accent, hints, complet
     <main className={`experience-screen ${className}`} style={style}>
       <header className="experience-header no-print">
         <button className="back-button" onClick={onBack}><ArrowLeft size={18} /> Variables</button>
-        <div className="experience-title"><span>EXPERIMENT {order} / 07 {completed && <b><Check size={12} /> EXPLORED</b>}</span><h1>{title}</h1><p>{question}</p></div>
+        <div className="experience-title"><span>EXPERIMENT {order} / 06 {completed && <b><Check size={12} /> EXPLORED</b>}</span><h1>{title}</h1><p>{question}</p></div>
         <div className="experience-actions">
           {onReset && <button className="reset-level-button" onClick={onReset}><RotateCcw size={16} /> <span>Reset level</span></button>}
           <button ref={hintButton} className="hint-button" onClick={showHint} aria-expanded={hintOpen} aria-controls="activity-hint"><Lightbulb size={18} /> Hint <span>{hintOpen ? `${hintLevel + 1}/${hints.length}` : '?'}</span></button>

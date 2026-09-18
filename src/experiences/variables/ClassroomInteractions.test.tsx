@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { createSession } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
 import { InputMachine } from './InputMachine'
-import { BuildBlackBox } from './BuildBlackBox'
 import { MemoryMachine } from './MemoryMachine'
 import { FinalBosses } from './FinalBosses'
 
@@ -15,7 +14,7 @@ vi.mock('../../components/CodeEditor', () => ({
   ),
 }))
 
-const activities = { input: InputMachine, build: BuildBlackBox, memory: MemoryMachine, bosses: FinalBosses }
+const activities = { input: InputMachine, memory: MemoryMachine, bosses: FinalBosses }
 function Harness({ activity, initial = createSession('Maya'), onUpdate = () => {} }: {
   activity: keyof typeof activities; initial?: SessionProgress; onUpdate?: (next: SessionProgress) => void
 }) {
@@ -93,29 +92,6 @@ it('sends the typed value, shows errors, and does not award completion for an er
   await waitFor(() => expect(screen.getByText('Use a whole number.')).toBeInTheDocument(), { timeout: 2000 })
   expect(update).not.toHaveBeenCalled()
 }, 10_000)
-
-it('clears evidence when a box rule changes and requires new tests of that rule', async () => {
-  const initial = { ...createSession('Maya'), blackBoxCode: 'number = int(input())\nresult = number * 2\nprint(result)', blackBoxTests: [{ input: 10, output: 20 }] }
-  let latest = initial as SessionProgress
-  render(<Harness activity="build" initial={initial} onUpdate={(next) => { latest = next }} />)
-  fireEvent.change(screen.getByLabelText('Python code editor'), { target: { value: 'number = int(input())\nresult = number + 1\nprint(result)' } })
-  expect(latest.blackBoxTests).toEqual([])
-  runScript.mockResolvedValue({ stdout: '11', variables: {} })
-  await act(async () => fireEvent.click(screen.getByRole('button', { name: 'TEST 10' })))
-  expect(latest.blackBoxTests).toEqual([{ input: 10, output: 11 }])
-  expect(latest.completed).not.toContain('build-black-box')
-  fireEvent.change(screen.getByLabelText('Test input'), { target: { value: '20' } })
-  runScript.mockResolvedValue({ stdout: '21', variables: {} })
-  await act(async () => fireEvent.click(screen.getByRole('button', { name: 'TEST 20' })))
-  expect(latest.completed).toContain('build-black-box')
-})
-
-it('does not treat empty output as the number zero', async () => {
-  runScript.mockResolvedValue({ stdout: '', variables: {} })
-  render(<Harness activity="build" />)
-  await act(async () => fireEvent.click(screen.getByRole('button', { name: 'TEST 10' })))
-  expect(screen.getByText(/use print\(result\) to send one number/i)).toBeInTheDocument()
-})
 
 it('traces code through memory, requires an experiment, and opens a three-question checkpoint', async () => {
   runScript.mockResolvedValue({ stdout: '9', variables: { x: 9 } })

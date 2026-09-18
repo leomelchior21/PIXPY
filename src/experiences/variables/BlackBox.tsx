@@ -5,7 +5,7 @@ import { ExperienceShell } from '../../components/ExperienceShell'
 import { completeActivity, resetActivityProgress } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
 
-interface Props { progress: SessionProgress; onProgress: (progress: SessionProgress) => void; onBack: () => void }
+interface Props { progress: SessionProgress; onProgress: (progress: SessionProgress) => void; onBack: () => void; onNext: () => void }
 interface Sample { input: number; output: number }
 interface QuizQuestion { code: string; options: string[]; answer: number; explanation: string }
 
@@ -80,7 +80,7 @@ function formatElapsed(ms: number): string {
   return `${minutes}:${seconds}`
 }
 
-export function BlackBox({ progress, onProgress, onBack }: Props) {
+export function BlackBox({ progress, onProgress, onBack, onNext }: Props) {
   const [level, setLevel] = useState(0)
   const [samples, setSamples] = useState<Sample[]>([])
   const [last, setLast] = useState<Sample | null>(null)
@@ -214,7 +214,8 @@ export function BlackBox({ progress, onProgress, onBack }: Props) {
                 <span><Trophy /></span><small>BLACK BOX QUIZ COMPLETE</small><h2>{quizScore} / {operationQuiz.length}</h2>
                 <p>Time: <b>{formatElapsed(quizElapsed)}</b></p>
                 <div className="blackbox-quiz-finish-actions">
-                  <button className="primary-action" onClick={onBack}>BACK TO ACTIVITIES <ArrowRight /></button>
+                  <button className="next-experiment-button" onClick={onNext}>NEXT EXPERIMENT: INPUT MACHINE <ArrowRight /></button>
+                  <button className="secondary-action" onClick={onBack}><ArrowLeft /> BACK TO ACTIVITIES</button>
                   <button className="secondary-action" onClick={tryQuizAgain} disabled={!canTryAgain}><RotateCcw /> TRY AGAIN</button>
                 </div>
               </div>

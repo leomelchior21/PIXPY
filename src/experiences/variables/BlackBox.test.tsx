@@ -8,7 +8,7 @@ import { BlackBox } from './BlackBox'
 describe('Black Box activity', () => {
   it('puts a clean physical box between random numbers and keeps clues only below it', async () => {
     const user = userEvent.setup()
-    const { container } = render(<BlackBox progress={createSession('Leo')} onProgress={vi.fn()} onBack={vi.fn()} />)
+    const { container } = render(<BlackBox progress={createSession('Leo')} onProgress={vi.fn()} onBack={vi.fn()} onNext={vi.fn()} />)
 
     expect(container.querySelector('.physical-black-box')).toHaveTextContent('UNKNOWN RULE')
     expect(container.querySelector('.box-bolts')).not.toBeInTheDocument()
@@ -27,7 +27,7 @@ describe('Black Box activity', () => {
 
   it('preserves the evidence when a hypothesis misses so the learner can revise it', async () => {
     const user = userEvent.setup()
-    const { container } = render(<BlackBox progress={createSession('Leo')} onProgress={vi.fn()} onBack={vi.fn()} />)
+    const { container } = render(<BlackBox progress={createSession('Leo')} onProgress={vi.fn()} onBack={vi.fn()} onNext={vi.fn()} />)
 
     await user.click(screen.getByRole('button', { name: /touch the black box/i }))
     await user.click(screen.getByRole('button', { name: /touch the black box/i }))
@@ -49,7 +49,7 @@ describe('Black Box activity', () => {
 
     function Harness() {
       const [progress, setProgress] = useState(latest)
-      return <BlackBox progress={progress} onProgress={(next) => { latest = next; setProgress(next) }} onBack={vi.fn()} />
+      return <BlackBox progress={progress} onProgress={(next) => { latest = next; setProgress(next) }} onBack={vi.fn()} onNext={vi.fn()} />
     }
 
     const { container } = render(<Harness />)
@@ -67,10 +67,11 @@ describe('Black Box activity', () => {
   it('records score and time after the last quiz answer, then allows a new attempt with new values', async () => {
     vi.useFakeTimers()
     let latest: SessionProgress = { ...createSession('Leo'), blackBoxLevels: [0, 1, 2] }
+    const onNext = vi.fn()
 
     function Harness() {
       const [progress, setProgress] = useState(latest)
-      return <BlackBox progress={progress} onProgress={(next) => { latest = next; setProgress(next) }} onBack={vi.fn()} />
+      return <BlackBox progress={progress} onProgress={(next) => { latest = next; setProgress(next) }} onBack={vi.fn()} onNext={onNext} />
     }
 
     try {
@@ -90,6 +91,10 @@ describe('Black Box activity', () => {
       expect(screen.getByText(/correct in/)).toBeInTheDocument()
       expect(latest.blackBoxQuizResults).toHaveLength(1)
       expect(latest.completed).toContain('black-box')
+      const nextExperiment = screen.getByRole('button', { name: /next experiment: input machine/i })
+      expect(nextExperiment).toHaveClass('next-experiment-button')
+      fireEvent.click(nextExperiment)
+      expect(onNext).toHaveBeenCalledOnce()
 
       fireEvent.click(screen.getByRole('button', { name: /try again/i }))
       fireEvent.click(screen.getByRole('button', { name: /start quiz/i }))

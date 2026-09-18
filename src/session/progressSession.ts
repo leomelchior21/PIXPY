@@ -23,8 +23,6 @@ export const emptyProgress: Omit<SessionProgress, 'name' | 'username' | 'isTeach
   memoryQuizAnswers: [],
   memoryQuizCompleted: false,
   bossProgress: [],
-  blackBoxCode: 'number = int(input())\n\nresult =  # type an operation here: number * 2\n\nprint(result)',
-  blackBoxTests: [],
   interestingValues: [],
   printPlaygroundActivity: 'morning-chat',
   printPlaygroundCode: {},
@@ -82,19 +80,12 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
     blackBoxQuizResults,
     memoryQuizAnswers,
     memoryQuizCompleted: parsed.memoryQuizCompleted === true || memoryQuizAnswers.length === 10,
-    blackBoxCode: migrateBlackBoxCode(parsed.blackBoxCode),
     printPlaygroundActivity: cleanPrintActivityId(parsed.printPlaygroundActivity),
     printPlaygroundCode: cleanPrintCode(parsed.printPlaygroundCode),
     printPlaygroundOutputs: cleanPrintOutputs(parsed.printPlaygroundOutputs),
     printPlaygroundVisited: cleanPrintActivityIds(parsed.printPlaygroundVisited),
     printPlaygroundCompleted,
   }
-}
-
-function migrateBlackBoxCode(value: unknown): string {
-  const legacy = 'number = int(input())\n\nresult = number * 2\n\nprint(result)'
-  if (typeof value !== 'string' || value === legacy) return emptyProgress.blackBoxCode
-  return value
 }
 
 export function saveSession(progress: SessionProgress): void {
@@ -110,7 +101,7 @@ export function completeActivity(progress: SessionProgress, activity: ActivityId
   return { ...progress, completed: [...progress.completed, activity] }
 }
 
-type ResettableActivityId = 'black-box' | 'input-machine' | 'memory-machine' | 'build-black-box' | 'final-bosses'
+type ResettableActivityId = 'black-box' | 'input-machine' | 'memory-machine' | 'final-bosses'
 
 export function resetActivityProgress(progress: SessionProgress, activity: ResettableActivityId): SessionProgress {
   const reset = { ...progress, completed: progress.completed.filter((id) => id !== activity) }
@@ -129,9 +120,6 @@ export function resetActivityProgress(progress: SessionProgress, activity: Reset
   if (activity === 'input-machine') return { ...reset, inputModes: [] }
   if (activity === 'memory-machine') {
     return { ...reset, memoryExamples: [], memoryQuizAnswers: [], memoryQuizCompleted: false }
-  }
-  if (activity === 'build-black-box') {
-    return { ...reset, blackBoxCode: emptyProgress.blackBoxCode, blackBoxTests: [] }
   }
   return { ...reset, bossProgress: [] }
 }

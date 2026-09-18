@@ -1,4 +1,4 @@
-import { Box, BrainCircuit, Gamepad2, Keyboard, MessageSquareText, Printer, Trophy } from 'lucide-react'
+import { Box, BrainCircuit, Gamepad2, Keyboard, Printer, Trophy } from 'lucide-react'
 import type { ActivityId } from '../types'
 
 export interface VariableExperience {
@@ -18,8 +18,7 @@ export const variableExperiences: VariableExperience[] = [
   { id: 'black-box', order: '03', title: 'Black Box', shortTitle: 'Black Box', question: 'How can a value go through a calculation?', description: 'Values can be transformed.', color: '#fe6f8f', icon: Box },
   { id: 'input-machine', order: '04', title: 'Input Machine', shortTitle: 'Input', question: 'How can a program receive something from me?', description: 'Values can enter the program.', color: '#72dcff', icon: Keyboard },
   { id: 'memory-machine', order: '05', title: 'Memory Machine', shortTitle: 'Memory', question: "Where does a variable's value go?", description: 'Variables remember those values.', color: '#a994ff', icon: BrainCircuit },
-  { id: 'build-black-box', order: '06', title: 'Build a Black Box', shortTitle: 'Build', question: 'Can I make my own transformation?', description: 'Now combine everything.', color: '#54e3bd', icon: MessageSquareText },
-  { id: 'final-bosses', order: '07', title: 'Final Bosses', shortTitle: 'Bosses', question: 'Can you use what you discovered?', description: 'Prove you can use it.', color: '#ff855e', icon: Trophy },
+  { id: 'final-bosses', order: '06', title: 'Final Bosses', shortTitle: 'Bosses', question: 'Can you use what you discovered?', description: 'Prove you can use it.', color: '#ff855e', icon: Trophy },
 ]
 
 export function getExperience(id: ActivityId) {

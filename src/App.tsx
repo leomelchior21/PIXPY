@@ -15,7 +15,6 @@ const PrintPlayground = lazy(() => import('./experiences/variables/PrintPlaygrou
 const BlackBox = lazy(() => import('./experiences/variables/BlackBox').then((module) => ({ default: module.BlackBox })))
 const InputMachine = lazy(() => import('./experiences/variables/InputMachine').then((module) => ({ default: module.InputMachine })))
 const MemoryMachine = lazy(() => import('./experiences/variables/MemoryMachine').then((module) => ({ default: module.MemoryMachine })))
-const BuildBlackBox = lazy(() => import('./experiences/variables/BuildBlackBox').then((module) => ({ default: module.BuildBlackBox })))
 const FinalBosses = lazy(() => import('./experiences/variables/FinalBosses').then((module) => ({ default: module.FinalBosses })))
 
 const validRoutes: AppRoute[] = ['home', 'teacher', 'variables', 'conditionals', 'functions', ...activityIds]
@@ -85,10 +84,9 @@ export default function App() {
           {visibleRoute === 'functions' && <ComingSoonScreen area="functions" onNavigate={navigate} />}
           {visibleRoute === 'dino-variables' && <DinoVariables {...experienceProps} />}
           {visibleRoute === 'print-playground' && <PrintPlayground {...experienceProps} />}
-          {visibleRoute === 'black-box' && <BlackBox {...experienceProps} />}
+          {visibleRoute === 'black-box' && <BlackBox {...experienceProps} onNext={() => navigate('input-machine')} />}
           {visibleRoute === 'input-machine' && <InputMachine {...experienceProps} />}
           {visibleRoute === 'memory-machine' && <MemoryMachine {...experienceProps} />}
-          {visibleRoute === 'build-black-box' && <BuildBlackBox {...experienceProps} />}
           {visibleRoute === 'final-bosses' && <FinalBosses {...experienceProps} />}
         </Suspense>
       </div>

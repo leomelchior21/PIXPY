@@ -64,7 +64,7 @@ describe('session-only progress', () => {
   it('resets only the selected activity and removes its completion mark', () => {
     const progress: SessionProgress = {
       ...createSession('Leo'),
-      completed: ['dino-variables', 'black-box', 'input-machine', 'memory-machine', 'build-black-box', 'final-bosses'],
+      completed: ['dino-variables', 'black-box', 'input-machine', 'memory-machine', 'final-bosses'],
       blackBoxLevels: [0, 1, 2],
       blackBoxQuizAnswers: [1, 2],
       blackBoxQuizStartedAt: 123,
@@ -75,17 +75,14 @@ describe('session-only progress', () => {
       memoryExamples: ['create'],
       memoryQuizAnswers: [2],
       memoryQuizCompleted: true,
-      blackBoxCode: 'custom code',
-      blackBoxTests: [{ input: 1, output: 2 }],
       bossProgress: [1],
     }
 
     const blackBox = resetActivityProgress(progress, 'black-box')
     expect(blackBox).toMatchObject({ blackBoxLevels: [], blackBoxQuizAnswers: [], blackBoxQuizStartedAt: null, blackBoxQuizElapsedMs: null, blackBoxQuizSeed: emptyProgress.blackBoxQuizSeed, blackBoxQuizResults: [] })
-    expect(blackBox.completed).toEqual(['dino-variables', 'input-machine', 'memory-machine', 'build-black-box', 'final-bosses'])
+    expect(blackBox.completed).toEqual(['dino-variables', 'input-machine', 'memory-machine', 'final-bosses'])
     expect(resetActivityProgress(progress, 'input-machine').inputModes).toEqual([])
     expect(resetActivityProgress(progress, 'memory-machine')).toMatchObject({ memoryExamples: [], memoryQuizAnswers: [], memoryQuizCompleted: false })
-    expect(resetActivityProgress(progress, 'build-black-box')).toMatchObject({ blackBoxCode: emptyProgress.blackBoxCode, blackBoxTests: [] })
     expect(resetActivityProgress(progress, 'final-bosses').bossProgress).toEqual([])
   })
 })

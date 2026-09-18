@@ -154,7 +154,7 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
 
   return (
     <ExperienceShell
-      order="07"
+      order="06"
       title="Final Bosses"
       question="Can your code pass every surprise test?"
       accent="#ff855e"

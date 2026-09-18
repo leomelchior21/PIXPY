@@ -41,7 +41,7 @@ export function AppHeader({ route, progress, syncState, onNavigate, onLogout }: 
       <nav aria-label="Main navigation">
         {progress.isTeacher && <button className={route === 'teacher' ? 'is-active' : ''} aria-current={route === 'teacher' ? 'page' : undefined} onClick={() => navigate('teacher')}><BarChart3 size={17} /> Dashboard</button>}
         <button className={route === 'home' ? 'is-active' : ''} aria-current={route === 'home' ? 'page' : undefined} onClick={() => navigate('home')}><Home size={17} /> Explore</button>
-        <button className={route === 'variables' || variableExperiences.some((item) => item.id === route) ? 'is-active' : ''} aria-current={route === 'variables' || variableExperiences.some((item) => item.id === route) ? 'page' : undefined} onClick={() => navigate('variables')}>Variables <span>{progress.completed.length}/7</span></button>
+        <button className={route === 'variables' || variableExperiences.some((item) => item.id === route) ? 'is-active' : ''} aria-current={route === 'variables' || variableExperiences.some((item) => item.id === route) ? 'page' : undefined} onClick={() => navigate('variables')}>Variables <span>{progress.completed.length}/{variableExperiences.length}</span></button>
       </nav>
       <div className="header-actions">
         <div className={`student-chip sync-${syncState}`}><span>{progress.isTeacher ? 'TEACHER MODE' : syncState === 'saving' ? 'SAVING…' : syncState === 'offline' ? 'SAVED ON DEVICE' : 'CLOUD SAVED'}</span><strong>{progress.isTeacher ? <GraduationCap /> : syncState === 'offline' ? <CloudOff /> : <Cloud />}{progress.name}</strong></div>

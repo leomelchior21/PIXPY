@@ -7,7 +7,7 @@ interface VariablesHomeProps {
   onNavigate: (route: AppRoute) => void
 }
 
-const previews = ['speed = 12', 'print("Hello, world!")', '4 → [ ? ] → 24', 'name = input()', 'score = score + 5', 'result = number * 2', 'Your code. Your challenge.']
+const previews = ['speed = 12', 'print("Hello, world!")', '4 → [ ? ] → 24', 'name = input()', 'score = score + 5', 'Your code. Your challenge.']
 
 export function VariablesHome({ progress, onNavigate }: VariablesHomeProps) {
   return (
@@ -15,7 +15,7 @@ export function VariablesHome({ progress, onNavigate }: VariablesHomeProps) {
       <header className="variables-heading">
         <button onClick={() => onNavigate('home')}><ArrowLeft size={17} /> All worlds</button>
         <div><p className="pixel-kicker"><Sparkles size={14} /> WORLD 01</p><h1>Variables</h1><p>Change values. Store information. Make Python remember things.</p></div>
-        <aside><strong>{progress.completed.length}<span>/7</span></strong><small>EXPERIENCES<br />EXPLORED</small></aside>
+        <aside><strong>{progress.completed.length}<span>/{variableExperiences.length}</span></strong><small>EXPERIENCES<br />EXPLORED</small></aside>
       </header>
       <section className="experience-grid">
         {variableExperiences.map((experience, index) => {

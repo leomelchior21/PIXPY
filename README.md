@@ -58,8 +58,7 @@ Variables is the first classroom-ready module. Its recommended sequence creates 
 3. **Black Box** — values can be transformed.
 4. **Input Machine** — values can enter the program.
 5. **Memory Machine** — variables remember those values.
-6. **Build a Black Box** — now combine everything.
-7. **Final Bosses** — prove you can use it.
+6. **Final Bosses** — prove you can use it.
 
 Every Variables experience is selectable and replayable. Inside Final Bosses, missions unlock in groups of three so students prove one group before seeing the next.
 
@@ -92,10 +91,6 @@ Four chapters—Raw Input, Double, Ten More, and Age Machine—each begin with a
 ### Memory Machine
 
 A three-screen visual prologue introduces variables as named spots in Python's memory. Five sequential chapters—Create, Change, Two Values, Reuse, and Input Memory—then arrange editable code at the top, a monitor-style working memory at bottom-left, and output at bottom-right. Students execute one code line per click: assignment lines activate a curved Store path into the monitor, while `print()` activates the Show path to output. A pinned coach moves beside the current action without covering code, then points to the quiz when the value completes its trip. Each chapter ends with a three-question full-screen checkpoint.
-
-### Build a Black Box
-
-Students edit a small input/process/output program and test it with multiple values. A compact **Try these operators** reference presents the four classic operators (`+`, `-`, `*`, `/`) as real code, while a blinking editor line invites the student to type the operation themselves. **HIDE MY CODE** turns the result into a classroom game where another student tries to crack the rule.
 
 ### Final Bosses
 
@@ -154,7 +149,6 @@ src/
       black-box/
       input-machine/
       memory-machine/
-      build-black-box/
       final-bosses/
   components/
     ExperienceShell/
@@ -180,10 +174,10 @@ The playground includes:
 - the three-area home screen;
 - simplified navigation;
 - a reusable no-scroll experience shell;
-- all seven Variables experiences;
+- all six Variables experiences;
 - no passwords, avatars, ranking, or global XP.
 
-The working Dino canvas, safe value clamping, CodeMirror editor, and browser Python worker were preserved and simplified. Black Box, Input Machine, Memory Machine, Build a Black Box, and Final Bosses were built as new modular experiences.
+The working Dino canvas, safe value clamping, CodeMirror editor, and browser Python worker were preserved and simplified. Black Box, Input Machine, Memory Machine, and Final Bosses were built as new modular experiences.
 
 ### Classroom UX review
 
@@ -193,7 +187,6 @@ The Variables collection now has readable experiment previews, larger code and t
 - **Black Box:** keep clues after a wrong guess, inspect the revealed Python, and revisit the boxes after unlocking the quiz.
 - **Memory Machine:** choose a value in the visual intro, trace it from top-center code through a live memory monitor to output, follow the moving coach, edit real Python, and complete a short checkpoint after each chapter.
 - **Both quizzes:** read feedback at your own pace and press Next to continue.
-- **Build a Black Box:** changing the rule clears old clues; two different inputs must test the same rule. Classmate mode keeps the code hidden while the machine remains usable.
 - **Final Bosses:** named challenge buttons, reset controls, readable result feedback, and drafts that survive switching challenges within the activity.
 
 `src/classroom.css` contains the classroom layout refinements. The application fills the viewport without document scrolling. Code wraps inside its editor, and decorative motion respects reduced-motion preferences.
