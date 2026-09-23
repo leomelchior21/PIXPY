@@ -14,32 +14,22 @@ vi.mock('../../components/CodeEditor', () => ({
   ),
 }))
 
-const activities = { input: InputMachine, memory: MemoryMachine, bosses: FinalBosses }
-function Harness({ activity, initial = createSession('Maya'), onUpdate = () => {} }: {
-  activity: keyof typeof activities; initial?: SessionProgress; onUpdate?: (next: SessionProgress) => void
+const activities = { memory: MemoryMachine, bosses: FinalBosses }
+function Harness({ activity, initial = createSession('Maya'), onUpdate = () => {}, onNext = () => {} }: {
+  activity: 'input' | keyof typeof activities; initial?: SessionProgress; onUpdate?: (next: SessionProgress) => void; onNext?: () => void
 }) {
   const [progress, setProgress] = useState(initial)
+  const props = { progress, onProgress: (next: SessionProgress) => { setProgress(next); onUpdate(next) }, onBack: () => {} }
+  if (activity === 'input') return <InputMachine {...props} onNext={onNext} />
   const Activity = activities[activity]
-  return <Activity progress={progress} onProgress={(next) => { setProgress(next); onUpdate(next) }} onBack={() => {}} />
+  return <Activity {...props} />
 }
 
 beforeEach(() => runScript.mockReset())
 
 async function enterInputLab() {
-  fireEvent.click(screen.getByRole('button', { name: /let python listen/i }))
-  expect(screen.getByLabelText('YOUR AGE')).toBeInTheDocument()
-  fireEvent.change(screen.getByLabelText('YOUR AGE'), { target: { value: '12' } })
-  vi.useFakeTimers()
-  fireEvent.click(screen.getByRole('button', { name: /calculate birth year/i }))
-  await act(async () => vi.advanceTimersByTime(1200))
-  vi.useRealTimers()
-  expect(screen.getByText('2014')).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: /how did it do that/i }))
-  fireEvent.click(screen.getByRole('button', { name: /stored my age/i }))
-  fireEvent.click(screen.getByRole('button', { name: /show me the code/i }))
-  expect(screen.getByText('age = int(input())')).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: /build it step by step/i }))
   fireEvent.click(screen.getByRole('button', { name: /open the lab/i }))
+  expect(screen.getByLabelText('YOUR MESSAGE')).toBeInTheDocument()
 }
 
 async function runInputMachine(buttonName: RegExp) {
@@ -49,9 +39,10 @@ async function runInputMachine(buttonName: RegExp) {
   vi.useRealTimers()
 }
 
-it('guides a change, explains the catch, checks the fix, and opens the chapter quiz', async () => {
+it('guides a change, explains the catch, checks the fix, and completes the quick quiz', async () => {
   runScript.mockResolvedValue({ stdout: 'Maya', variables: {} })
-  render(<Harness activity="input" />)
+  const onNext = vi.fn()
+  render(<Harness activity="input" onNext={onNext} />)
   await enterInputLab()
   fireEvent.change(screen.getByLabelText('YOUR MESSAGE'), { target: { value: 'Maya' } })
   await runInputMachine(/send input/i)
@@ -73,8 +64,12 @@ it('guides a change, explains the catch, checks the fix, and opens the chapter q
   fireEvent.click(screen.getByRole('button', { name: /rocket$/i }))
   fireEvent.click(screen.getByRole('button', { name: /next question/i }))
   fireEvent.click(screen.getByRole('button', { name: /message = input\(\)$/i }))
-  fireEvent.click(screen.getByRole('button', { name: /next chapter/i }))
-  expect(screen.getByText('Now make the input grow.')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /finish input machine/i }))
+  expect(screen.getByText('EXPLORED')).toBeInTheDocument()
+  const nextExperiment = screen.getByRole('button', { name: /next experiment: memory machine/i })
+  expect(nextExperiment).toHaveClass('next-experiment-button')
+  fireEvent.click(nextExperiment)
+  expect(onNext).toHaveBeenCalledOnce()
 }, 15_000)
 
 it('sends the typed value, shows errors, and does not award completion for an error', async () => {

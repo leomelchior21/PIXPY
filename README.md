@@ -82,11 +82,11 @@ Students physically touch a dark, tactile Black Box to collect fresh random inpu
 
 ### Input Machine
 
-A short, story-style prologue recaps `print()` and math, then lets students enter their age and watch the machine estimate their birth year. A prediction question leads into the real Python recipe:
+One concept card introduces the big idea—your program can listen—and then the Raw Input lab opens. Students type a message into a phone-style composer, send it, and watch `input()` catch it while `print()` replies with the same message:
 
-**LISTEN -> STORE -> USE -> REPLY**
+**LISTEN -> STORE -> REPLY**
 
-Four chapters—Raw Input, Double, Ten More, and Age Machine—each begin with a visual concept card and continue into an editable code lab. A phone-style conversation makes student input and Python output feel like messages. Attention cues guide students from the required input field to Send, then highlight the real code lines as they run before moving to an editable-code coachmark, Run, and finally Next.
+The single chapter pairs the phone-style conversation with editable Python. Attention cues guide students from the required input field to Send, then highlight the real code lines as they run. A coachmark invites them to replace `input()` with their own name in quotes, explains why the program stops listening, and checks the fix. Three quick questions close the activity with a next-experiment handoff to Memory Machine.
 
 ### Memory Machine
 
@@ -183,7 +183,7 @@ The working Dino canvas, safe value clamping, CodeMirror editor, and browser Pyt
 
 The Variables collection now has readable experiment previews, larger code and touch controls, and layouts tailored to landscape iPads and laptops. Activities keep their panels side by side without page scrolling. Portrait mode displays a rotate-to-landscape screen and preserves the current activity. The shared header shows the experiment question and completion state. Hints and the activity list support Escape and keyboard focus; browser Back follows activity navigation.
 
-- **Input Machine:** move through the age demo and prediction story, send with Enter, edit real Python beside a phone-style output, reset the active machine, keep drafts when switching, and see distinct input, output, and error states.
+- **Input Machine:** send with Enter, edit real Python beside a phone-style output, reset the lab, and see distinct input, output, and error states.
 - **Black Box:** keep clues after a wrong guess, inspect the revealed Python, and revisit the boxes after unlocking the quiz.
 - **Memory Machine:** choose a value in the visual intro, trace it from top-center code through a live memory monitor to output, follow the moving coach, edit real Python, and complete a short checkpoint after each chapter.
 - **Both quizzes:** read feedback at your own pace and press Next to continue.

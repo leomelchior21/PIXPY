@@ -85,7 +85,7 @@ export default function App() {
           {visibleRoute === 'dino-variables' && <DinoVariables {...experienceProps} />}
           {visibleRoute === 'print-playground' && <PrintPlayground {...experienceProps} />}
           {visibleRoute === 'black-box' && <BlackBox {...experienceProps} onNext={() => navigate('input-machine')} />}
-          {visibleRoute === 'input-machine' && <InputMachine {...experienceProps} />}
+          {visibleRoute === 'input-machine' && <InputMachine {...experienceProps} onNext={() => navigate('memory-machine')} />}
           {visibleRoute === 'memory-machine' && <MemoryMachine {...experienceProps} />}
           {visibleRoute === 'final-bosses' && <FinalBosses {...experienceProps} />}
         </Suspense>
