@@ -5,6 +5,7 @@ export const activityIds = [
   'memory-machine',
   'input-machine',
   'final-bosses',
+  'backroom-run',
   'choice-machine',
   'if-else',
   'make-it-work',
@@ -27,6 +28,10 @@ export interface SessionProgress {
   username: string
   isTeacher: boolean
   completed: ActivityId[]
+  backroomRunXp: number
+  backroomRunBest: number
+  backroomRunGates: number
+  backroomRunOperators: string[]
   choiceMachineStoriesComplete: boolean
   choiceMachineQuizIndex: number
   choiceMachineXp: number

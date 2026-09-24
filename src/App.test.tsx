@@ -50,7 +50,7 @@ describe('PixPy classroom session', () => {
     expect(screen.queryByRole('button', { name: /print my progress/i })).not.toBeInTheDocument()
   })
 
-  it('opens Conditions with five activities and a world-specific menu', async () => {
+  it('opens Conditions with six activities and a world-specific menu', async () => {
     const user = userEvent.setup()
     render(<App />)
     await user.type(screen.getByLabelText('Enter your PixPy login'), 'MayaStudent')
@@ -58,7 +58,7 @@ describe('PixPy classroom session', () => {
     await user.click(await screen.findByRole('button', { name: 'Open Conditions' }))
 
     expect(screen.getByRole('heading', { name: 'Conditions' })).toBeInTheDocument()
-    for (const [index, title] of ['HOW THE COMPUTER MAKES A CHOICE', 'IF/ELSE', 'MAKE IT WORK', 'MORE THAN ONE CHOICE?', 'Final Bosses'].entries()) {
+    for (const [index, title] of ['BACKROOM RUN', 'HOW THE COMPUTER MAKES A CHOICE', 'IF/ELSE', 'MAKE IT WORK', 'MORE THAN ONE CHOICE?', 'Final Bosses'].entries()) {
       const number = String(index + 1).padStart(2, '0')
       expect(screen.getByRole('button', { name: new RegExp(`^${number} ${title.replace('?', '\\?')}:`, 'i') })).toBeEnabled()
     }
@@ -66,7 +66,7 @@ describe('PixPy classroom session', () => {
     const list = screen.getByRole('complementary', { name: 'Conditions activities' })
     expect(list).toHaveTextContent('IF/ELSE')
     expect(list).not.toHaveTextContent('Dino Variables')
-    await user.click(screen.getByRole('button', { name: /^01 HOW THE COMPUTER MAKES A CHOICE:/i }))
+    await user.click(screen.getByRole('button', { name: /^02 HOW THE COMPUTER MAKES A CHOICE:/i }))
     expect(screen.getByRole('heading', { name: /how the computer makes a choice/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Open Conditions activity list' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /Every choice starts with a question/i })).toBeInTheDocument()

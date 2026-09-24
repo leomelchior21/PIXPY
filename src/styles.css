@@ -1959,6 +1959,21 @@ body *:not(.pixpy-editor):not(.pixpy-editor *):not(code):not(pre) { font-family:
 .conditions-activity__finish > div { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 30px; }
 .conditions-activity__finish button:last-child { background: var(--condition-accent); }
 
+/* Backroom Run keeps its own black arcade identity inside the folder grid. */
+.experience-card.is-backroom { color: #f2f4ee; border-color: #05070a; background: #121418; }
+.experience-card.is-backroom::before { border-color: #05070a; background: #ffd447; }
+.experience-card.is-backroom .experience-card__icon { border-color: #ffd447; color: #7dffab; background: #05070a; box-shadow: 2px 2px 0 #ffd447; }
+.experience-card.is-backroom .experience-card__order { color: #ffd447; }
+.experience-card.is-backroom .experience-card__copy strong { color: #fff; }
+.experience-card.is-backroom .experience-card__copy p { color: #aab4c4; }
+.experience-card.is-backroom .experience-card__preview { border-color: #3c5a48; color: #b9ffd4; background: #05070a; }
+.experience-card.is-backroom .experience-card__state { border-color: #3a4250; color: #ffd447; }
+.experience-card.is-backroom:hover { box-shadow: 11px 11px 0 var(--ink), 0 0 26px rgba(84,227,127,.35); }
+.experience-card.is-backroom:focus, .experience-card.is-backroom:active { color: #f2f4ee; background: #121418; }
+.experience-card.is-backroom.is-complete { background: #1b2028; }
+.experience-card.is-backroom.is-complete:focus, .experience-card.is-backroom.is-complete:active { background: #1b2028; }
+.experience-card.is-backroom > i { border-color: #05070a; background: #7dffab; }
+
 @media (max-width: 800px) {
   .conditions-home { grid-template-rows: auto auto auto; align-content: start; }
   .conditions-home .experience-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto; }

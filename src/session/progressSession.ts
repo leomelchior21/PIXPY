@@ -12,6 +12,10 @@ const SESSION_KEY = 'pixpy.session.v3'
 
 export const emptyProgress: Omit<SessionProgress, 'name' | 'username' | 'isTeacher'> = {
   completed: [],
+  backroomRunXp: 0,
+  backroomRunBest: 0,
+  backroomRunGates: 0,
+  backroomRunOperators: [],
   choiceMachineStoriesComplete: false,
   choiceMachineQuizIndex: 0,
   choiceMachineXp: 0,
@@ -77,6 +81,10 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
     username,
     isTeacher: parsed.isTeacher === true,
     completed: quizCompleted,
+    backroomRunXp: cleanWholeNumber(parsed.backroomRunXp, 0, 100000),
+    backroomRunBest: cleanWholeNumber(parsed.backroomRunBest, 0, 10000),
+    backroomRunGates: cleanWholeNumber(parsed.backroomRunGates, 0, 100000),
+    backroomRunOperators: cleanOperatorList(parsed.backroomRunOperators),
     choiceMachineStoriesComplete: parsed.choiceMachineStoriesComplete === true,
     choiceMachineQuizIndex: cleanChoiceQuizIndex(parsed.choiceMachineQuizIndex),
     choiceMachineXp: cleanChoiceXp(parsed.choiceMachineXp),
@@ -156,6 +164,17 @@ function cleanActivityIds(value: unknown): ActivityId[] {
 function cleanQuizAnswers(value: unknown): number[] {
   if (!Array.isArray(value)) return []
   return value.filter((answer) => Number.isInteger(answer) && answer >= 0 && answer <= 3).slice(0, 10)
+}
+
+const comparisonOperators = ['>', '<', '>=', '<=', '==', '!='] as const
+
+function cleanOperatorList(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.filter((item): item is string => typeof item === 'string' && comparisonOperators.includes(item as typeof comparisonOperators[number])))]
+}
+
+function cleanWholeNumber(value: unknown, min: number, max: number): number {
+  return typeof value === 'number' && Number.isInteger(value) ? Math.max(min, Math.min(max, value)) : min
 }
 
 function cleanChoiceQuizIndex(value: unknown): number {

@@ -12,6 +12,7 @@ import { VariablesHome } from './screens/VariablesHome'
 import { ConditionsHome } from './screens/ConditionsHome'
 import { ConditionsActivity } from './experiences/conditions/ConditionsActivity'
 import { ChoiceMachine } from './experiences/conditions/ChoiceMachine'
+import { BackroomRun } from './experiences/conditions/BackroomRun'
 import { conditionExperiences, isConditionActivity } from './data/conditions'
 
 const DinoVariables = lazy(() => import('./experiences/variables/DinoVariables').then((module) => ({ default: module.DinoVariables })))
@@ -92,8 +93,9 @@ export default function App() {
           {visibleRoute === 'input-machine' && <InputMachine {...experienceProps} onNext={() => navigate('final-bosses')} />}
           {visibleRoute === 'memory-machine' && <MemoryMachine {...experienceProps} />}
           {visibleRoute === 'final-bosses' && <FinalBosses {...experienceProps} />}
+          {visibleRoute === 'backroom-run' && <BackroomRun progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} />}
           {visibleRoute === 'choice-machine' && <ChoiceMachine progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} onNext={navigate} />}
-          {isConditionActivity(visibleRoute) && visibleRoute !== 'choice-machine' && <ConditionsActivity key={visibleRoute} activity={conditionExperiences.find((item) => item.id === visibleRoute)!} progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} onNext={navigate} />}
+          {isConditionActivity(visibleRoute) && visibleRoute !== 'choice-machine' && visibleRoute !== 'backroom-run' && <ConditionsActivity key={visibleRoute} activity={conditionExperiences.find((item) => item.id === visibleRoute)!} progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} onNext={navigate} />}
         </Suspense>
       </div>
       <PrintProgress progress={progress} />

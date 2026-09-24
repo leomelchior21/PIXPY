@@ -109,7 +109,7 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
   return <main className={`cm-screen cm-screen--${phase}`} style={{ '--cm-accent': '#b9f352' } as CSSProperties}>
     <header className="cm-header">
       <button className="cm-back" onClick={onBack}><ArrowLeft size={18} /> CONDITIONS</button>
-      <div className="cm-header-title"><small>WORLD 02 / ACTIVITY 01</small><h1>How the computer makes a choice</h1></div>
+      <div className="cm-header-title"><small>WORLD 02 / ACTIVITY 02</small><h1>How the computer makes a choice</h1></div>
       <span className="cm-phase-label"><span />{phaseLabel}</span>
     </header>
 
@@ -193,6 +193,6 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
       <div className="cm-quiz-bottom"><div className="cm-quiz-feedback" role="status">{quizAnswer === null ? <span>Choose the result to earn 10 XP.</span> : quizCorrect ? <><Check size={22} /><span><b>+10 XP!</b> {quiz.explanation}</span></> : <><RotateCcw size={22} /><span><b>Not yet.</b> {quiz.explanation} Try the same idea with new values.</span></>}</div>{quizAnswer !== null && <button className="cm-primary" onClick={quizCorrect ? nextQuiz : () => { setQuizRetry(quizRetry + 1); setQuizAnswer(null) }}>{quizCorrect ? quizIndex + 1 === CHOICE_QUIZ_LENGTH ? 'SEE YOUR RESULT' : 'NEXT QUESTION' : 'TRY NEW VALUES'} <ArrowRight size={18} /></button>}</div>
     </section>}
 
-    {phase === 'complete' && <section className="cm-complete cm-panel"><div className="cm-complete-orbit"><Trophy size={72} /></div><span className="cm-kicker">ACTIVITY 01 COMPLETE</span><h2>You know how Python chooses.</h2><p>You followed True and False paths through three stories and solved all 20 quiz questions.</p><div className="cm-complete-xp"><Zap size={27} fill="currentColor" /><b>{progress.choiceMachineXp}</b><span>XP EARNED</span></div><div className="cm-complete-actions"><button className="cm-primary" onClick={() => onNext('if-else')}>NEXT: IF/ELSE <ArrowRight size={18} /></button><button className="cm-secondary" onClick={startOver}><RotateCcw size={17} /> PLAY AGAIN</button></div></section>}
+    {phase === 'complete' && <section className="cm-complete cm-panel"><div className="cm-complete-orbit"><Trophy size={72} /></div><span className="cm-kicker">ACTIVITY 02 COMPLETE</span><h2>You know how Python chooses.</h2><p>You followed True and False paths through three stories and solved all 20 quiz questions.</p><div className="cm-complete-xp"><Zap size={27} fill="currentColor" /><b>{progress.choiceMachineXp}</b><span>XP EARNED</span></div><div className="cm-complete-actions"><button className="cm-primary" onClick={() => onNext('if-else')}>NEXT: IF/ELSE <ArrowRight size={18} /></button><button className="cm-secondary" onClick={startOver}><RotateCcw size={17} /> PLAY AGAIN</button></div></section>}
   </main>
 }

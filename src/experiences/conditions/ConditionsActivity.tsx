@@ -32,7 +32,7 @@ export function ConditionsActivity({ activity, progress, onProgress, onBack, onN
   return <main className="conditions-activity" style={{ '--condition-accent': activity.color } as React.CSSProperties}>
     <header className="conditions-activity__header">
       <button onClick={onBack}><ArrowLeft size={17} /> Conditions</button>
-      <div><small>WORLD 02 · ACTIVITY {activity.order} / 05</small><h1>{activity.title}</h1></div>
+      <div><small>WORLD 02 · ACTIVITY {activity.order} / {String(conditionExperiences.length).padStart(2, '0')}</small><h1>{activity.title}</h1></div>
       <span>{finished ? 'COMPLETE' : `${step + 1} / ${activity.challenges.length}`}</span>
     </header>
     {finished ? <section className="conditions-activity__finish">

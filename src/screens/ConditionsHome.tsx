@@ -7,7 +7,7 @@ interface Props {
   onNavigate: (route: AppRoute) => void
 }
 
-const previews = ['if score > 5:', 'if ready:\nelse:', 'if score >= 10:', 'if / elif / else', 'Choose your path.']
+const previews = ['energy > 60 → TRUE', 'if score > 5:', 'if ready:\nelse:', 'if score >= 10:', 'if / elif / else', 'Choose your path.']
 
 export function ConditionsHome({ progress, onNavigate }: Props) {
   const completed = conditionExperiences.filter((item) => progress.completed.includes(item.id)).length
@@ -22,7 +22,7 @@ export function ConditionsHome({ progress, onNavigate }: Props) {
         {conditionExperiences.map((experience, index) => {
           const Icon = experience.icon
           const complete = progress.completed.includes(experience.id)
-          return <button key={experience.id} aria-label={`${experience.order} ${experience.title}: ${experience.description}`} className={`experience-card ${complete ? 'is-complete' : ''} ${index === 0 ? 'is-start' : ''}`} style={{ '--card-accent': experience.color } as React.CSSProperties} onClick={() => onNavigate(experience.id)}>
+          return <button key={experience.id} aria-label={`${experience.order} ${experience.title}: ${experience.description}`} className={`experience-card ${experience.id === 'backroom-run' ? 'is-backroom' : ''} ${complete ? 'is-complete' : ''} ${index === 0 ? 'is-start' : ''}`} style={{ '--card-accent': experience.color } as React.CSSProperties} onClick={() => onNavigate(experience.id)}>
             <span className="experience-card__order">{experience.order}</span>
             <span className="experience-card__icon"><Icon /></span>
             <span className="experience-card__copy"><strong>{experience.title}</strong><p>{experience.description}</p></span>

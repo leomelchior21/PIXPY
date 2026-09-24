@@ -70,6 +70,12 @@ describe('session-only progress', () => {
     expect(loadSession()?.completed).toContain('choice-machine')
   })
 
+  it('keeps backroom run XP, best run and seen operators across reloads', () => {
+    const progress = createSession('Leo')
+    saveSession({ ...progress, backroomRunXp: 145, backroomRunBest: 12, backroomRunGates: 12, backroomRunOperators: ['>', '<', '>=', '??'] })
+    expect(loadSession()).toMatchObject({ backroomRunXp: 145, backroomRunBest: 12, backroomRunGates: 12, backroomRunOperators: ['>', '<', '>='] })
+  })
+
   it('resets only the selected activity and removes its completion mark', () => {
     const progress: SessionProgress = {
       ...createSession('Leo'),
