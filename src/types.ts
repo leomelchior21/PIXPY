@@ -2,9 +2,14 @@ export const activityIds = [
   'dino-variables',
   'print-playground',
   'black-box',
-  'input-machine',
   'memory-machine',
+  'input-machine',
   'final-bosses',
+  'choice-machine',
+  'if-else',
+  'make-it-work',
+  'more-than-one-choice',
+  'conditions-final-bosses',
 ] as const
 
 export type ActivityId = (typeof activityIds)[number]
@@ -22,6 +27,9 @@ export interface SessionProgress {
   username: string
   isTeacher: boolean
   completed: ActivityId[]
+  choiceMachineStoriesComplete: boolean
+  choiceMachineQuizIndex: number
+  choiceMachineXp: number
   blackBoxLevels: number[]
   blackBoxQuizAnswers: number[]
   blackBoxQuizStartedAt: number | null

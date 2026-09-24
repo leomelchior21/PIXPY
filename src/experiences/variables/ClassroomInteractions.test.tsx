@@ -66,7 +66,7 @@ it('guides a change, explains the catch, checks the fix, and completes the quick
   fireEvent.click(screen.getByRole('button', { name: /message = input\(\)$/i }))
   fireEvent.click(screen.getByRole('button', { name: /finish input machine/i }))
   expect(screen.getByText('EXPLORED')).toBeInTheDocument()
-  const nextExperiment = screen.getByRole('button', { name: /next experiment: memory machine/i })
+  const nextExperiment = screen.getByRole('button', { name: /next experiment: final bosses/i })
   expect(nextExperiment).toHaveClass('next-experiment-button')
   fireEvent.click(nextExperiment)
   expect(onNext).toHaveBeenCalledOnce()

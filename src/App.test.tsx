@@ -35,12 +35,13 @@ describe('PixPy classroom session', () => {
     await user.click(screen.getByRole('button', { name: /log in to pixpy/i }))
 
     expect(await screen.findByRole('heading', { name: /ready, leostudent.*let's get to work/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /conditionals coming soon/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Open Conditions' })).toBeEnabled()
     expect(screen.getByRole('button', { name: /functions coming soon/i })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /open .* activity list/i })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Open Variables' }))
 
     expect(await screen.findByRole('heading', { name: 'Variables' })).toBeInTheDocument()
-    for (const [index, title] of ['Dino Variables', 'Print Playground', 'Black Box', 'Input Machine', 'Memory Machine', 'Final Bosses'].entries()) {
+    for (const [index, title] of ['Dino Variables', 'Print Playground', 'Black Box', 'Memory Machine', 'Input Machine', 'Final Bosses'].entries()) {
       const number = String(index + 1).padStart(2, '0')
       expect(screen.getByRole('button', { name: new RegExp(`^${number} ${title}:`, 'i') })).toBeEnabled()
     }
@@ -48,6 +49,33 @@ describe('PixPy classroom session', () => {
     expect(screen.getByRole('complementary', { name: 'Variables activities' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /print my progress/i })).not.toBeInTheDocument()
   })
+
+  it('opens Conditions with five activities and a world-specific menu', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.type(screen.getByLabelText('Enter your PixPy login'), 'MayaStudent')
+    await user.click(screen.getByRole('button', { name: /log in to pixpy/i }))
+    await user.click(await screen.findByRole('button', { name: 'Open Conditions' }))
+
+    expect(screen.getByRole('heading', { name: 'Conditions' })).toBeInTheDocument()
+    for (const [index, title] of ['HOW THE COMPUTER MAKES A CHOICE', 'IF/ELSE', 'MAKE IT WORK', 'MORE THAN ONE CHOICE?', 'Final Bosses'].entries()) {
+      const number = String(index + 1).padStart(2, '0')
+      expect(screen.getByRole('button', { name: new RegExp(`^${number} ${title.replace('?', '\\?')}:`, 'i') })).toBeEnabled()
+    }
+    await user.click(screen.getByRole('button', { name: 'Open Conditions activity list' }))
+    const list = screen.getByRole('complementary', { name: 'Conditions activities' })
+    expect(list).toHaveTextContent('IF/ELSE')
+    expect(list).not.toHaveTextContent('Dino Variables')
+    await user.click(screen.getByRole('button', { name: /^01 HOW THE COMPUTER MAKES A CHOICE:/i }))
+    expect(screen.getByRole('heading', { name: /how the computer makes a choice/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open Conditions activity list' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Every choice starts with a question/i })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /start learning/i }))
+    expect(screen.getByRole('heading', { name: 'A rainy day' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^CONDITIONS$/i }))
+    await user.click(screen.getByRole('button', { name: /all worlds/i }))
+    expect(screen.queryByRole('button', { name: /open .* activity list/i })).not.toBeInTheDocument()
+  }, 15_000)
 
   it('keeps the student name in sessionStorage after a refresh-style remount', async () => {
     const user = userEvent.setup()

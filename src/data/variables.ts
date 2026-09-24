@@ -16,8 +16,8 @@ export const variableExperiences: VariableExperience[] = [
   { id: 'dino-variables', order: '01', title: 'Dino Variables', shortTitle: 'Dino Lab', question: 'What happens when a value changes?', description: 'Values can change things.', color: '#b9f352', icon: Gamepad2 },
   { id: 'print-playground', order: '02', title: 'Print Playground', shortTitle: 'Print', question: 'How can Python put something on screen?', description: 'Python can output values.', color: '#ffcb47', icon: Printer },
   { id: 'black-box', order: '03', title: 'Black Box', shortTitle: 'Black Box', question: 'How can a value go through a calculation?', description: 'Values can be transformed.', color: '#fe6f8f', icon: Box },
-  { id: 'input-machine', order: '04', title: 'Input Machine', shortTitle: 'Input', question: 'How can a program receive something from me?', description: 'Values can enter the program.', color: '#72dcff', icon: Keyboard },
-  { id: 'memory-machine', order: '05', title: 'Memory Machine', shortTitle: 'Memory', question: "Where does a variable's value go?", description: 'Variables remember those values.', color: '#a994ff', icon: BrainCircuit },
+  { id: 'memory-machine', order: '04', title: 'Memory Machine', shortTitle: 'Memory', question: "Where does a variable's value go?", description: 'Variables remember those values.', color: '#a994ff', icon: BrainCircuit },
+  { id: 'input-machine', order: '05', title: 'Input Machine', shortTitle: 'Input', question: 'How can a program receive something from me?', description: 'Values can enter the program.', color: '#72dcff', icon: Keyboard },
   { id: 'final-bosses', order: '06', title: 'Final Bosses', shortTitle: 'Bosses', question: 'Can you use what you discovered?', description: 'Prove you can use it.', color: '#ff855e', icon: Trophy },
 ]
 

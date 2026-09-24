@@ -7,6 +7,7 @@ interface PrintProgressProps {
 
 export function PrintProgress({ progress }: PrintProgressProps) {
   const date = new Intl.DateTimeFormat('en', { dateStyle: 'long' }).format(new Date())
+  const variablesCompleted = variableExperiences.filter((item) => progress.completed.includes(item.id)).length
 
   return (
     <section className="print-progress">
@@ -19,7 +20,7 @@ export function PrintProgress({ progress }: PrintProgressProps) {
         ))}
       </div>
       <div className="print-summary">
-        <article><strong>{progress.completed.length} / {variableExperiences.length}</strong><span>experiences completed</span></article>
+        <article><strong>{variablesCompleted} / {variableExperiences.length}</strong><span>experiences completed</span></article>
         <article><strong>{progress.bossProgress.length} / 15</strong><span>Final Bosses defeated</span></article>
       </div>
       {progress.interestingValues.length > 0 && <p className="print-note"><b>Things I tried:</b> {progress.interestingValues.slice(-5).join(' · ')}</p>}

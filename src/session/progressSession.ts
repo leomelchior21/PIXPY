@@ -12,6 +12,9 @@ const SESSION_KEY = 'pixpy.session.v3'
 
 export const emptyProgress: Omit<SessionProgress, 'name' | 'username' | 'isTeacher'> = {
   completed: [],
+  choiceMachineStoriesComplete: false,
+  choiceMachineQuizIndex: 0,
+  choiceMachineXp: 0,
   blackBoxLevels: [],
   blackBoxQuizAnswers: [],
   blackBoxQuizStartedAt: null,
@@ -64,6 +67,7 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
     if (activity === 'memory-machine') return memoryQuizAnswers.length === 10 || parsed.memoryQuizCompleted === true
     if (activity === 'black-box') return blackBoxQuizAnswers.length === 10 || blackBoxQuizResults.length > 0
     if (activity === 'print-playground') return printCoreActivityIds.every((id) => printPlaygroundCompleted.includes(id))
+    if (activity === 'choice-machine') return parsed.choiceMachineQuizIndex === 20
     return true
   })
   return {
@@ -73,6 +77,9 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
     username,
     isTeacher: parsed.isTeacher === true,
     completed: quizCompleted,
+    choiceMachineStoriesComplete: parsed.choiceMachineStoriesComplete === true,
+    choiceMachineQuizIndex: cleanChoiceQuizIndex(parsed.choiceMachineQuizIndex),
+    choiceMachineXp: cleanChoiceXp(parsed.choiceMachineXp),
     blackBoxQuizAnswers,
     blackBoxQuizStartedAt: cleanTimestamp(parsed.blackBoxQuizStartedAt),
     blackBoxQuizElapsedMs: cleanElapsed(parsed.blackBoxQuizElapsedMs),
@@ -149,6 +156,14 @@ function cleanActivityIds(value: unknown): ActivityId[] {
 function cleanQuizAnswers(value: unknown): number[] {
   if (!Array.isArray(value)) return []
   return value.filter((answer) => Number.isInteger(answer) && answer >= 0 && answer <= 3).slice(0, 10)
+}
+
+function cleanChoiceQuizIndex(value: unknown): number {
+  return typeof value === 'number' && Number.isInteger(value) ? Math.max(0, Math.min(20, value)) : 0
+}
+
+function cleanChoiceXp(value: unknown): number {
+  return typeof value === 'number' && Number.isInteger(value) ? Math.max(0, Math.min(200, value)) : 0
 }
 
 function cleanTimestamp(value: unknown): number | null {

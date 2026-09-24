@@ -9,6 +9,10 @@ import { NameEntryScreen } from './screens/NameEntryScreen'
 import { PlaygroundHome } from './screens/PlaygroundHome'
 import { TeacherDashboard } from './screens/TeacherDashboard'
 import { VariablesHome } from './screens/VariablesHome'
+import { ConditionsHome } from './screens/ConditionsHome'
+import { ConditionsActivity } from './experiences/conditions/ConditionsActivity'
+import { ChoiceMachine } from './experiences/conditions/ChoiceMachine'
+import { conditionExperiences, isConditionActivity } from './data/conditions'
 
 const DinoVariables = lazy(() => import('./experiences/variables/DinoVariables').then((module) => ({ default: module.DinoVariables })))
 const PrintPlayground = lazy(() => import('./experiences/variables/PrintPlayground').then((module) => ({ default: module.PrintPlayground })))
@@ -80,14 +84,16 @@ export default function App() {
           {visibleRoute === 'teacher' && progress.isTeacher && <TeacherDashboard username={progress.username} />}
           {visibleRoute === 'home' && <PlaygroundHome progress={progress} onNavigate={navigate} />}
           {visibleRoute === 'variables' && <VariablesHome progress={progress} onNavigate={navigate} />}
-          {visibleRoute === 'conditionals' && <ComingSoonScreen area="conditionals" onNavigate={navigate} />}
+          {visibleRoute === 'conditionals' && <ConditionsHome progress={progress} onNavigate={navigate} />}
           {visibleRoute === 'functions' && <ComingSoonScreen area="functions" onNavigate={navigate} />}
           {visibleRoute === 'dino-variables' && <DinoVariables {...experienceProps} />}
           {visibleRoute === 'print-playground' && <PrintPlayground {...experienceProps} />}
-          {visibleRoute === 'black-box' && <BlackBox {...experienceProps} onNext={() => navigate('input-machine')} />}
-          {visibleRoute === 'input-machine' && <InputMachine {...experienceProps} onNext={() => navigate('memory-machine')} />}
+          {visibleRoute === 'black-box' && <BlackBox {...experienceProps} onNext={() => navigate('memory-machine')} />}
+          {visibleRoute === 'input-machine' && <InputMachine {...experienceProps} onNext={() => navigate('final-bosses')} />}
           {visibleRoute === 'memory-machine' && <MemoryMachine {...experienceProps} />}
           {visibleRoute === 'final-bosses' && <FinalBosses {...experienceProps} />}
+          {visibleRoute === 'choice-machine' && <ChoiceMachine progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} onNext={navigate} />}
+          {isConditionActivity(visibleRoute) && visibleRoute !== 'choice-machine' && <ConditionsActivity key={visibleRoute} activity={conditionExperiences.find((item) => item.id === visibleRoute)!} progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} onNext={navigate} />}
         </Suspense>
       </div>
       <PrintProgress progress={progress} />

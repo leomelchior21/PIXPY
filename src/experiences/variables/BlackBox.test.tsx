@@ -91,7 +91,7 @@ describe('Black Box activity', () => {
       expect(screen.getByText(/correct in/)).toBeInTheDocument()
       expect(latest.blackBoxQuizResults).toHaveLength(1)
       expect(latest.completed).toContain('black-box')
-      const nextExperiment = screen.getByRole('button', { name: /next experiment: input machine/i })
+      const nextExperiment = screen.getByRole('button', { name: /next experiment: memory machine/i })
       expect(nextExperiment).toHaveClass('next-experiment-button')
       fireEvent.click(nextExperiment)
       expect(onNext).toHaveBeenCalledOnce()

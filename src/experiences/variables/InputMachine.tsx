@@ -162,7 +162,7 @@ export function InputMachine({ progress, onProgress, onBack, onNext }: Props) {
 
   return (
     <ExperienceShell
-      order="04"
+      order="05"
       title="Input Machine"
       question="What if your program could listen and reply?"
       accent="#72dcff"
@@ -322,9 +322,9 @@ function QuizFinish({ onNext, onBack }: { onNext: () => void; onBack: () => void
         <span><Trophy /></span>
         <small>INPUT MACHINE COMPLETE</small>
         <h2>You made Python listen.</h2>
-        <p>input() caught your message and a variable kept it. Next, find out where that value lives.</p>
+        <p>input() caught your message and a variable kept it. Now put your skills to the test.</p>
         <div className="input-quiz-finish-actions">
-          <button className="next-experiment-button" onClick={onNext}>NEXT EXPERIMENT: MEMORY MACHINE <ArrowRight /></button>
+      <button className="next-experiment-button" onClick={onNext}>NEXT EXPERIMENT: FINAL BOSSES <ArrowRight /></button>
           <button className="secondary-action" onClick={onBack}><ArrowLeft /> BACK TO ACTIVITIES</button>
         </div>
       </div>

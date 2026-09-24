@@ -61,6 +61,15 @@ describe('session-only progress', () => {
     expect(loadSession()?.completed).toContain('print-playground')
   })
 
+  it('restores the choice quiz checkpoint and requires all 20 questions for completion', () => {
+    const progress = createSession('Leo')
+    saveSession({ ...progress, choiceMachineStoriesComplete: true, choiceMachineQuizIndex: 8, choiceMachineXp: 80, completed: ['choice-machine'] })
+    expect(loadSession()).toMatchObject({ choiceMachineStoriesComplete: true, choiceMachineQuizIndex: 8, choiceMachineXp: 80, completed: [] })
+
+    saveSession({ ...progress, choiceMachineStoriesComplete: true, choiceMachineQuizIndex: 20, choiceMachineXp: 200, completed: ['choice-machine'] })
+    expect(loadSession()?.completed).toContain('choice-machine')
+  })
+
   it('resets only the selected activity and removes its completion mark', () => {
     const progress: SessionProgress = {
       ...createSession('Leo'),

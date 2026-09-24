@@ -214,7 +214,7 @@ export function BlackBox({ progress, onProgress, onBack, onNext }: Props) {
                 <span><Trophy /></span><small>BLACK BOX QUIZ COMPLETE</small><h2>{quizScore} / {operationQuiz.length}</h2>
                 <p>Time: <b>{formatElapsed(quizElapsed)}</b></p>
                 <div className="blackbox-quiz-finish-actions">
-                  <button className="next-experiment-button" onClick={onNext}>NEXT EXPERIMENT: INPUT MACHINE <ArrowRight /></button>
+                  <button className="next-experiment-button" onClick={onNext}>NEXT EXPERIMENT: MEMORY MACHINE <ArrowRight /></button>
                   <button className="secondary-action" onClick={onBack}><ArrowLeft /> BACK TO ACTIVITIES</button>
                   <button className="secondary-action" onClick={tryQuizAgain} disabled={!canTryAgain}><RotateCcw /> TRY AGAIN</button>
                 </div>

@@ -1,6 +1,7 @@
 import { BarChart3, Check, Cloud, CloudOff, GraduationCap, Home, List, LogOut, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { variableExperiences } from '../data/variables'
+import { conditionExperiences, isConditionActivity } from '../data/conditions'
 import type { AppRoute, SessionProgress } from '../types'
 import { Brand } from './Brand'
 
@@ -16,6 +17,11 @@ export function AppHeader({ route, progress, syncState, onNavigate, onLogout }: 
   const [listOpen, setListOpen] = useState(false)
   const listRef = useRef<HTMLElement>(null)
   const toggleRef = useRef<HTMLButtonElement>(null)
+  const world = route === 'variables' || variableExperiences.some((item) => item.id === route)
+    ? { title: 'Variables', experiences: variableExperiences }
+    : route === 'conditionals' || isConditionActivity(route)
+      ? { title: 'Conditions', experiences: conditionExperiences }
+      : null
   useEffect(() => {
     if (!listOpen) return
     listRef.current?.querySelector<HTMLButtonElement>('.is-current')?.focus()
@@ -41,19 +47,18 @@ export function AppHeader({ route, progress, syncState, onNavigate, onLogout }: 
       <nav aria-label="Main navigation">
         {progress.isTeacher && <button className={route === 'teacher' ? 'is-active' : ''} aria-current={route === 'teacher' ? 'page' : undefined} onClick={() => navigate('teacher')}><BarChart3 size={17} /> Dashboard</button>}
         <button className={route === 'home' ? 'is-active' : ''} aria-current={route === 'home' ? 'page' : undefined} onClick={() => navigate('home')}><Home size={17} /> Explore</button>
-        <button className={route === 'variables' || variableExperiences.some((item) => item.id === route) ? 'is-active' : ''} aria-current={route === 'variables' || variableExperiences.some((item) => item.id === route) ? 'page' : undefined} onClick={() => navigate('variables')}>Variables <span>{progress.completed.length}/{variableExperiences.length}</span></button>
       </nav>
       <div className="header-actions">
         <div className={`student-chip sync-${syncState}`}><span>{progress.isTeacher ? 'TEACHER MODE' : syncState === 'saving' ? 'SAVING…' : syncState === 'offline' ? 'SAVED ON DEVICE' : 'CLOUD SAVED'}</span><strong>{progress.isTeacher ? <GraduationCap /> : syncState === 'offline' ? <CloudOff /> : <Cloud />}{progress.name}</strong></div>
-        <button ref={toggleRef} className={`quick-list-button ${listOpen ? 'is-active' : ''}`} onClick={() => setListOpen((value) => !value)} aria-label="Open Variables activity list" aria-expanded={listOpen} aria-controls="activity-list"><List size={21} /><span>Activities</span></button>
+        {world && <button ref={toggleRef} className={`quick-list-button ${listOpen ? 'is-active' : ''}`} onClick={() => setListOpen((value) => !value)} aria-label={`Open ${world.title} activity list`} aria-expanded={listOpen} aria-controls="activity-list"><List size={21} /><span>Activities</span></button>}
         <button className="logout-button" onClick={onLogout} aria-label="Log out"><LogOut /></button>
       </div>
 
-      {listOpen && (
-        <aside ref={listRef} id="activity-list" className="quick-list" aria-label="Variables activities">
-          <header><div><small>CURRENT GROUP</small><strong>Variables</strong></div><button onClick={() => setListOpen(false)} aria-label="Close activity list"><X /></button></header>
+      {listOpen && world && (
+        <aside ref={listRef} id="activity-list" className="quick-list" aria-label={`${world.title} activities`}>
+          <header><div><small>CURRENT GROUP</small><strong>{world.title}</strong></div><button onClick={() => setListOpen(false)} aria-label="Close activity list"><X /></button></header>
           <div>
-            {variableExperiences.map((experience) => {
+            {world.experiences.map((experience) => {
               const Icon = experience.icon
               const done = progress.completed.includes(experience.id)
               return (
