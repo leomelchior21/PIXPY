@@ -35,17 +35,19 @@ Progress is cached in `sessionStorage` for fast refresh recovery and synchronize
 
 The teacher login `leleomaker` opens the full PixPy website with a teacher-only **Dashboard** tab. The dashboard shows activity completion, Final Boss mission progress, last update, search, and summary totals, with filters for classes A/B/C and the White/Yellow teams. Students without a team in the source roster remain visible as **No team**.
 
+**Live view** opens from the dashboard's `Live view` button: a passive grid of every student's current editor content (STOP, Print Playground, Final Bosses, Input Machine, Memory Machine). Editors publish a debounced snapshot through `private.pixpy_live_code`; the teacher page refreshes every two seconds and highlights cards that changed in the last 90 seconds. Students never see a banner and can only ever write their own row. Apply `supabase/migrations/20260919090000_pixpy_live_code.sql` before using it, or the page shows a migration hint.
+
 The app header has a **QUICK LIST** for jumping directly to any activity in the current group. It stays focused on navigation and contains no screenshot, print, or session-reset actions.
 
 ## Main experience map
 
-The home screen has three large areas. Variables is available now; unfinished groups appear as disabled gray cards so their status is unambiguous:
+The home screen has three playable areas:
 
 | Area | Promise | Delivery status |
 | --- | --- | --- |
-| Variables | Change values and watch Python remember them. | First complete area |
-| Conditionals | Make choices with code. | Coming next |
-| Functions | Build actions and reuse them. | Coming next |
+| Variables | Change values and watch Python remember them. | Six experiences |
+| Conditionals | Make choices with code. | Six activities |
+| Extras | Try the bonus build. | STOP · String Sheet |
 
 This is a simple world selector, not a dashboard. It has no graphs, side navigation, statistics, leaderboards, or locked content.
 
@@ -191,7 +193,7 @@ The Variables collection now has readable experiment previews, larger code and t
 
 `src/classroom.css` contains the classroom layout refinements. The application fills the viewport without document scrolling. Code wraps inside its editor, and decorative motion respects reduced-motion preferences.
 
-Conditionals and Functions currently provide open visual previews only. Their playable experiences are intentionally outside this delivery.
+Extras hosts **STOP · String Sheet**: students store text in a variable and grow a live, statically analyzed six-row sheet by printing labels. The sheet updates while they type; RUN executes the real Python separately. The Functions world is not built.
 
 ## Run locally
 

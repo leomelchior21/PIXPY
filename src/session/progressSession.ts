@@ -36,6 +36,8 @@ export const emptyProgress: Omit<SessionProgress, 'name' | 'username' | 'isTeach
   printPlaygroundOutputs: {},
   printPlaygroundVisited: [],
   printPlaygroundCompleted: [],
+  stopCode: null,
+  stopSheetComplete: false,
 }
 
 export function createSession(name: string, username = cleanUsername(name), isTeacher = false): SessionProgress {
@@ -72,6 +74,7 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
     if (activity === 'black-box') return blackBoxQuizAnswers.length === 10 || blackBoxQuizResults.length > 0
     if (activity === 'print-playground') return printCoreActivityIds.every((id) => printPlaygroundCompleted.includes(id))
     if (activity === 'choice-machine') return parsed.choiceMachineQuizIndex === 20
+    if (activity === 'stop') return parsed.stopSheetComplete === true
     return true
   })
   return {
@@ -100,6 +103,8 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
     printPlaygroundOutputs: cleanPrintOutputs(parsed.printPlaygroundOutputs),
     printPlaygroundVisited: cleanPrintActivityIds(parsed.printPlaygroundVisited),
     printPlaygroundCompleted,
+    stopCode: typeof parsed.stopCode === 'string' ? parsed.stopCode.slice(0, 20000) : null,
+    stopSheetComplete: parsed.stopSheetComplete === true,
   }
 }
 
@@ -116,7 +121,7 @@ export function completeActivity(progress: SessionProgress, activity: ActivityId
   return { ...progress, completed: [...progress.completed, activity] }
 }
 
-type ResettableActivityId = 'black-box' | 'input-machine' | 'memory-machine' | 'final-bosses'
+type ResettableActivityId = 'black-box' | 'input-machine' | 'memory-machine' | 'final-bosses' | 'stop'
 
 export function resetActivityProgress(progress: SessionProgress, activity: ResettableActivityId): SessionProgress {
   const reset = { ...progress, completed: progress.completed.filter((id) => id !== activity) }
@@ -136,6 +141,7 @@ export function resetActivityProgress(progress: SessionProgress, activity: Reset
   if (activity === 'memory-machine') {
     return { ...reset, memoryExamples: [], memoryQuizAnswers: [], memoryQuizCompleted: false }
   }
+  if (activity === 'stop') return { ...reset, stopCode: null, stopSheetComplete: false }
   return { ...reset, bossProgress: [] }
 }
 

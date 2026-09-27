@@ -560,13 +560,12 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 .logout-button svg { width: 18px; }
 
 /* Teacher dashboard, available alongside the complete PixPy site. */
-.teacher-dashboard { display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); gap: 12px; width: min(1700px, calc(100% - 40px)); height: 100%; margin: auto; padding: 14px 0 18px; color: var(--ink); }
-.teacher-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 66px; padding: 10px 16px; border: 2px solid var(--ink); border-radius: 13px; background: #fff; box-shadow: 4px 4px 0 #62a92f; }
-.teacher-header > div { min-width: 0; }
-.teacher-header small { color: #39751e; font-size: 9px; font-weight: 900; letter-spacing: .12em; }
-.teacher-header h1 { margin: 2px 0; font-size: clamp(22px, 2vw, 30px); line-height: 1; }
-.teacher-header p { color: #5f635c; font-size: 11px; }
+.teacher-dashboard { display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; width: min(1700px, calc(100% - 40px)); height: 100%; margin: auto; padding: 14px 0 18px; color: var(--ink); }
+.teacher-live-button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 0 13px; border: 2px solid var(--ink); border-radius: 8px; color: var(--ink); background: var(--cyan); box-shadow: 2px 2px 0 var(--ink); font-size: 10px; font-weight: 900; }
+.teacher-live-button:hover { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
+.teacher-live-button svg { width: 17px; }
 .teacher-refresh { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 0 13px; border: 2px solid var(--ink); border-radius: 8px; color: var(--ink); background: var(--lime); box-shadow: 2px 2px 0 var(--ink); font-size: 10px; font-weight: 900; }
+.teacher-refresh:hover:not(:disabled) { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
 .teacher-refresh svg { width: 17px; }
 .teacher-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .teacher-summary article { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 72px; padding: 10px; border: 2px solid var(--ink); border-radius: 11px; background: #fff; box-shadow: 3px 3px 0 var(--ink); }
@@ -593,7 +592,14 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 .teacher-roster > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 2px 3px 12px; border-bottom: 1px solid #d6d1c8; }
 .teacher-roster > header small { color: #39751e; font-size: 8px; font-weight: 900; letter-spacing: .1em; }
 .teacher-roster > header h2 { margin-top: 2px; font-size: 21px; }
-.teacher-search { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; width: min(310px, 40%); min-height: 42px; padding: 0 10px; border: 2px solid var(--ink); border-radius: 8px; background: #f6f3ed; }
+.teacher-roster-tools { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.teacher-roster-tools .teacher-refresh { min-height: 44px; }
+.teacher-roster-tools .teacher-search { width: min(240px, 24vw); }
+.teacher-world-switch { display: flex; gap: 5px; padding: 4px; border: 2px solid var(--ink); border-radius: 9px; background: #f0ede7; }
+.teacher-world-switch button { min-height: 36px; padding: 0 12px; border: 2px solid transparent; border-radius: 6px; color: #4e534c; background: transparent; font-size: 10px; font-weight: 900; letter-spacing: .04em; }
+.teacher-world-switch button:hover { color: var(--ink); background: #fff; }
+.teacher-world-switch button.is-active { border-color: var(--ink); color: var(--ink); background: var(--lime); box-shadow: 2px 2px 0 var(--ink); }
+.teacher-search { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; width: min(260px, 32%); min-height: 42px; padding: 0 10px; border: 2px solid var(--ink); border-radius: 8px; background: #f6f3ed; }
 .teacher-search svg { width: 17px; }
 .teacher-search input { min-width: 0; border: 0; outline: 0; color: var(--ink); background: transparent; font-size: 12px; }
 .teacher-table-wrap { min-height: 0; overflow: auto; }
@@ -617,6 +623,7 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 .teacher-activity-dots span { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid #aaa79f; border-radius: 6px; color: #898981; background: #f0ede7; }
 .teacher-activity-dots span.is-done { border-color: #2c744d; color: #fff; background: #3ba66e; }
 .teacher-activity-dots svg { width: 13px; }
+.teacher-choice-xp { color: #5f4a86 !important; font-weight: 800; }
 .teacher-boss-progress { display: inline-block; width: min(150px, 70%); height: 9px; margin-right: 8px; overflow: hidden; border: 1px solid #807b73; border-radius: 99px; background: #e8e3da; }
 .teacher-boss-progress i { display: block; height: 100%; border-radius: inherit; background: var(--orange); }
 .teacher-table-wrap td:nth-child(4) > strong { display: inline; font-size: 11px; }
@@ -630,7 +637,6 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 
 @media screen and (orientation: landscape) and (max-width: 1100px) {
   .teacher-dashboard { gap: 8px; width: calc(100% - 26px); padding-block: 9px 12px; }
-  .teacher-header { min-height: 58px; gap: 12px; padding: 7px 11px; }
   .teacher-summary { gap: 8px; }
   .teacher-summary article { grid-template-columns: 38px minmax(0, 1fr); min-height: 62px; padding: 7px; }
   .teacher-summary article > span { width: 36px; height: 36px; }
@@ -645,9 +651,7 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 }
 
 @media screen and (orientation: landscape) and (max-height: 600px) and (min-width: 641px) {
-  .teacher-dashboard { grid-template-rows: auto 54px auto minmax(0, 1fr); gap: 6px; padding-block: 6px; }
-  .teacher-header { min-height: 50px; }
-  .teacher-header p { display: none; }
+  .teacher-dashboard { grid-template-rows: auto auto minmax(0, 1fr); gap: 6px; padding-block: 6px; }
   .teacher-summary article { min-height: 52px; }
   .teacher-summary article > span { width: 31px; height: 31px; }
   .teacher-filter-group button { min-height: 27px; }

@@ -14,13 +14,21 @@ export function runGuidedPython(code: string, inputs: string[] = []): ScriptRunR
 
     const printMatch = line.match(/^print\((.*)\)$/)
     if (printMatch) {
-      output.push(printMatch[1].trim() === '' ? '' : formatValue(readValue(printMatch[1], variables, inputs, () => inputIndex++)))
+      const printed = splitTopLevel(printMatch[1], ',').map((argument) => argument.trim() === '' ? '' : formatValue(readValue(argument, variables, inputs, () => inputIndex++))).join(' ')
+      output.push(printed)
       continue
     }
 
-    const assignment = line.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/)
+    const assignment = line.match(/^([A-Za-z_]\w*)\s*(\+=|=)(?!=)\s*(.+)$/)
     if (assignment) {
-      variables[assignment[1]] = readValue(assignment[2], variables, inputs, () => inputIndex++)
+      const name = assignment[1]
+      const value = readValue(assignment[3], variables, inputs, () => inputIndex++)
+      if (assignment[2] === '+=') {
+        if (!Object.prototype.hasOwnProperty.call(variables, name)) throw new Error(`Line ${index + 1}: ${name} needs a value before +=.`)
+        variables[name] = addValues(variables[name], value)
+      } else {
+        variables[name] = value
+      }
       continue
     }
 
@@ -62,6 +70,17 @@ function readValue(expression: string, variables: Record<string, Value>, inputs:
     const value = Number(readValue(numberCall[2], variables, inputs, takeInput))
     return numberCall[1] === 'round' ? Math.round(value) : Math.abs(value)
   }
+  const parts = splitTopLevel(source, '+')
+  if (parts.length > 1 && parts.some((part) => /["']/.test(part))) {
+    return parts.map((part) => formatValue(readValue(part, variables, inputs, takeInput))).join('')
+  }
+  const fstring = source.match(/^[fF](["'])([\s\S]*)\1$/)
+  if (fstring) {
+    return fstring[2]
+      .replace(/\{\{/g, '\uE000').replace(/\}\}/g, '\uE001')
+      .replace(/\{([^{}]+)\}/g, (_match, inner: string) => formatValue(readValue(inner.trim(), variables, inputs, takeInput)))
+      .replace(/\uE000/g, '{').replace(/\uE001/g, '}')
+  }
   if ((source.startsWith('"') && source.endsWith('"')) || (source.startsWith("'") && source.endsWith("'"))) {
     return source.slice(1, -1).replace(/\\n/g, '\n').replace(/\\([\\"'])/g, '$1')
   }
@@ -70,6 +89,39 @@ function readValue(expression: string, variables: Record<string, Value>, inputs:
   if (source === 'None') return null
   if (/^[A-Za-z_]\w*$/.test(source) && Object.prototype.hasOwnProperty.call(variables, source)) return variables[source]
   return evaluateMath(source, variables)
+}
+
+function splitTopLevel(expression: string, separator: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let quote = ''
+  let escaped = false
+  let start = 0
+  for (let index = 0; index < expression.length; index += 1) {
+    const character = expression[index]
+    if (quote) {
+      if (escaped) { escaped = false; continue }
+      if (character === '\\') { escaped = true; continue }
+      if (character === quote) quote = ''
+      continue
+    }
+    if (character === '"' || character === "'") { quote = character; continue }
+    if ('([{'.includes(character)) depth += 1
+    if (')]}'.includes(character)) depth -= 1
+    if (depth === 0 && character === separator) {
+      parts.push(expression.slice(start, index))
+      start = index + 1
+    }
+  }
+  parts.push(expression.slice(start))
+  return parts
+}
+
+function addValues(left: Value, right: Value): Value {
+  if (typeof left === 'string' || typeof right === 'string') return formatValue(left) + formatValue(right)
+  if (typeof left === 'number' && typeof right === 'number') return left + right
+  if (typeof left === 'boolean' || typeof right === 'boolean') return Number(left) + Number(right)
+  return null
 }
 
 export function evaluateMath(expression: string, variables: Record<string, Value>): number {
@@ -89,6 +141,7 @@ export function evaluateMath(expression: string, variables: Record<string, Value
     }
     if (/^\d+(?:\.\d+)?$/.test(token)) return Number(token)
     if (/^[A-Za-z_]\w*$/.test(token)) {
+      if (!Object.prototype.hasOwnProperty.call(variables, token)) throw new Error(`${token} is not defined.`)
       const value = variables[token]
       if (typeof value !== 'number') throw new Error(`${token} needs a number.`)
       return value

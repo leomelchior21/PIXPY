@@ -4,6 +4,35 @@ import type { DinoRunResult, DinoValues, RuntimeState, ScriptRunResult } from '.
 
 type StateListener = (state: RuntimeState) => void
 
+export class PythonRunError extends Error {
+  readonly line: number | null
+
+  constructor(message: string, line: number | null = null) {
+    super(message)
+    this.name = 'PythonRunError'
+    this.line = line
+  }
+}
+
+function pythonErrorLine(error: string): number | null {
+  const match = error.match(/line (\d+)/i)
+  const line = match ? Number(match[1]) : Number.NaN
+  return Number.isInteger(line) && line > 0 ? line : null
+}
+
+function toPythonRunError(error: unknown, fallbackMessage: string): PythonRunError {
+  const message = error instanceof Error ? error.message : fallbackMessage
+  return new PythonRunError(message, pythonErrorLine(message))
+}
+
+function runGuidedSafely(code: string, inputs: string[]): Promise<ScriptRunResult> {
+  try {
+    return Promise.resolve(runGuidedPython(code, inputs))
+  } catch (error) {
+    return Promise.reject(toPythonRunError(error, 'Python could not run that code.'))
+  }
+}
+
 interface PendingRun {
   resolve: (value: ScriptRunResult) => void
   reject: (reason: Error) => void
@@ -37,10 +66,9 @@ class PythonRunner {
         this.pending.delete(message.id)
         if (message.type === 'error') {
           if (this.state === 'unavailable' || /fetch|network|load/i.test(message.error ?? '')) {
-            try { pending.resolve(runGuidedPython(pending.code, pending.inputs)) }
-            catch (error) { pending.reject(error instanceof Error ? error : new Error(String(error))) }
+            void runGuidedSafely(pending.code, pending.inputs).then(pending.resolve, pending.reject)
           } else {
-            pending.reject(new Error(cleanPythonError(message.error ?? 'Python could not run that code.')))
+            pending.reject(new PythonRunError(cleanPythonError(message.error ?? 'Python could not run that code.'), pythonErrorLine(message.error ?? '')))
           }
         } else {
           try {
@@ -70,7 +98,7 @@ class PythonRunner {
 
   runScript(code: string, inputs: string[] = []): Promise<ScriptRunResult> {
     if (!this.worker || this.state === 'unavailable') {
-      return Promise.resolve(runGuidedPython(code, inputs))
+      return runGuidedSafely(code, inputs)
     }
     const id = this.nextId++
     return new Promise((resolve, reject) => {
@@ -79,8 +107,7 @@ class PythonRunner {
         // A first download can be slow on classroom Wi-Fi. Keep loading Python
         // while the small-program runner answers this request locally.
         if (this.state === 'booting' || this.state === 'unavailable') {
-          try { resolve(runGuidedPython(code, inputs)) }
-          catch (error) { reject(error instanceof Error ? error : new Error(String(error))) }
+          void runGuidedSafely(code, inputs).then(resolve, reject)
           return
         }
         this.worker?.terminate()

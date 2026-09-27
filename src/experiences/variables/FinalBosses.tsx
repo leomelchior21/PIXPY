@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
+import { useLiveCode } from '../../hooks/useLiveCode'
 import { ExperienceShell } from '../../components/ExperienceShell'
 import { variableBosses, type BossTestCase } from '../../data/bosses'
 import { pythonRunner } from '../../lib/pythonRunner'
@@ -30,6 +31,7 @@ export function FinalBosses({ progress, onProgress, onBack }: Props) {
   const [bossIndex, setBossIndex] = useState(() => firstOpenMission(progress.bossProgress))
   const boss = variableBosses[bossIndex]
   const [code, setCode] = useState(boss.code)
+  useLiveCode('final-bosses', code, `Boss ${String(boss.id).padStart(2, '0')} · ${boss.title}`)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(() => progress.bossProgress.includes(boss.id) ? 'Mission already cleared. You can test another solution.' : 'Your phone is ready for three surprise tests.')
   const [victory, setVictory] = useState(() => progress.bossProgress.includes(boss.id))

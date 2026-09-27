@@ -4,12 +4,12 @@ import { PrintProgress } from './components/PrintProgress'
 import { activityIds, type AppRoute, type SessionProgress } from './types'
 import { clearSession, createSession, loadSession, restoreProgress, saveSession } from './session/progressSession'
 import { loginToClassroom, saveClassroomProgress } from './lib/classroomCloud'
-import { ComingSoonScreen } from './screens/ComingSoonScreen'
 import { NameEntryScreen } from './screens/NameEntryScreen'
 import { PlaygroundHome } from './screens/PlaygroundHome'
 import { TeacherDashboard } from './screens/TeacherDashboard'
 import { VariablesHome } from './screens/VariablesHome'
 import { ConditionsHome } from './screens/ConditionsHome'
+import { ExtrasHome } from './screens/ExtrasHome'
 import { ConditionsActivity } from './experiences/conditions/ConditionsActivity'
 import { ChoiceMachine } from './experiences/conditions/ChoiceMachine'
 import { BackroomRun } from './experiences/conditions/BackroomRun'
@@ -21,8 +21,10 @@ const BlackBox = lazy(() => import('./experiences/variables/BlackBox').then((mod
 const InputMachine = lazy(() => import('./experiences/variables/InputMachine').then((module) => ({ default: module.InputMachine })))
 const MemoryMachine = lazy(() => import('./experiences/variables/MemoryMachine').then((module) => ({ default: module.MemoryMachine })))
 const FinalBosses = lazy(() => import('./experiences/variables/FinalBosses').then((module) => ({ default: module.FinalBosses })))
+const StopStringSheet = lazy(() => import('./experiences/extras/StopStringSheet').then((module) => ({ default: module.StopStringSheet })))
+const TeacherLiveView = lazy(() => import('./screens/TeacherLiveView').then((module) => ({ default: module.TeacherLiveView })))
 
-const validRoutes: AppRoute[] = ['home', 'teacher', 'variables', 'conditionals', 'functions', ...activityIds]
+const validRoutes: AppRoute[] = ['home', 'teacher', 'teacher-live', 'variables', 'conditionals', 'extras', ...activityIds]
 
 function routeFromHash(): AppRoute {
   const candidate = window.location.hash.replace(/^#\/?/, '') as AppRoute
@@ -75,24 +77,26 @@ export default function App() {
 
   if (!progress) return <NameEntryScreen onStart={start} />
   const experienceProps = { progress, onProgress: setProgress, onBack: () => navigate('variables') }
-  const visibleRoute = route === 'teacher' && !progress.isTeacher ? 'home' : route
+  const visibleRoute = (route === 'teacher' || route === 'teacher-live') && !progress.isTeacher ? 'home' : route
 
   return (
     <div className={`app-shell route-${visibleRoute}`}>
       <AppHeader route={visibleRoute} progress={progress} syncState={syncState} onNavigate={navigate} onLogout={logout} />
       <div className="app-content">
         <Suspense fallback={<div className="route-loader" role="status"><span /> Loading experiment...</div>}>
-          {visibleRoute === 'teacher' && progress.isTeacher && <TeacherDashboard username={progress.username} />}
+          {visibleRoute === 'teacher' && progress.isTeacher && <TeacherDashboard username={progress.username} onOpenLive={() => navigate('teacher-live')} />}
+          {visibleRoute === 'teacher-live' && progress.isTeacher && <TeacherLiveView username={progress.username} onBack={() => navigate('teacher')} />}
           {visibleRoute === 'home' && <PlaygroundHome progress={progress} onNavigate={navigate} />}
           {visibleRoute === 'variables' && <VariablesHome progress={progress} onNavigate={navigate} />}
           {visibleRoute === 'conditionals' && <ConditionsHome progress={progress} onNavigate={navigate} />}
-          {visibleRoute === 'functions' && <ComingSoonScreen area="functions" onNavigate={navigate} />}
+          {visibleRoute === 'extras' && <ExtrasHome progress={progress} onNavigate={navigate} />}
           {visibleRoute === 'dino-variables' && <DinoVariables {...experienceProps} />}
           {visibleRoute === 'print-playground' && <PrintPlayground {...experienceProps} />}
           {visibleRoute === 'black-box' && <BlackBox {...experienceProps} onNext={() => navigate('memory-machine')} />}
           {visibleRoute === 'input-machine' && <InputMachine {...experienceProps} onNext={() => navigate('final-bosses')} />}
           {visibleRoute === 'memory-machine' && <MemoryMachine {...experienceProps} />}
           {visibleRoute === 'final-bosses' && <FinalBosses {...experienceProps} />}
+          {visibleRoute === 'stop' && <StopStringSheet progress={progress} onProgress={setProgress} onBack={() => navigate('extras')} />}
           {visibleRoute === 'backroom-run' && <BackroomRun progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} />}
           {visibleRoute === 'choice-machine' && <ChoiceMachine progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} onNext={navigate} />}
           {isConditionActivity(visibleRoute) && visibleRoute !== 'choice-machine' && visibleRoute !== 'backroom-run' && <ConditionsActivity key={visibleRoute} activity={conditionExperiences.find((item) => item.id === visibleRoute)!} progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} onNext={navigate} />}

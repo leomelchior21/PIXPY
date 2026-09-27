@@ -1,4 +1,4 @@
-import { comparisonOperators, evaluateCondition, gateXp, generateChallenge, hasSolution, operatorHint, operatorWords, planCourse, sliderRange } from './backroomEngine'
+import { baseRunSpeed, comparisonOperators, corridorCenterAt, energyRange, evaluateCondition, gateCrossing, gateXp, generateChallenge, hasSolution, hitsObstacle, operatorHint, operatorWords, planCorridor, planCourse, speedForGate } from './backroomEngine'
 
 function lcg(seed: number): () => number {
   let state = seed
@@ -57,22 +57,23 @@ describe('operator labels', () => {
 })
 
 describe('challenge generator', () => {
-  it('always offers a reachable solution on the slider', () => {
+  it('always offers a reachable energy value', () => {
     for (let run = 1; run <= 60; run += 1) {
       for (const seed of [3, 17, 99, 404, 1234]) {
         const challenge = generateChallenge(run, seed, ((run - 1) % 3) + 1)
         expect(hasSolution(challenge.operator, challenge.threshold)).toBe(true)
-        expect(challenge.threshold).toBeGreaterThanOrEqual(sliderRange.min)
-        expect(challenge.threshold).toBeLessThanOrEqual(sliderRange.max)
-        expect(challenge.startValue).toBeGreaterThanOrEqual(sliderRange.min)
-        expect(challenge.startValue).toBeLessThanOrEqual(sliderRange.max)
+        expect(challenge.threshold).toBeGreaterThanOrEqual(energyRange.min)
+        expect(challenge.threshold).toBeLessThanOrEqual(energyRange.max)
+        expect(challenge.startValue).toBeGreaterThanOrEqual(energyRange.min)
+        expect(challenge.startValue).toBeLessThanOrEqual(energyRange.max)
         expect(comparisonOperators).toContain(challenge.operator)
       }
     }
   })
 
-  it('teaches the first gate with energy > 60 starting at 30', () => {
+  it('teaches the first gate with required_energy > 60 starting at 30', () => {
     const first = generateChallenge(1, 11, 1)
+    expect(first.variableName).toBe('required_energy')
     expect(first.operator).toBe('>')
     expect(first.threshold).toBe(60)
     expect(first.startValue).toBe(30)
@@ -91,10 +92,13 @@ describe('challenge generator', () => {
     }
   })
 
-  it('never starts every equality gate already solved', () => {
-    for (let run = 8; run <= 40; run += 1) {
-      const challenge = generateChallenge(run, run * 31, 3)
-      if (challenge.operator === '==') expect(challenge.startValue).not.toBe(challenge.threshold)
+  it('starts later gates false and close enough to adjust at higher pace', () => {
+    for (let run = 2; run <= 80; run += 1) {
+      for (const seed of [11, 31, 71]) {
+        const challenge = generateChallenge(run, seed, 3)
+        expect(challenge.startsTrue).toBe(false)
+        expect(Math.abs(challenge.startValue - challenge.threshold)).toBeLessThanOrEqual(18)
+      }
     }
   })
 
@@ -109,24 +113,29 @@ describe('challenge generator', () => {
 })
 
 describe('course planner', () => {
-  it('places a single curve before the gate on a high roll', () => {
-    expect(planCourse(() => 0.99)).toEqual([{ kind: 'curve', dir: 1 }, { kind: 'gate', dir: 0 }])
+  it('places two curves before the gate on a high roll', () => {
+    expect(planCourse(() => 0.99)).toEqual([
+      { kind: 'curve', dir: 1 },
+      { kind: 'curve', dir: 1 },
+      { kind: 'gate', dir: 0 },
+    ])
   })
 
-  it('places two curves before the gate on a low roll', () => {
+  it('places three curves before the gate on a low roll', () => {
     expect(planCourse(() => 0.1)).toEqual([
+      { kind: 'curve', dir: -1 },
       { kind: 'curve', dir: -1 },
       { kind: 'curve', dir: -1 },
       { kind: 'gate', dir: 0 },
     ])
   })
 
-  it('always ends on a gate after one or two curves', () => {
+  it('always ends on a gate after two or three curves', () => {
     for (let seed = 1; seed <= 50; seed += 1) {
       const tiles = planCourse(lcg(seed))
       const curves = tiles.filter((tile) => tile.kind === 'curve')
-      expect(curves.length).toBeGreaterThanOrEqual(1)
-      expect(curves.length).toBeLessThanOrEqual(2)
+      expect(curves.length).toBeGreaterThanOrEqual(2)
+      expect(curves.length).toBeLessThanOrEqual(3)
       expect(tiles[tiles.length - 1]).toEqual({ kind: 'gate', dir: 0 })
       for (const curve of curves) expect([-1, 1]).toContain(curve.dir)
     }
@@ -137,9 +146,58 @@ describe('course planner', () => {
   })
 })
 
+describe('gate progression', () => {
+  it('keeps gates well past the final bend on both route lengths', () => {
+    for (const tiles of [planCourse(() => 0.99), planCourse(() => 0.1)]) {
+      const plan = planCorridor(9, 0, tiles)
+      expect(plan.bends).toHaveLength(tiles.length - 1)
+      expect(plan.nextGateZ - 9).toBeGreaterThanOrEqual(45)
+      expect(plan.nextGateZ - plan.bends.at(-1)!.endZ).toBe(26)
+      expect(plan.activationZ).toBe(plan.nextGateZ - 16)
+      expect(corridorCenterAt(0, plan.bends, plan.nextGateZ)).toBe(plan.nextGateCenter)
+      expect(plan.obstacles).toHaveLength(1)
+      expect(plan.obstacles[0].z).toBeLessThan(plan.activationZ)
+    }
+  })
+
+  it('keeps every bend anchored to the same world coordinates as the player advances', () => {
+    const plan = planCorridor(9, 0, planCourse(() => 0.1))
+    const [first, second] = plan.bends
+    expect(corridorCenterAt(0, plan.bends, first.startZ)).toBe(0)
+    expect(corridorCenterAt(0, plan.bends, first.endZ)).toBe(first.to)
+    expect(corridorCenterAt(0, plan.bends, second.startZ)).toBe(second.from)
+    expect(second.startZ).toBeGreaterThan(first.endZ)
+  })
+
+  it('validates at the gate plane and only through a fully open door', () => {
+    expect(gateCrossing(8, 8.9, 9, true, 1)).toBe('before')
+    expect(gateCrossing(8.9, 9.01, 9, false, 1)).toBe('blocked')
+    expect(gateCrossing(8.9, 9.01, 9, true, 0.8)).toBe('blocked')
+    expect(gateCrossing(8.9, 9.01, 9, true, 1)).toBe('pass')
+    expect(gateCrossing(9.01, 9.2, 9, true, 1)).toBe('before')
+  })
+
+  it('hits a floor obstacle only when the player overlaps its lane and depth', () => {
+    const obstacle = planCorridor(9, 0, planCourse(() => 0.99)).obstacles[0]
+    expect(hitsObstacle(obstacle.z - 0.4, obstacle.z - 0.2, obstacle.x, obstacle)).toBe(true)
+    expect(hitsObstacle(obstacle.z - 0.4, obstacle.z - 0.2, obstacle.x + 0.5, obstacle)).toBe(false)
+    expect(hitsObstacle(obstacle.z - 2, obstacle.z - 1, obstacle.x, obstacle)).toBe(false)
+  })
+})
+
 describe('xp', () => {
   it('awards a base of ten and a first-try bonus', () => {
     expect(gateXp(false)).toBe(10)
     expect(gateXp(true)).toBe(15)
+  })
+})
+
+describe('runner pace', () => {
+  it('increases after each gate until its cap', () => {
+    expect(speedForGate(1)).toBe(baseRunSpeed)
+    for (let gate = 2; gate <= 15; gate += 1) {
+      expect(speedForGate(gate)).toBeGreaterThan(speedForGate(gate - 1))
+    }
+    expect(speedForGate(100)).toBe(2.5)
   })
 })

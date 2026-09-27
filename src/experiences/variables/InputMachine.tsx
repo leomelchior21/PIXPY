@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
+import { useLiveCode } from '../../hooks/useLiveCode'
 import { ExperienceShell } from '../../components/ExperienceShell'
 import { pythonRunner } from '../../lib/pythonRunner'
 import { completeActivity, resetActivityProgress } from '../../session/progressSession'
@@ -48,6 +49,7 @@ type RunStatus = 'idle' | 'success' | 'error'
 export function InputMachine({ progress, onProgress, onBack, onNext }: Props) {
   const [inLab, setInLab] = useState(false)
   const [code, setCode] = useState<string>(rawInput.starter)
+  useLiveCode('input-machine', code, 'Input Machine')
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
   const [status, setStatus] = useState<RunStatus>('idle')

@@ -19,7 +19,25 @@ describe('guided Python fallback', () => {
     expect(evaluateMath('number ** 2', { number: 7 })).toBe(49)
   })
 
+  it('supports string concatenation, comma prints and f-strings', () => {
+    const result = runGuidedPython('answer1 = "Ada"\nprint("Name: " + answer1)\nprint("City:", answer1)\nprint(f"Hello, {answer1}!")')
+    expect(result.stdout).toBe('Name: Ada\nCity: Ada\nHello, Ada!')
+    expect(result.variables.answer1).toBe('Ada')
+  })
+
+  it('accumulates strings with += and keeps numbers working', () => {
+    const result = runGuidedPython('greeting = "Hi"\ngreeting += " there"\nscore = 2 + 3\nprint(greeting)\nprint("Score:", score)')
+    expect(result.stdout).toBe('Hi there\nScore: 5')
+  })
+
+  it('builds text from variables and conversions', () => {
+    const result = runGuidedPython('age = 12\nprint("Age: " + str(age) + " years")')
+    expect(result.stdout).toBe('Age: 12 years')
+  })
+
   it('rejects unknown syntax instead of evaluating JavaScript', () => {
     expect(() => evaluateMath('window.alert(1)', {})).toThrow()
+    expect(() => runGuidedPython('nope += 1')).toThrow(/needs a value before \+=/)
+    expect(() => runGuidedPython('print("Missing: " + answer2)')).toThrow(/answer2 is not defined/)
   })
 })

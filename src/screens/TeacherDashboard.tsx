@@ -1,12 +1,26 @@
-import { Check, Circle, Cloud, LoaderCircle, RefreshCcw, Search, Trophy, Users } from 'lucide-react'
+import { Check, Circle, Cloud, DoorOpen, LoaderCircle, Radio, RefreshCcw, Search, Trophy, Users } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { variableExperiences } from '../data/variables'
+import { conditionExperiences } from '../data/conditions'
+import { CHOICE_QUIZ_LENGTH, CHOICE_XP_PER_QUESTION } from '../data/choiceMachine'
+import { milestoneGates } from '../lib/backroomEngine'
 import { loadClassProgress, type ClassProgressRow, type RosterClass, type RosterTeam } from '../lib/classroomCloud'
 import type { ActivityId } from '../types'
 
-interface TeacherDashboardProps { username: string }
+interface TeacherDashboardProps {
+  username: string
+  onOpenLive: () => void
+}
 type ClassFilter = 'all' | RosterClass
 type TeamFilter = 'all' | RosterTeam | 'unassigned'
+type WorldId = 'variables' | 'conditions'
+
+interface WorldExperience { id: ActivityId; title: string }
+
+const worldOptions: Array<{ id: WorldId; label: string; experiences: WorldExperience[]; unit: string }> = [
+  { id: 'variables', label: 'Variables', experiences: variableExperiences, unit: 'experiments' },
+  { id: 'conditions', label: 'Conditions', experiences: conditionExperiences, unit: 'activities' },
+]
 
 const classOptions: Array<{ value: ClassFilter; label: string }> = [
   { value: 'all', label: 'All classes' },
@@ -22,11 +36,12 @@ const teamOptions: Array<{ value: TeamFilter; label: string }> = [
   { value: 'unassigned', label: 'No team' },
 ]
 
-export function TeacherDashboard({ username }: TeacherDashboardProps) {
+export function TeacherDashboard({ username, onOpenLive }: TeacherDashboardProps) {
   const [students, setStudents] = useState<ClassProgressRow[]>([])
   const [query, setQuery] = useState('')
   const [classFilter, setClassFilter] = useState<ClassFilter>('all')
   const [teamFilter, setTeamFilter] = useState<TeamFilter>('all')
+  const [world, setWorld] = useState<WorldId>('variables')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -55,9 +70,11 @@ export function TeacherDashboard({ username }: TeacherDashboardProps) {
     })
   }, [classFilter, query, students, teamFilter])
 
+  const activeWorld = worldOptions.find((option) => option.id === world) ?? worldOptions[0]
   const started = students.filter((student) => student.progress || student.lastLoginAt).length
-  const finished = students.filter((student) => completedActivities(student).length === variableExperiences.length).length
+  const finished = students.filter((student) => completedActivities(student, activeWorld.experiences).length === activeWorld.experiences.length).length
   const missions = students.reduce((total, student) => total + completedBosses(student), 0)
+  const gates = students.reduce((total, student) => total + backroomGates(student), 0)
   const countClass = (value: ClassFilter) => value === 'all' ? students.length : students.filter((student) => student.className === value).length
   const countTeam = (value: TeamFilter) => value === 'all'
     ? students.length
@@ -65,16 +82,13 @@ export function TeacherDashboard({ username }: TeacherDashboardProps) {
 
   return (
     <main className="teacher-dashboard">
-      <header className="teacher-header">
-        <div><small>TEACHER DASHBOARD</small><h1>Class progress</h1><p>Live progress across every PixPy class and team.</p></div>
-        <button className="teacher-refresh" onClick={() => void refresh()} disabled={loading}><RefreshCcw className={loading ? 'spin' : ''} /> Refresh</button>
-      </header>
-
       <section className="teacher-summary" aria-label="Class summary">
         <article><span><Users /></span><div><small>ROSTER</small><strong>{students.length || '—'}</strong><p>students</p></div></article>
         <article><span><Cloud /></span><div><small>STARTED</small><strong>{started}</strong><p>profiles active</p></div></article>
-        <article><span><Trophy /></span><div><small>MISSIONS</small><strong>{missions}</strong><p>bosses cleared</p></div></article>
-        <article><span><Check /></span><div><small>FINISHED</small><strong>{finished}</strong><p>all activities</p></div></article>
+        {world === 'variables'
+          ? <article><span><Trophy /></span><div><small>MISSIONS</small><strong>{missions}</strong><p>bosses cleared</p></div></article>
+          : <article><span><DoorOpen /></span><div><small>GATES</small><strong>{gates}</strong><p>backroom gates</p></div></article>}
+        <article><span><Check /></span><div><small>FINISHED</small><strong>{finished}</strong><p>all {activeWorld.unit}</p></div></article>
       </section>
 
       <section className="teacher-cohorts panel-surface" aria-label="Roster groups">
@@ -91,23 +105,35 @@ export function TeacherDashboard({ username }: TeacherDashboardProps) {
       <section className="teacher-roster panel-surface">
         <header>
           <div><small>STUDENT PROGRESS</small><h2>{filtered.length} {filtered.length === 1 ? 'student' : 'students'} in view</h2></div>
-          <label className="teacher-search"><Search /><span className="sr-only">Search students</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a student" /></label>
+          <div className="teacher-roster-tools">
+            <button className="teacher-live-button" onClick={onOpenLive}><Radio size={17} /> Live view</button>
+            <button className="teacher-refresh" onClick={() => void refresh()} disabled={loading}><RefreshCcw className={loading ? 'spin' : ''} /> Refresh</button>
+            <div className="teacher-world-switch" role="group" aria-label="World progress">
+              {worldOptions.map((option) => <button key={option.id} className={world === option.id ? 'is-active' : ''} aria-pressed={world === option.id} onClick={() => setWorld(option.id)}>{option.label}</button>)}
+            </div>
+            <label className="teacher-search"><Search /><span className="sr-only">Search students</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a student" /></label>
+          </div>
         </header>
 
         {error ? <div className="teacher-state is-error" role="alert"><p>{error}</p><button onClick={() => void refresh()}>TRY AGAIN</button></div> : loading && students.length === 0 ? <div className="teacher-state"><LoaderCircle className="spin" /><p>Loading classroom progress…</p></div> : (
           <div className="teacher-table-wrap">
             <table>
-              <thead><tr><th>Student</th><th>Group</th><th>Activities</th><th>Final missions</th><th>Last update</th></tr></thead>
+              <thead><tr><th>Student</th><th>Group</th><th>Activities</th><th>{world === 'variables' ? 'Final missions' : 'Backroom gates'}</th><th>Last update</th></tr></thead>
               <tbody>
                 {filtered.map((student) => {
-                  const completed = completedActivities(student)
+                  const completed = completedActivities(student, activeWorld.experiences)
                   const bossCount = completedBosses(student)
+                  const gateCount = backroomGates(student)
                   return (
                     <tr key={student.username}>
                       <td><strong>{student.displayName}</strong><small>{student.username}</small></td>
                       <td><div className="teacher-group-badges"><span>CLASS {student.className ?? '—'}</span><span className={`team-${student.team ?? 'unassigned'}`}>{student.team ?? 'No team'}</span></div></td>
-                      <td><div className="teacher-activity-dots" aria-label={`${completed.length} of ${variableExperiences.length} activities complete`}>{variableExperiences.map((activity) => <span key={activity.id} className={completed.includes(activity.id) ? 'is-done' : ''} title={activity.title}>{completed.includes(activity.id) ? <Check /> : <Circle />}</span>)}</div><small>{completed.length} / {variableExperiences.length} complete</small></td>
-                      <td><div className="teacher-boss-progress"><i style={{ width: `${(bossCount / 15) * 100}%` }} /></div><strong>{bossCount} / 15</strong></td>
+                      <td><div className="teacher-activity-dots" aria-label={`${completed.length} of ${activeWorld.experiences.length} activities complete`}>{activeWorld.experiences.map((activity) => <span key={activity.id} className={completed.includes(activity.id) ? 'is-done' : ''} title={activity.title}>{completed.includes(activity.id) ? <Check /> : <Circle />}</span>)}</div><small>{completed.length} / {activeWorld.experiences.length} complete</small></td>
+                      <td>
+                        {world === 'variables'
+                          ? <><div className="teacher-boss-progress"><i style={{ width: `${(bossCount / 15) * 100}%` }} /></div><strong>{bossCount} / 15</strong></>
+                          : <><div className="teacher-boss-progress"><i style={{ width: `${Math.min(gateCount / milestoneGates, 1) * 100}%` }} /></div><strong>{Math.min(gateCount, milestoneGates)} / {milestoneGates} gates</strong><small className="teacher-choice-xp">Choice XP {choiceMachineXp(student)} / {CHOICE_QUIZ_LENGTH * CHOICE_XP_PER_QUESTION}</small></>}
+                      </td>
                       <td><span className={student.progress ? 'teacher-status is-active' : 'teacher-status'}>{student.progress ? 'IN PROGRESS' : student.lastLoginAt ? 'SIGNED IN' : 'NOT STARTED'}</span><small>{formatUpdate(student.updatedAt ?? student.lastLoginAt)}</small></td>
                     </tr>
                   )
@@ -122,14 +148,24 @@ export function TeacherDashboard({ username }: TeacherDashboardProps) {
   )
 }
 
-function completedActivities(student: ClassProgressRow): ActivityId[] {
+function completedActivities(student: ClassProgressRow, experiences: WorldExperience[]): ActivityId[] {
   const value = student.progress?.completed
-  return Array.isArray(value) ? value.filter((item): item is ActivityId => variableExperiences.some((activity) => activity.id === item)) : []
+  return Array.isArray(value) ? value.filter((item): item is ActivityId => experiences.some((activity) => activity.id === item)) : []
 }
 
 function completedBosses(student: ClassProgressRow): number {
   const value = student.progress?.bossProgress
   return Array.isArray(value) ? new Set(value.filter((item) => Number.isInteger(item) && item >= 1 && item <= 15)).size : 0
+}
+
+function backroomGates(student: ClassProgressRow): number {
+  const value = student.progress?.backroomRunGates
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0
+}
+
+function choiceMachineXp(student: ClassProgressRow): number {
+  const value = student.progress?.choiceMachineXp
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0
 }
 
 function formatUpdate(value: string | null): string {

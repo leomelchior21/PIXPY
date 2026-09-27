@@ -11,6 +11,7 @@ export const activityIds = [
   'make-it-work',
   'more-than-one-choice',
   'conditions-final-bosses',
+  'stop',
 ] as const
 
 export type ActivityId = (typeof activityIds)[number]
@@ -18,9 +19,10 @@ export type ActivityId = (typeof activityIds)[number]
 export type AppRoute =
   | 'home'
   | 'teacher'
+  | 'teacher-live'
   | 'variables'
   | 'conditionals'
-  | 'functions'
+  | 'extras'
   | ActivityId
 
 export interface SessionProgress {
@@ -52,6 +54,8 @@ export interface SessionProgress {
   printPlaygroundOutputs: Partial<Record<PrintActivityId, PrintActivityOutputState>>
   printPlaygroundVisited: PrintActivityId[]
   printPlaygroundCompleted: PrintActivityId[]
+  stopCode: string | null
+  stopSheetComplete: boolean
 }
 
 export interface DinoConfig {

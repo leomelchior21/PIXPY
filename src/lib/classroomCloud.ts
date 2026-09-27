@@ -5,7 +5,7 @@ import { cleanUsername } from '../session/progressSession'
 const supabaseUrl = 'https://imodobxbarcsjylvitxt.supabase.co'
 const supabasePublishableKey = 'sb_publishable_jkHrLZkNR4Zh3XtHEgpTMA_JnMMpG6w'
 
-const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 })
 let progressSaveQueue: Promise<void> = Promise.resolve()

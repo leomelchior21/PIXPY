@@ -1,6 +1,13 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
+import { buildStopStarter } from './lib/stopAnalyzer'
+
+vi.mock('./components/CodeEditor', () => ({
+  CodeEditor: ({ value, onChange, label }: { value: string; onChange: (value: string) => void; label?: string }) => (
+    <textarea aria-label={label ?? 'Python code editor'} value={value} onChange={(event) => onChange(event.target.value)} />
+  ),
+}))
 
 const cloud = vi.hoisted(() => ({
   loginToClassroom: vi.fn(async (username: string) => ({
@@ -36,7 +43,7 @@ describe('PixPy classroom session', () => {
 
     expect(await screen.findByRole('heading', { name: /ready, leostudent.*let's get to work/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Open Conditions' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: /functions coming soon/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Open Extras' })).toBeEnabled()
     expect(screen.queryByRole('button', { name: /open .* activity list/i })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Open Variables' }))
 
@@ -77,6 +84,28 @@ describe('PixPy classroom session', () => {
     expect(screen.queryByRole('button', { name: /open .* activity list/i })).not.toBeInTheDocument()
   }, 15_000)
 
+  it('opens Extras with the STOP string sheet', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.type(screen.getByLabelText('Enter your PixPy login'), 'MayaStudent')
+    await user.click(screen.getByRole('button', { name: /log in to pixpy/i }))
+    await user.click(await screen.findByRole('button', { name: 'Open Extras' }))
+
+    expect(screen.getByRole('heading', { name: 'Extras' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^01 STOP · STRING SHEET:/i })).toBeEnabled()
+    expect(screen.queryByRole('button', { name: /DINO VARIABLES/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /BACKROOM RUN/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /^01 STOP · STRING SHEET:/i }))
+    expect(await screen.findByRole('heading', { name: 'STOP' }, { timeout: 8000 })).toBeInTheDocument()
+    expect(screen.getByText('STOP SHEET')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open extras activity list/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /run/i })).toBeEnabled()
+    expect(screen.getByLabelText('STOP sheet code editor')).toHaveValue(buildStopStarter('Mayastudent'))
+    await user.click(screen.getByRole('button', { name: /^EXTRAS$/i }))
+    expect(await screen.findByRole('heading', { name: 'Extras' })).toBeInTheDocument()
+  }, 15_000)
+
   it('keeps the student name in sessionStorage after a refresh-style remount', async () => {
     const user = userEvent.setup()
     const first = render(<App />)
@@ -95,7 +124,7 @@ describe('PixPy classroom session', () => {
     render(<App />)
     await user.type(screen.getByLabelText('Enter your PixPy login'), 'leleomaker')
     await user.click(screen.getByRole('button', { name: /log in to pixpy/i }))
-    expect(await screen.findByRole('heading', { name: 'Class progress' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '0 students in view' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /dashboard/i })).toHaveAttribute('aria-current', 'page')
 
     await user.click(screen.getByRole('button', { name: /explore/i }))
@@ -104,6 +133,20 @@ describe('PixPy classroom session', () => {
     expect(await screen.findByRole('heading', { name: 'Variables' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /dashboard/i }))
-    expect(await screen.findByRole('heading', { name: 'Class progress' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '0 students in view' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /live view/i })).toBeInTheDocument()
+  })
+
+  it('keeps the live view behind the teacher role', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.type(screen.getByLabelText('Enter your PixPy login'), 'MayaStudent')
+    await user.click(screen.getByRole('button', { name: /log in to pixpy/i }))
+    await screen.findByRole('heading', { name: /ready, mayastudent/i })
+
+    window.history.pushState(null, '', '#/teacher-live')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    expect(await screen.findByRole('heading', { name: /ready, mayastudent/i })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Live view' })).not.toBeInTheDocument()
   })
 })

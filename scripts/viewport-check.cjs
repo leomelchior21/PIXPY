@@ -31,8 +31,9 @@ const routes = [
   { name: 'black-box', route: 'black-box', selector: '.blackbox-experience', experience: true, surface: '.real-black-box', panels: ['.blackbox-stage', '.hypothesis-panel'] },
   { name: 'input', route: 'input-machine', selector: '.input-experience', experience: true, surface: '.mode-intro', panels: [] },
   { name: 'memory', route: 'memory-machine', selector: '.memory-experience', experience: true, surface: '.memory-story', panels: [] },
-  { name: 'build', route: 'build-black-box', selector: '.buildbox-experience', experience: true, surface: '.pixpy-editor', panels: ['.build-reference-panel', '.build-editor-panel'] },
   { name: 'bosses', route: 'final-bosses', selector: '.boss-experience', experience: true, surface: '.boss-phone-screen', panels: ['.boss-stage', '.boss-phone-stage'] },
+  { name: 'extras', route: 'extras', selector: '.extras-home' },
+  { name: 'stop', route: 'stop', selector: '.stop-screen', surface: '.stop-editor .pixpy-editor', panels: ['.stop-panel--code', '.stop-panel--sheet'] },
 ]
 
 const outputDir = path.join(os.tmpdir(), 'pixpy-viewport-checks')
@@ -183,7 +184,6 @@ async function checkTeacherDashboard(send, size) {
         size: ${JSON.stringify(size.name)},
         hasDocumentVerticalScroll: document.documentElement.scrollHeight > innerHeight + 1 || document.body.scrollHeight > innerHeight + 1,
         rootInsideViewport: rect.top >= -1 && rect.bottom <= innerHeight + 1,
-        headerVisible: ${visibleRectExpression('.teacher-header')},
         summaryVisible: ${visibleRectExpression('.teacher-summary')},
         cohortsVisible: ${visibleRectExpression('.teacher-cohorts')},
         rosterVisible: ${visibleRectExpression('.teacher-roster')},
@@ -639,7 +639,7 @@ async function main() {
     const quizFailures = quizChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.quizVisible || !item.codeVisible || !item.contentFits || !item.optionsClearFeedback || item.optionCount !== 3 || !item.advanced)
     const blackBoxQuizFailures = blackBoxQuizChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.quizVisible || !item.codeVisible || !item.contentFits || !item.optionsClearFeedback || item.optionCount !== 4 || !item.advanced)
     const nameFailures = nameChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.formVisible || !item.inputVisible || !item.placeholderCorrect)
-    const teacherFailures = teacherChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.headerVisible || !item.summaryVisible || !item.cohortsVisible || !item.rosterVisible || item.rosterCount < 80)
+    const teacherFailures = teacherChecks.filter((item) => item.hasDocumentVerticalScroll || !item.rootInsideViewport || !item.summaryVisible || !item.cohortsVisible || !item.rosterVisible || item.rosterCount < 80)
     const printFailed = !printCheck.printVisible || !printCheck.websiteHidden || !printCheck.studentVisible || !printCheck.progressVisible || printCheck.pdfBytes < 1000
     const interactionFailures = interactionChecks.filter((item) => !item.passed)
     console.log(JSON.stringify({ outputDir, checked: metrics.length + quizChecks.length + blackBoxQuizChecks.length + nameChecks.length + teacherChecks.length, interactionChecks: interactionChecks.length, failures, quizFailures, blackBoxQuizFailures, nameFailures, teacherFailures, interactionFailures, printCheck }, null, 2))

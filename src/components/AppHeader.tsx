@@ -1,7 +1,8 @@
 import { BarChart3, Check, Cloud, CloudOff, GraduationCap, Home, List, LogOut, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { variableExperiences } from '../data/variables'
-import { conditionExperiences, isConditionActivity } from '../data/conditions'
+import { conditionExperiences } from '../data/conditions'
+import { extraExperiences } from '../data/extras'
 import type { AppRoute, SessionProgress } from '../types'
 import { Brand } from './Brand'
 
@@ -19,9 +20,11 @@ export function AppHeader({ route, progress, syncState, onNavigate, onLogout }: 
   const toggleRef = useRef<HTMLButtonElement>(null)
   const world = route === 'variables' || variableExperiences.some((item) => item.id === route)
     ? { title: 'Variables', experiences: variableExperiences }
-    : route === 'conditionals' || isConditionActivity(route)
+    : route === 'conditionals' || conditionExperiences.some((item) => item.id === route)
       ? { title: 'Conditions', experiences: conditionExperiences }
-      : null
+      : route === 'extras' || route === 'stop'
+        ? { title: 'Extras', experiences: extraExperiences }
+        : null
   useEffect(() => {
     if (!listOpen) return
     listRef.current?.querySelector<HTMLButtonElement>('.is-current')?.focus()
