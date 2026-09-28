@@ -25,15 +25,15 @@ export const everydayChoices: EverydayChoice[] = [
   },
   {
     id: 'password', eyebrow: '02 / THE PASSWORD', title: 'The locked door',
-    explanation: 'The secret word is PIXPY. Someone types PIXPI. The door must decide what happens.',
-    situation: 'Secret: PIXPY   ·   Typed: PIXPI', condition: 'Do the words match?', question: 'What should the door do?',
+    explanation: 'The secret code is 4729. Someone types 4728. The door must decide what happens.',
+    situation: 'Secret code: 4729   ·   Typed code: 4728', condition: 'Do the codes match?', question: 'What should the door do?',
     options: ['Open the door', 'Show an error'], answer: 1,
-    feedback: 'The words do not match. The answer is FALSE, so the door shows an error.',
-    path: 'FALSE', result: 'Access denied', visualLabel: 'PASSWORD CHECK',
+    feedback: 'The codes do not match. The answer is FALSE, so the door shows an error.',
+    path: 'FALSE', result: 'Access denied', visualLabel: 'NUMERIC LOCK',
   },
   {
     id: 'grade', eyebrow: '03 / THE RESULT', title: 'The school result',
-    explanation: 'The pass mark is 7. A student gets 8. One comparison decides the result.',
+    explanation: 'The pass mark is 7. One student got 8. One comparison decides the result.',
     situation: 'Student grade: 8   ·   Pass mark: 7', condition: 'Is 8 at least 7?', question: 'Which result should appear?',
     options: ['Approved', 'Try again'], answer: 0,
     feedback: '8 is at least 7. The answer is TRUE, so the result is Approved.',
@@ -41,36 +41,61 @@ export const everydayChoices: EverydayChoice[] = [
   },
 ]
 
+export interface FlowStoryInput {
+  placeholder: string
+  hint: string
+  typeHint: string
+  parse: (raw: string) => number | null
+  below: string
+  above: string
+}
+
 export interface FlowStory {
   id: string
   title: string
   narrative: string
   variable: string
-  values: Array<number | boolean>
   question: string
   condition: string
   trueOutput: string
   falseOutput: string
-  decide: (value: number | boolean) => boolean
-  format: (value: number | boolean) => string
+  decide: (value: number) => boolean
+  format: (value: number) => string
+  calc: (value: number) => string[]
+  input: FlowStoryInput
+}
+
+function wholeNumber(raw: string): number | null {
+  const trimmed = raw.trim()
+  if (!/^-?\d+$/.test(trimmed)) return null
+  const value = Number(trimmed)
+  return Number.isSafeInteger(value) ? value : null
 }
 
 export const flowStories: FlowStory[] = [
   {
-    id: 'grade', title: 'The school result', narrative: 'A grade decides which message the student sees.',
-    variable: 'grade', values: [4, 7, 10], question: 'Is the grade at least 7?', condition: 'grade >= 7',
-    trueOutput: 'Approved', falseOutput: 'Try again', decide: (value) => Number(value) >= 7, format: String,
+    id: 'grade', title: 'The school result', narrative: 'A grade decides which message the student sees. Type any whole number and watch Python choose a path.',
+    variable: 'grade', question: 'Is the grade at least 7?', condition: 'grade >= 7',
+    trueOutput: 'Approved', falseOutput: 'Try again', decide: (value) => value >= 7, format: String,
+    calc: (value) => [`${value} >= 7 → ${value >= 7 ? 'True' : 'False'}`],
+    input: { placeholder: 'type a number, e.g. 8', hint: 'Type a whole number in the box, then press START FLOW.', typeHint: 'Whole numbers only', parse: wholeNumber, below: 'less than 7', above: '7 or more' },
   },
   {
-    id: 'rain', title: 'The weather plan', narrative: 'The weather decides what you take outside.',
-    variable: 'raining', values: [true, false], question: 'Is it raining?', condition: 'raining',
-    trueOutput: 'Take an umbrella', falseOutput: 'Enjoy the sun', decide: (value) => value === true,
-    format: (value) => value ? 'True' : 'False',
+    id: 'even-odd', title: 'Even or odd', narrative: 'The computer looks at the last digit to split every number into two groups. Give it a number to test.',
+    variable: 'n', question: 'Is n an even number?', condition: 'n % 2 == 0',
+    trueOutput: 'Even', falseOutput: 'Odd', decide: (value) => Math.abs(value) % 2 === 0, format: String,
+    calc: (value) => {
+      const remainder = Math.abs(value) % 2
+      return [`${value} % 2 = ${remainder}`, `${remainder} == 0 → ${remainder === 0 ? 'True' : 'False'}`]
+    },
+    input: { placeholder: 'type a number, e.g. 7', hint: 'Type a whole number in the box, then press START FLOW.', typeHint: 'Whole numbers only', parse: wholeNumber, below: 'odd (n % 2 is 1)', above: 'even (n % 2 is 0)' },
   },
   {
-    id: 'age', title: 'The ride entrance', narrative: 'An age check chooses the correct entrance.',
-    variable: 'age', values: [16, 18, 21], question: 'Is the age at least 18?', condition: 'age >= 18',
-    trueOutput: 'Big ride', falseOutput: 'Small ride', decide: (value) => Number(value) >= 18, format: String,
+    id: 'adult', title: 'Grown-up or not', narrative: 'An age check chooses between two very different answers. Try an age of your own.',
+    variable: 'age', question: 'Is the age at least 18?', condition: 'age >= 18',
+    trueOutput: 'Adult', falseOutput: 'Minor', decide: (value) => value >= 18, format: String,
+    calc: (value) => [`${value} >= 18 → ${value >= 18 ? 'True' : 'False'}`],
+    input: { placeholder: 'type an age, e.g. 18', hint: 'Type a whole number in the box, then press START FLOW.', typeHint: 'Whole numbers only', parse: wholeNumber, below: 'under 18', above: '18 or more' },
   },
 ]
 

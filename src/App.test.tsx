@@ -74,7 +74,7 @@ describe('PixPy classroom session', () => {
     expect(list).toHaveTextContent('IF/ELSE')
     expect(list).not.toHaveTextContent('Dino Variables')
     await user.click(screen.getByRole('button', { name: /^02 HOW THE COMPUTER MAKES A CHOICE:/i }))
-    expect(screen.getByRole('heading', { name: /how the computer makes a choice/i })).toBeInTheDocument()
+    expect(screen.getByText('INTRO', { selector: '.cm-phase-label' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Open Conditions activity list' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /Every choice starts with a question/i })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /start learning/i }))

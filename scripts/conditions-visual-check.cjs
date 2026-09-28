@@ -92,16 +92,16 @@ async function main() {
         }
         await waitFor('.cm-story')
         await capture('story-chromebook')
-        for (let storyIndex = 0; storyIndex < 3; storyIndex += 1) {
-          for (const valueIndex of [0, 1]) {
-            await evaluate(`document.querySelectorAll('.cm-value-picker button')[${valueIndex}].click()`)
-            for (let step = 0; step < 4; step += 1) {
-              await evaluate(`document.querySelector('.cm-story-bottom .cm-primary').click()`)
-              await sleep(25)
-            }
-            if (storyIndex === 0 && valueIndex === 0) await capture('story-path-chromebook')
+        const storyValues = [['4', '7'], ['3', '8'], ['15', '18']]
+        for (let storyIndex = 0; storyIndex < storyValues.length; storyIndex += 1) {
+          for (const value of storyValues[storyIndex]) {
+            await evaluate(`(() => { const input = document.querySelector('.cm-value-field input'); const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; setter.call(input, ${JSON.stringify(value)}); input.dispatchEvent(new Event('input', { bubbles: true })); })()`)
+            await sleep(60)
             await evaluate(`document.querySelector('.cm-story-bottom .cm-primary').click()`)
-            await sleep(40)
+            await sleep(3400)
+            if (storyIndex === 0 && value === '4') await capture('story-path-chromebook')
+            await evaluate(`document.querySelector('.cm-story-bottom .cm-primary').click()`)
+            await sleep(80)
           }
         }
         await waitFor('.cm-quiz-intro')

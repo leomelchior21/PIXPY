@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { useState } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CHOICE_QUIZ_LENGTH, makeChoiceQuizQuestion } from '../../data/choiceMachine'
 import { createSession } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
@@ -10,35 +11,42 @@ function Harness() {
   return <ChoiceMachine progress={progress} onProgress={setProgress} onBack={() => {}} onNext={() => {}} />
 }
 
-function finishFlow() {
-  fireEvent.click(screen.getByRole('button', { name: /start flow/i }))
-  for (let step = 0; step < 3; step += 1) fireEvent.click(screen.getByRole('button', { name: /next step/i }))
-}
-
 describe('How the computer makes a choice', () => {
-  it('requires both paths in three stories before opening the 20-question XP quiz', () => {
+  beforeEach(() => { vi.useFakeTimers() })
+  afterEach(() => { vi.useRealTimers() })
+
+  const runFlow = () => {
+    fireEvent.click(screen.getByRole('button', { name: /start flow/i }))
+    act(() => { vi.advanceTimersByTime(900) })
+    act(() => { vi.advanceTimersByTime(1000) })
+    act(() => { vi.advanceTimersByTime(1000) })
+  }
+
+  it('teaches three real situations, two typed paths per story, then opens the 20-question XP quiz', () => {
     render(<Harness />)
     expect(screen.getByRole('heading', { name: /every choice starts with a question/i })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /start learning/i }))
 
     expect(screen.getByRole('heading', { name: 'A rainy day' })).toBeInTheDocument()
-    expect(screen.queryByText(/read the code/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /rain falling/i })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Leave the umbrella' }))
     expect(screen.getByRole('button', { name: /next situation/i })).toBeDisabled()
-    expect(screen.getByText('TRY AGAIN')).toBeInTheDocument()
+    expect(screen.getByText('LOOK AGAIN')).toBeInTheDocument()
 
     for (const answer of ['Take an umbrella', 'Show an error', 'Approved']) {
       fireEvent.click(screen.getByRole('button', { name: answer }))
       fireEvent.click(screen.getByRole('button', { name: /next situation|open the live flow/i }))
     }
 
-    for (const [first, second] of [['grade = 4', 'grade = 7'], ['raining = True', 'raining = False'], ['age = 16', 'age = 18']]) {
-      fireEvent.click(screen.getByRole('button', { name: first }))
-      finishFlow()
-      expect(screen.getByRole('button', { name: /try the other path/i })).toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: /try the other path/i }))
-      fireEvent.click(screen.getByRole('button', { name: second }))
-      finishFlow()
+    expect(screen.getByText(/is the grade at least 7/i)).toBeInTheDocument()
+    expect(screen.getByText('YOUR TURN')).toBeInTheDocument()
+    for (const [first, second] of [['4', '7'], ['3', '8'], ['15', '18']]) {
+      fireEvent.change(screen.getByLabelText(/value$/), { target: { value: first } })
+      runFlow()
+      expect(screen.getByRole('button', { name: /try another value/i })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /try another value/i }))
+      fireEvent.change(screen.getByLabelText(/value$/), { target: { value: second } })
+      runFlow()
       fireEvent.click(screen.getByRole('button', { name: /next story|open the quiz/i }))
     }
 
