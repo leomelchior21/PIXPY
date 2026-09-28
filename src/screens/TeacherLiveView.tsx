@@ -117,6 +117,8 @@ export function TeacherLiveView({ username, onBack }: Props) {
   }, [])
 
   const connectLive = useCallback(async () => {
+    realtimeRef.current = 'connecting'
+    setRealtime('connecting')
     try {
       await unlockLiveTeacher(username)
       startRealtime()

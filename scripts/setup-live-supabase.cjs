@@ -26,6 +26,7 @@ const migrations = [
   'supabase/migrations/20260919090000_pixpy_live_code.sql',
   'supabase/migrations/20260919100000_pixpy_live_realtime.sql',
   'supabase/migrations/20260919110000_pixpy_live_teacher_claim.sql',
+  'supabase/migrations/20260919120000_pixpy_publish_fix.sql',
 ]
 
 function envFileValue(name) {
@@ -67,11 +68,34 @@ async function api(pathname, options = {}) {
   return text ? JSON.parse(text) : null
 }
 
+async function appliedVersions() {
+  try {
+    const history = await api(`/projects/${projectRef}/database/migrations`)
+    return new Set((Array.isArray(history) ? history : []).flatMap((entry) => {
+      const version = typeof entry.version === 'string' ? entry.version : ''
+      const name = typeof entry.name === 'string' ? entry.name : ''
+      return [version, name].filter(Boolean)
+    }))
+  } catch {
+    return new Set()
+  }
+}
+
 async function applyMigrations() {
+  const applied = await appliedVersions()
   for (const file of migrations) {
+    const base = path.basename(file, '.sql')
+    const version = base.slice(0, 14)
+    if (applied.has(base) || applied.has(version) || applied.has(base.slice(15))) {
+      console.log(`Already applied ${base}`)
+      continue
+    }
     const sql = fs.readFileSync(path.join(process.cwd(), file), 'utf8')
-    await api(`/projects/${projectRef}/database/query`, { method: 'POST', body: JSON.stringify({ query: sql }) })
-    console.log(`Applied ${path.basename(file)}`)
+    await api(`/projects/${projectRef}/database/migrations`, {
+      method: 'POST',
+      body: JSON.stringify({ query: sql, name: base }),
+    })
+    console.log(`Applied ${base}`)
   }
 }
 
@@ -88,6 +112,8 @@ async function enableAnonymousSignIns() {
   }
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
 async function verify() {
   const anonSignIn = await fetch(`${projectUrl}/auth/v1/signup`, {
     method: 'POST',
@@ -96,14 +122,22 @@ async function verify() {
   })
   if (!anonSignIn.ok) throw new Error(`Anonymous sign-in failed (${anonSignIn.status}). Is anonymous sign-in enabled?`)
   const session = await anonSignIn.json()
-  const authHeaders = { apikey: publishableKey, Authorization: `Bearer ${session.access_token}` }
+  const authHeaders = { apikey: publishableKey, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
 
-  const claimResponse = await fetch(`${projectUrl}/rest/v1/rpc/pixpy_claim_live_teacher`, {
-    method: 'POST',
-    headers: authHeaders,
-    body: JSON.stringify({ p_username: teacherUsername }),
-  })
-  const claimed = claimResponse.ok ? await claimResponse.json() : false
+  // PostgREST reloads its schema cache a few seconds after DDL, so retry.
+  let claimed = false
+  let claimStatus = 0
+  for (let attempt = 0; attempt < 6 && claimed !== true; attempt += 1) {
+    if (attempt > 0) await sleep(2500)
+    const claimResponse = await fetch(`${projectUrl}/rest/v1/rpc/pixpy_claim_live_teacher`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ p_username: teacherUsername }),
+    })
+    claimStatus = claimResponse.status
+    if (claimResponse.ok) claimed = (await claimResponse.json()) === true
+  }
+  const claimResponse = { status: claimStatus }
 
   const teacherRead = await fetch(`${projectUrl}/rest/v1/pixpy_live_code?select=username&limit=1`, { headers: authHeaders })
   const studentRead = await fetch(`${projectUrl}/rest/v1/pixpy_live_code?select=username&limit=1`, { headers: { apikey: publishableKey } })

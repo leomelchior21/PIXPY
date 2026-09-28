@@ -58,6 +58,21 @@ revoke all on table private.pixpy_teachers from public, anon, authenticated;
 alter table public.pixpy_live_code enable row level security;
 revoke all on table public.pixpy_live_code from public, anon;
 
+-- RLS helper: is the caller's JWT bound to a claimed teacher identity? Defined
+-- before the policy that uses it. Superseded by the username claim migration,
+-- which drops and recreates both this function's consumer and the claim RPC.
+create or replace function public.pixpy_is_live_teacher()
+returns boolean
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select exists (
+    select 1 from private.pixpy_teachers where auth_user_id = auth.uid()
+  )
+$$;
+
 -- Only the teacher role can SELECT the table directly or over Realtime. The
 -- publish RPC below is SECURITY DEFINER, so students never need grants.
 drop policy if exists pixpy_live_code_teacher_read on public.pixpy_live_code;
@@ -87,18 +102,6 @@ begin
   on conflict (auth_user_id) do nothing;
   return true;
 end;
-$$;
-
-create or replace function public.pixpy_is_live_teacher()
-returns boolean
-language sql
-security definer
-stable
-set search_path = ''
-as $$
-  select exists (
-    select 1 from private.pixpy_teachers where auth_user_id = auth.uid()
-  )
 $$;
 
 -- Students publish their own row (username hash gate), now with the roster
@@ -140,7 +143,7 @@ begin
   end if;
 
   insert into public.pixpy_live_code (username, display_name, class_name, group_name, module, detail, code, updated_at)
-  values (student.username, student.display_name, student.class_name, student.group_name, clean_module, pg_catalog.nullif(clean_detail, ''), clean_code, pg_catalog.now())
+  values (student.username, student.display_name, student.class_name, student.group_name, clean_module, nullif(clean_detail, ''), clean_code, pg_catalog.now())
   on conflict (username) do update
     set display_name = excluded.display_name,
         class_name = excluded.class_name,

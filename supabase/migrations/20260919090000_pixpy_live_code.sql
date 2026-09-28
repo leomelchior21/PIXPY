@@ -64,7 +64,7 @@ begin
   end if;
 
   insert into private.pixpy_live_code (username, module, detail, code, updated_at)
-  values (student_username, clean_module, pg_catalog.nullif(clean_detail, ''), clean_code, pg_catalog.now())
+  values (student_username, clean_module, nullif(clean_detail, ''), clean_code, pg_catalog.now())
   on conflict (username) do update
     set module = excluded.module,
         detail = excluded.detail,
