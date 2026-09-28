@@ -120,7 +120,7 @@ export function latestUpdatedAt(rows: LiveCodeRow[]): string | null {
   return value
 }
 
-function toLiveCodeRow(item: unknown): LiveCodeRow | null {
+export function toLiveCodeRow(item: unknown): LiveCodeRow | null {
   if (!item || typeof item !== 'object') return null
   const payload = item as Record<string, unknown>
   if (typeof payload.login !== 'string' || typeof payload.display_name !== 'string') return null

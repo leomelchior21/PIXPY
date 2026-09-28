@@ -11,6 +11,8 @@
     "test:watch": "vitest",
     "check:viewports": "node scripts/viewport-check.cjs",
     "check:backroom": "node scripts/backroom-smoke.cjs",
+    "setup:live": "node scripts/setup-live-supabase.cjs",
+    "setup:live-teacher": "node scripts/live-teacher-setup.cjs",
     "preview": "vite preview"
   },
   "dependencies": {

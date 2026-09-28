@@ -35,7 +35,12 @@ Progress is cached in `sessionStorage` for fast refresh recovery and synchronize
 
 The teacher login `leleomaker` opens the full PixPy website with a teacher-only **Dashboard** tab. The dashboard shows activity completion, Final Boss mission progress, last update, search, and summary totals, with filters for classes A/B/C and the White/Yellow teams. Students without a team in the source roster remain visible as **No team**.
 
-**Live view** opens from the dashboard's `Live view` button: a passive grid of every student's current editor content (STOP, Print Playground, Final Bosses, Input Machine, Memory Machine). Editors publish a debounced snapshot through `private.pixpy_live_code`; the teacher page refreshes every two seconds and highlights cards that changed in the last 90 seconds. Students never see a banner and can only ever write their own row. Apply `supabase/migrations/20260919090000_pixpy_live_code.sql` before using it, or the page shows a migration hint.
+**Live view** opens from the dashboard's `Live view` button: a passive grid of every student's current editor content (STOP, Print Playground, Final Bosses, Input Machine, Memory Machine). Editors publish a debounced snapshot through `pixpy_publish_live_code`; the teacher page highlights cards that changed in the last 90 seconds. Students never see a banner and can only ever write their own row.
+
+Setup (one time):
+1. Apply both migrations, `supabase/migrations/20260919090000_pixpy_live_code.sql` and `20260919100000_pixpy_live_realtime.sql` (Supabase SQL editor or `supabase db push`). They are additive and never touch student progress.
+2. Create the teacher auth account: `$env:SUPABASE_SERVICE_ROLE_KEY='...'; $env:LIVE_TEACHER_PASSWORD='...'; npm run setup:live-teacher` (or create `leleomaker@pixpy.local` manually in Authentication -> Users).
+3. On the live page press **REALTIME**, sign in once per device, and the page switches from two-second polling to a Realtime stream (`postgres_changes`, RLS scoped to the teacher identity). If realtime is unavailable, polling keeps working and the page shows the migration hint.
 
 The app header has a **QUICK LIST** for jumping directly to any activity in the current group. It stays focused on navigation and contains no screenshot, print, or session-reset actions.
 

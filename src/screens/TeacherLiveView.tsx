@@ -1,6 +1,7 @@
-import { ArrowLeft, CircleAlert, LoaderCircle, Radio, RefreshCcw, Search, X } from 'lucide-react'
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ArrowLeft, CircleAlert, KeyRound, LoaderCircle, Radio, RefreshCcw, Search, X } from 'lucide-react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { fetchLiveCode, filterLiveCode, isLiveCode, latestUpdatedAt, liveAgeLabel, mergeLiveCode, type LiveCodeClass, type LiveCodeRow, type LiveCodeTeam } from '../lib/liveCode'
+import { LIVE_TEACHER_EMAIL, getLiveTeacherSession, signInLiveTeacher, subscribeLiveCode, type LiveRealtimeStatus } from '../lib/liveRealtime'
 import { highlightPythonLines, type HighlightSpan } from '../lib/pythonHighlight'
 import './teacherLive.css'
 
@@ -75,8 +76,16 @@ export function TeacherLiveView({ username, onBack }: Props) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<LiveCodeRow | null>(null)
   const [reload, setReload] = useState(0)
+  const [realtime, setRealtime] = useState<LiveRealtimeStatus>('off')
+  const [unlockOpen, setUnlockOpen] = useState(false)
+  const [unlockEmail, setUnlockEmail] = useState(LIVE_TEACHER_EMAIL)
+  const [unlockPassword, setUnlockPassword] = useState('')
+  const [unlockError, setUnlockError] = useState('')
+  const [unlockBusy, setUnlockBusy] = useState(false)
   const afterRef = useRef<string | null>(null)
   const busyRef = useRef(false)
+  const realtimeRef = useRef<LiveRealtimeStatus>('off')
+  const unsubscribeRef = useRef<(() => void) | null>(null)
 
   const load = useCallback(async (full: boolean) => {
     if (busyRef.current) return
@@ -97,9 +106,37 @@ export function TeacherLiveView({ username, onBack }: Props) {
     }
   }, [username])
 
+  const startRealtime = useCallback(() => {
+    unsubscribeRef.current?.()
+    unsubscribeRef.current = subscribeLiveCode(
+      (row) => {
+        setRows((current) => mergeLiveCode(current, [row]))
+        if (!afterRef.current || Date.parse(row.updatedAt) > Date.parse(afterRef.current)) afterRef.current = row.updatedAt
+        setNow(Date.now())
+      },
+      (status) => {
+        realtimeRef.current = status
+        setRealtime(status)
+      },
+    )
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    void getLiveTeacherSession().then((session) => { if (active && session) startRealtime() })
+    return () => {
+      active = false
+      unsubscribeRef.current?.()
+      unsubscribeRef.current = null
+    }
+  }, [startRealtime])
+
   useEffect(() => {
     void load(true)
-    const poller = window.setInterval(() => { if (document.visibilityState !== 'hidden') void load(false) }, REFRESH_MS)
+    const poller = window.setInterval(() => {
+      if (document.visibilityState === 'hidden' || realtimeRef.current === 'live') return
+      void load(false)
+    }, REFRESH_MS)
     const ticker = window.setInterval(() => setNow(Date.now()), 2000)
     const onVisibility = () => { if (document.visibilityState === 'visible') void load(false) }
     document.addEventListener('visibilitychange', onVisibility)
@@ -111,11 +148,43 @@ export function TeacherLiveView({ username, onBack }: Props) {
   }, [load, reload])
 
   useEffect(() => {
-    if (!selected) return
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setSelected(null) }
+    if (!selected && !unlockOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setSelected(null)
+      setUnlockOpen(false)
+    }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [selected])
+  }, [selected, unlockOpen])
+
+  const openRealtime = () => {
+    void (async () => {
+      const session = await getLiveTeacherSession()
+      if (session) startRealtime()
+      else {
+        setUnlockError('')
+        setUnlockEmail(LIVE_TEACHER_EMAIL)
+        setUnlockOpen(true)
+      }
+    })()
+  }
+
+  const unlockRealtime = async (event: FormEvent) => {
+    event.preventDefault()
+    setUnlockBusy(true)
+    setUnlockError('')
+    try {
+      await signInLiveTeacher(unlockEmail, unlockPassword)
+      setUnlockOpen(false)
+      setUnlockPassword('')
+      startRealtime()
+    } catch (reason) {
+      setUnlockError(reason instanceof Error ? reason.message : 'Unlock failed.')
+    } finally {
+      setUnlockBusy(false)
+    }
+  }
 
   const activeCount = useMemo(() => rows.filter((row) => isLiveCode(row, now)).length, [rows, now])
   const visible = useMemo(() => filterLiveCode(rows, { className: classFilter, team: teamFilter, query }), [rows, classFilter, teamFilter, query])
@@ -127,7 +196,10 @@ export function TeacherLiveView({ username, onBack }: Props) {
         <button className="live-back" onClick={onBack}><ArrowLeft size={17} /> DASHBOARD</button>
         <div className="live-title"><small>TEACHER</small><h1>Live view</h1></div>
         <div className="live-actions">
-          <span className={`live-connection is-${connection}`} role="status"><i />{connection === 'live' ? 'LIVE' : connection === 'connecting' ? 'CONNECTING' : 'OFFLINE'}</span>
+          {realtime === 'live'
+            ? <span className="live-realtime is-live" role="status"><i />REALTIME</span>
+            : <button className={`live-realtime is-${realtime}`} onClick={openRealtime} aria-label={`Realtime ${realtime}. Unlock streaming`}><KeyRound size={14} /> REALTIME {realtime === 'connecting' ? '…' : 'OFF'}</button>}
+          <span className={`live-connection is-${connection}`} role="status"><i />{connection === 'live' ? (realtime === 'live' ? 'STREAMING' : 'LIVE') : connection === 'connecting' ? 'CONNECTING' : 'OFFLINE'}</span>
           <span className="live-counter"><i />{activeCount} ACTIVE</span>
           <button className="live-refresh" onClick={() => setReload((value) => value + 1)} disabled={connection === 'connecting' && rows.length === 0}><RefreshCcw className={connection === 'connecting' ? 'spin' : ''} size={16} /> REFRESH</button>
         </div>
@@ -178,6 +250,21 @@ export function TeacherLiveView({ username, onBack }: Props) {
             </header>
             {selected.code.trim() ? <CodeLines lines={selectedLines} /> : <p className="live-modal__empty">Empty editor.</p>}
           </section>
+        </div>
+      )}
+
+      {unlockOpen && (
+        <div className="live-modal" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setUnlockOpen(false) }}>
+          <form className="live-unlock" role="dialog" aria-modal="true" aria-label="Unlock realtime streaming" onSubmit={(event) => { void unlockRealtime(event) }}>
+            <header>
+              <div><small>REALTIME</small><h2>Unlock live view</h2><p>Sign in once on this device to stream student code instead of polling.</p></div>
+              <button type="button" onClick={() => setUnlockOpen(false)} aria-label="Close unlock"><X size={18} /></button>
+            </header>
+            <label className="live-unlock__field"><span>Teacher email</span><input type="email" value={unlockEmail} onChange={(event) => setUnlockEmail(event.target.value)} autoComplete="username" required /></label>
+            <label className="live-unlock__field"><span>Password</span><input type="password" value={unlockPassword} onChange={(event) => setUnlockPassword(event.target.value)} autoComplete="current-password" required /></label>
+            {unlockError && <p className="live-unlock__error" role="alert">{unlockError}</p>}
+            <button type="submit" className="live-unlock__submit" disabled={unlockBusy}>{unlockBusy ? <LoaderCircle className="spin" size={16} /> : <KeyRound size={16} />} UNLOCK</button>
+          </form>
         </div>
       )}
     </main>
