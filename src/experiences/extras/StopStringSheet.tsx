@@ -1,7 +1,6 @@
 import { AlertTriangle, ArrowLeft, Check, HelpCircle, LoaderCircle, Play, RotateCcw, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
-import { useLiveCode } from '../../hooks/useLiveCode'
 import { analyzeStopSheet, buildStopStarter, countStopLines, STOP_COLUMN_COUNT } from '../../lib/stopAnalyzer'
 import { PythonRunError, pythonRunner } from '../../lib/pythonRunner'
 import { completeActivity } from '../../session/progressSession'
@@ -42,7 +41,6 @@ export function StopStringSheet({ progress, onProgress, onBack }: Props) {
   const starter = useMemo(() => buildStopStarter(progress.name), [progress.name])
   const code = progress.stopCode ?? starter
   const sheet = useMemo(() => analyzeStopSheet(code), [code])
-  useLiveCode('stop', code, 'STOP · String Sheet')
   const [busy, setBusy] = useState(false)
   const [lastRun, setLastRun] = useState<RunBanner | null>(null)
   const [attentionLine, setAttentionLine] = useState<number | null>(null)

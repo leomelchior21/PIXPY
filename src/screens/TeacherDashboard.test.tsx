@@ -19,7 +19,7 @@ vi.mock('../lib/classroomCloud', async (importOriginal) => ({
 describe('TeacherDashboard', () => {
   it('filters the roster by class and team without hiding unassigned students', async () => {
     const user = userEvent.setup()
-    render(<TeacherDashboard username="leleomaker" onOpenLive={() => undefined} />)
+    render(<TeacherDashboard username="leleomaker" />)
 
     expect(await screen.findByRole('heading', { name: '4 students in view' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Class A.*2/ })).toBeInTheDocument()
@@ -44,7 +44,7 @@ describe('TeacherDashboard', () => {
 
   it('switches the dashboard between the Variables and Conditions worlds', async () => {
     const user = userEvent.setup()
-    render(<TeacherDashboard username="leleomaker" onOpenLive={() => undefined} />)
+    render(<TeacherDashboard username="leleomaker" />)
     await screen.findByRole('heading', { name: '4 students in view' })
 
     expect(screen.getByRole('button', { name: 'Variables' })).toHaveAttribute('aria-pressed', 'true')

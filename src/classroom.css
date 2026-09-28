@@ -561,9 +561,6 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 
 /* Teacher dashboard, available alongside the complete PixPy site. */
 .teacher-dashboard { display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; width: min(1700px, calc(100% - 40px)); height: 100%; margin: auto; padding: 14px 0 18px; color: var(--ink); }
-.teacher-live-button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 0 13px; border: 2px solid var(--ink); border-radius: 8px; color: var(--ink); background: var(--cyan); box-shadow: 2px 2px 0 var(--ink); font-size: 10px; font-weight: 900; }
-.teacher-live-button:hover { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
-.teacher-live-button svg { width: 17px; }
 .teacher-refresh { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 0 13px; border: 2px solid var(--ink); border-radius: 8px; color: var(--ink); background: var(--lime); box-shadow: 2px 2px 0 var(--ink); font-size: 10px; font-weight: 900; }
 .teacher-refresh:hover:not(:disabled) { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
 .teacher-refresh svg { width: 17px; }

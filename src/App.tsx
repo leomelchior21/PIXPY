@@ -22,9 +22,8 @@ const InputMachine = lazy(() => import('./experiences/variables/InputMachine').t
 const MemoryMachine = lazy(() => import('./experiences/variables/MemoryMachine').then((module) => ({ default: module.MemoryMachine })))
 const FinalBosses = lazy(() => import('./experiences/variables/FinalBosses').then((module) => ({ default: module.FinalBosses })))
 const StopStringSheet = lazy(() => import('./experiences/extras/StopStringSheet').then((module) => ({ default: module.StopStringSheet })))
-const TeacherLiveView = lazy(() => import('./screens/TeacherLiveView').then((module) => ({ default: module.TeacherLiveView })))
 
-const validRoutes: AppRoute[] = ['home', 'teacher', 'teacher-live', 'variables', 'conditionals', 'extras', ...activityIds]
+const validRoutes: AppRoute[] = ['home', 'teacher', 'variables', 'conditionals', 'extras', ...activityIds]
 
 function routeFromHash(): AppRoute {
   const candidate = window.location.hash.replace(/^#\/?/, '') as AppRoute
@@ -77,15 +76,14 @@ export default function App() {
 
   if (!progress) return <NameEntryScreen onStart={start} />
   const experienceProps = { progress, onProgress: setProgress, onBack: () => navigate('variables') }
-  const visibleRoute = (route === 'teacher' || route === 'teacher-live') && !progress.isTeacher ? 'home' : route
+  const visibleRoute = route === 'teacher' && !progress.isTeacher ? 'home' : route
 
   return (
     <div className={`app-shell route-${visibleRoute}`}>
       <AppHeader route={visibleRoute} progress={progress} syncState={syncState} onNavigate={navigate} onLogout={logout} />
       <div className="app-content">
         <Suspense fallback={<div className="route-loader" role="status"><span /> Loading experiment...</div>}>
-          {visibleRoute === 'teacher' && progress.isTeacher && <TeacherDashboard username={progress.username} onOpenLive={() => navigate('teacher-live')} />}
-          {visibleRoute === 'teacher-live' && progress.isTeacher && <TeacherLiveView username={progress.username} onBack={() => navigate('teacher')} />}
+          {visibleRoute === 'teacher' && progress.isTeacher && <TeacherDashboard username={progress.username} />}
           {visibleRoute === 'home' && <PlaygroundHome progress={progress} onNavigate={navigate} />}
           {visibleRoute === 'variables' && <VariablesHome progress={progress} onNavigate={navigate} />}
           {visibleRoute === 'conditionals' && <ConditionsHome progress={progress} onNavigate={navigate} />}

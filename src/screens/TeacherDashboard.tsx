@@ -1,4 +1,4 @@
-import { Check, Circle, Cloud, DoorOpen, LoaderCircle, Radio, RefreshCcw, Search, Trophy, Users } from 'lucide-react'
+import { Check, Circle, Cloud, DoorOpen, LoaderCircle, RefreshCcw, Search, Trophy, Users } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { variableExperiences } from '../data/variables'
 import { conditionExperiences } from '../data/conditions'
@@ -7,10 +7,7 @@ import { milestoneGates } from '../lib/backroomEngine'
 import { loadClassProgress, type ClassProgressRow, type RosterClass, type RosterTeam } from '../lib/classroomCloud'
 import type { ActivityId } from '../types'
 
-interface TeacherDashboardProps {
-  username: string
-  onOpenLive: () => void
-}
+interface TeacherDashboardProps { username: string }
 type ClassFilter = 'all' | RosterClass
 type TeamFilter = 'all' | RosterTeam | 'unassigned'
 type WorldId = 'variables' | 'conditions'
@@ -36,7 +33,7 @@ const teamOptions: Array<{ value: TeamFilter; label: string }> = [
   { value: 'unassigned', label: 'No team' },
 ]
 
-export function TeacherDashboard({ username, onOpenLive }: TeacherDashboardProps) {
+export function TeacherDashboard({ username }: TeacherDashboardProps) {
   const [students, setStudents] = useState<ClassProgressRow[]>([])
   const [query, setQuery] = useState('')
   const [classFilter, setClassFilter] = useState<ClassFilter>('all')
@@ -106,7 +103,6 @@ export function TeacherDashboard({ username, onOpenLive }: TeacherDashboardProps
         <header>
           <div><small>STUDENT PROGRESS</small><h2>{filtered.length} {filtered.length === 1 ? 'student' : 'students'} in view</h2></div>
           <div className="teacher-roster-tools">
-            <button className="teacher-live-button" onClick={onOpenLive}><Radio size={17} /> Live view</button>
             <button className="teacher-refresh" onClick={() => void refresh()} disabled={loading}><RefreshCcw className={loading ? 'spin' : ''} /> Refresh</button>
             <div className="teacher-world-switch" role="group" aria-label="World progress">
               {worldOptions.map((option) => <button key={option.id} className={world === option.id ? 'is-active' : ''} aria-pressed={world === option.id} onClick={() => setWorld(option.id)}>{option.label}</button>)}

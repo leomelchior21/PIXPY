@@ -19,7 +19,6 @@ export type ActivityId = (typeof activityIds)[number]
 export type AppRoute =
   | 'home'
   | 'teacher'
-  | 'teacher-live'
   | 'variables'
   | 'conditionals'
   | 'extras'

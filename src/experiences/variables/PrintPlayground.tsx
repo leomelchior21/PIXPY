@@ -2,7 +2,6 @@ import { Check, LoaderCircle, Play, RotateCcw, Sparkles, TerminalSquare } from '
 import { useEffect, useRef, useState } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
 import { ExperienceShell } from '../../components/ExperienceShell'
-import { useLiveCode } from '../../hooks/useLiveCode'
 import { PrintRewardDisplay } from '../../components/printRewards/PrintRewardDisplay'
 import { getPrintActivity, printActivities } from '../../data/printActivities'
 import { detectPrintReward } from '../../lib/printRewards'
@@ -22,7 +21,6 @@ export function PrintPlayground({ progress, onProgress, onBack }: Props) {
   const activity = getPrintActivity(activityId)
   const activityIndex = printActivities.findIndex((item) => item.id === activityId)
   const code = progress.printPlaygroundCode[activityId] ?? activity.starterCode
-  useLiveCode('print-playground', code, activity.title)
   const outputState = progress.printPlaygroundOutputs[activityId]
   const currentRun = latestRun?.activityId === activityId ? latestRun : null
   const currentSuccessfulRun = currentRun?.success ? currentRun : null

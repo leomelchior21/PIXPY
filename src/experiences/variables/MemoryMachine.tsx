@@ -1,7 +1,6 @@
 import { ArrowLeft, ArrowRight, Check, Code2, Lightbulb, MonitorUp, Play, RotateCcw, Sparkles } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
-import { useLiveCode } from '../../hooks/useLiveCode'
 import { ExperienceShell } from '../../components/ExperienceShell'
 import { pythonRunner } from '../../lib/pythonRunner'
 import { completeActivity, resetActivityProgress } from '../../session/progressSession'
@@ -175,7 +174,6 @@ export function MemoryMachine({ progress, onProgress, onBack }: Props) {
   const runVersion = useRef(0)
   const mode = modes[modeIndex]
   const code = drafts[mode.id]
-  useLiveCode('memory-machine', code, mode.label)
   const input = inputs[mode.id] ?? ''
   const hasRun = ranModes.includes(mode.id)
   const tested = testedModes.includes(mode.id)

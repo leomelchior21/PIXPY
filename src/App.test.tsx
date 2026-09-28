@@ -134,19 +134,5 @@ describe('PixPy classroom session', () => {
 
     await user.click(screen.getByRole('button', { name: /dashboard/i }))
     expect(await screen.findByRole('heading', { name: '0 students in view' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /live view/i })).toBeInTheDocument()
-  })
-
-  it('keeps the live view behind the teacher role', async () => {
-    const user = userEvent.setup()
-    render(<App />)
-    await user.type(screen.getByLabelText('Enter your PixPy login'), 'MayaStudent')
-    await user.click(screen.getByRole('button', { name: /log in to pixpy/i }))
-    await screen.findByRole('heading', { name: /ready, mayastudent/i })
-
-    window.history.pushState(null, '', '#/teacher-live')
-    window.dispatchEvent(new HashChangeEvent('hashchange'))
-    expect(await screen.findByRole('heading', { name: /ready, mayastudent/i })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Live view' })).not.toBeInTheDocument()
   })
 })

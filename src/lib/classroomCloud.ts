@@ -2,10 +2,10 @@ import { createClient } from '@supabase/supabase-js'
 import type { SessionProgress } from '../types'
 import { cleanUsername } from '../session/progressSession'
 
-export const supabaseUrl = 'https://imodobxbarcsjylvitxt.supabase.co'
-export const supabasePublishableKey = 'sb_publishable_jkHrLZkNR4Zh3XtHEgpTMA_JnMMpG6w'
+const supabaseUrl = 'https://imodobxbarcsjylvitxt.supabase.co'
+const supabasePublishableKey = 'sb_publishable_jkHrLZkNR4Zh3XtHEgpTMA_JnMMpG6w'
 
-export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 })
 let progressSaveQueue: Promise<void> = Promise.resolve()
