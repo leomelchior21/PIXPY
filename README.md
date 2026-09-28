@@ -37,10 +37,11 @@ The teacher login `leleomaker` opens the full PixPy website with a teacher-only 
 
 **Live view** opens from the dashboard's `Live view` button: a passive grid of every student's current editor content (STOP, Print Playground, Final Bosses, Input Machine, Memory Machine). Editors publish a debounced snapshot through `pixpy_publish_live_code`; the teacher page highlights cards that changed in the last 90 seconds. Students never see a banner and can only ever write their own row.
 
-Setup (one time):
-1. Apply both migrations, `supabase/migrations/20260919090000_pixpy_live_code.sql` and `20260919100000_pixpy_live_realtime.sql` (Supabase SQL editor or `supabase db push`). They are additive and never touch student progress.
-2. Create the teacher auth account: `$env:SUPABASE_SERVICE_ROLE_KEY='...'; $env:LIVE_TEACHER_PASSWORD='...'; npm run setup:live-teacher` (or create `leleomaker@pixpy.local` manually in Authentication -> Users).
-3. On the live page press **REALTIME**, sign in once per device, and the page switches from two-second polling to a Realtime stream (`postgres_changes`, RLS scoped to the teacher identity). If realtime is unavailable, polling keeps working and the page shows the migration hint.
+Setup (one time, no new password): the teacher keeps signing into PixPy with the username `leleomaker` only.
+1. Apply the live-code migrations `20260919090000`, `20260919100000` and `20260919110000` (Supabase SQL editor or `supabase db push`); they are additive and never touch student progress.
+2. Enable **Authentication -> Sign In / Providers -> Anonymous sign-ins**.
+3. Or do both in one command: put a Supabase Personal Access Token (`sbp_...`) in `.env.local` as `SUPABASE_ACCESS_TOKEN` and run `npm run setup:live`. It applies the migrations, enables anonymous sign-ins and verifies that the teacher can read and students are blocked.
+4. Open Dashboard -> Live view: the page signs in anonymously and claims the teacher identity automatically, switching from two-second polling to the Realtime stream. If realtime is unavailable, polling keeps working.
 
 The app header has a **QUICK LIST** for jumping directly to any activity in the current group. It stays focused on navigation and contains no screenshot, print, or session-reset actions.
 

@@ -4,12 +4,11 @@ import { toLiveCodeRow, type LiveCodeRow } from './liveCode'
 
 export type LiveRealtimeStatus = 'off' | 'connecting' | 'live' | 'error'
 
-export const LIVE_TEACHER_EMAIL = 'leleomaker@pixpy.local'
-
 /**
  * Realtime needs a Supabase Auth JWT so Postgres Changes can evaluate RLS. The
- * rest of the app deliberately keeps no Supabase session, so the live view uses
- * its own client with persistent storage: the teacher unlocks once per device.
+ * app signs the teacher in with the username only, so the live view signs in
+ * anonymously and claims the teacher identity by username. No password, and the
+ * PixPy login flow is untouched.
  */
 export const liveClient = createClient(supabaseUrl, supabasePublishableKey, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'pixpy.live.auth' },
@@ -24,16 +23,21 @@ export async function getLiveTeacherSession(): Promise<Session | null> {
   }
 }
 
-export async function signInLiveTeacher(email: string, password: string): Promise<void> {
-  const { data, error } = await liveClient.auth.signInWithPassword({ email: email.trim(), password })
-  if (error || !data.session) throw new Error('Live view unlock failed. Check the teacher email and password.')
-  try {
-    await liveClient.rpc('pixpy_claim_live_teacher')
-  } catch {
-    // The account exists but the migration may not be applied yet; the page
-    // keeps its polling fallback in that case.
+export async function unlockLiveTeacher(username: string): Promise<void> {
+  let session = (await liveClient.auth.getSession()).data.session
+  if (!session) {
+    const anonymous = await liveClient.auth.signInAnonymously()
+    if (anonymous.error || !anonymous.data.session) {
+      throw new Error('Realtime needs anonymous sign-ins enabled in the Supabase project.')
+    }
+    session = anonymous.data.session
   }
-  await liveClient.realtime.setAuth(data.session.access_token)
+
+  const { data, error } = await liveClient.rpc('pixpy_claim_live_teacher', { p_username: username })
+  if (error) throw new Error('Realtime is not ready yet. Apply the pixpy_live_realtime migration.')
+  if (data !== true) throw new Error('Live view is reserved for the teacher account.')
+
+  await liveClient.realtime.setAuth(session.access_token)
 }
 
 export async function signOutLiveTeacher(): Promise<void> {

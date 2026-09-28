@@ -7,8 +7,7 @@ import type { LiveRealtimeStatus } from '../lib/liveRealtime'
 
 const api = vi.hoisted(() => ({ fetchLiveCode: vi.fn() }))
 const rt = vi.hoisted(() => ({
-  getSession: vi.fn(),
-  signIn: vi.fn(),
+  unlock: vi.fn(),
   subscribe: vi.fn(),
 }))
 
@@ -18,9 +17,7 @@ vi.mock('../lib/liveCode', async (importOriginal) => ({
 }))
 
 vi.mock('../lib/liveRealtime', () => ({
-  LIVE_TEACHER_EMAIL: 'leleomaker@pixpy.local',
-  getLiveTeacherSession: rt.getSession,
-  signInLiveTeacher: rt.signIn,
+  unlockLiveTeacher: rt.unlock,
   signOutLiveTeacher: vi.fn(async () => undefined),
   subscribeLiveCode: rt.subscribe,
 }))
@@ -41,8 +38,7 @@ function row(overrides: Partial<LiveCodeRow> & { login: string }): LiveCodeRow {
 describe('TeacherLiveView', () => {
   beforeEach(() => {
     api.fetchLiveCode.mockReset()
-    rt.getSession.mockReset().mockResolvedValue(null)
-    rt.signIn.mockReset().mockResolvedValue(undefined)
+    rt.unlock.mockReset().mockResolvedValue(undefined)
     rt.subscribe.mockReset().mockReturnValue(() => undefined)
   })
   afterEach(cleanup)
@@ -111,8 +107,7 @@ describe('TeacherLiveView', () => {
     expect(screen.getByRole('button', { name: 'TRY AGAIN' })).toBeInTheDocument()
   })
 
-  it('streams rows over realtime when the teacher session is unlocked', async () => {
-    rt.getSession.mockResolvedValue({ access_token: 'token' })
+  it('streams rows over realtime after the passwordless unlock', async () => {
     let emitRow: (row: LiveCodeRow) => void = () => undefined
     let emitStatus: (status: LiveRealtimeStatus) => void = () => undefined
     rt.subscribe.mockImplementation((onRow: (row: LiveCodeRow) => void, onStatus: (status: LiveRealtimeStatus) => void) => {
@@ -123,6 +118,7 @@ describe('TeacherLiveView', () => {
     api.fetchLiveCode.mockResolvedValue([])
     render(<TeacherLiveView username="leleomaker" onBack={() => undefined} />)
 
+    await waitFor(() => expect(rt.unlock).toHaveBeenCalledWith('leleomaker'))
     await waitFor(() => expect(rt.subscribe).toHaveBeenCalled())
     act(() => emitStatus('live'))
     act(() => emitRow(row({ login: 'adaa', displayName: 'Ada A.' })))
@@ -133,18 +129,17 @@ describe('TeacherLiveView', () => {
     expect(screen.getByText('1 ACTIVE')).toBeInTheDocument()
   })
 
-  it('unlocks realtime with the teacher account', async () => {
+  it('keeps polling and offers a retry when the realtime unlock fails', async () => {
     const user = userEvent.setup()
+    rt.unlock.mockRejectedValue(new Error('Anonymous sign-ins disabled'))
     api.fetchLiveCode.mockResolvedValue([])
     render(<TeacherLiveView username="leleomaker" onBack={() => undefined} />)
     await screen.findByText('No students typing right now.')
 
-    await user.click(screen.getByRole('button', { name: /Realtime off/i }))
-    const dialog = screen.getByRole('dialog', { name: 'Unlock realtime streaming' })
-    await user.type(within(dialog).getByLabelText('Password'), 'secret-pass')
-    await user.click(within(dialog).getByRole('button', { name: 'UNLOCK' }))
-
-    await waitFor(() => expect(rt.signIn).toHaveBeenCalledWith('leleomaker@pixpy.local', 'secret-pass'))
+    const retry = screen.getByRole('button', { name: /Realtime off. Retry streaming/i })
+    rt.unlock.mockClear().mockResolvedValue(undefined)
+    await user.click(retry)
+    await waitFor(() => expect(rt.unlock).toHaveBeenCalledWith('leleomaker'))
     expect(rt.subscribe).toHaveBeenCalled()
   })
 
