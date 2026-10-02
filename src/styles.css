@@ -192,6 +192,14 @@ code, pre { font-family: 'IBM Plex Mono', monospace; }
 .pixpy-editor .cm-editor { height: 100%; min-height: 0 !important; font-size: 13px; }
 .pixpy-editor .cm-scroller { overflow: auto; font-family: 'IBM Plex Mono', monospace; }
 .pixpy-editor .cm-gutters { border-right: 1px solid #253247; background: #0b111c; }
+/* Python token colors matched to the one-dark editor used across the playgrounds. */
+.py-tok--keyword { color: #c678dd; }
+.py-tok--function { color: #61afef; }
+.py-tok--name { color: #e06c75; }
+.py-tok--number { color: #e5c07b; }
+.py-tok--string { color: #98c379; }
+.py-tok--operator { color: #56b6c2; }
+.py-tok--comment { color: #7d8799; font-style: italic; }
 .run-row { display: grid; grid-template-columns: 118px 1fr; gap: 9px; }
 .primary-action, .secondary-action, .text-action { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 2px solid #02050a; font: 700 12px var(--pixel); }
 .primary-action { color: var(--ink); background: var(--experience-accent); box-shadow: 4px 4px 0 #02050a; }

@@ -50,6 +50,11 @@ export interface FlowStoryInput {
   above: string
 }
 
+export interface FlowStoryBriefing {
+  lead: string
+  watch: string[]
+}
+
 export interface FlowStory {
   id: string
   title: string
@@ -63,6 +68,7 @@ export interface FlowStory {
   format: (value: number) => string
   calc: (value: number) => string[]
   input: FlowStoryInput
+  briefing: FlowStoryBriefing
 }
 
 function wholeNumber(raw: string): number | null {
@@ -79,6 +85,10 @@ export const flowStories: FlowStory[] = [
     trueOutput: 'Approved', falseOutput: 'Try again', decide: (value) => value >= 7, format: String,
     calc: (value) => [`${value} >= 7 → ${value >= 7 ? 'True' : 'False'}`],
     input: { placeholder: 'type a number, e.g. 8', hint: 'Type a whole number in the box, then press START FLOW.', typeHint: 'Whole numbers only', parse: wholeNumber, below: 'less than 7', above: '7 or more' },
+    briefing: {
+      lead: 'A grade comes in from a student. Python compares it with the pass mark of 7 and chooses which message appears.',
+      watch: ['You type a whole number for grade and press START FLOW.', 'Python tests the condition grade >= 7.', 'The glow follows TRUE to Approved or FALSE to Try again.'],
+    },
   },
   {
     id: 'even-odd', title: 'Even or odd', narrative: 'The computer looks at the last digit to split every number into two groups. Give it a number to test.',
@@ -89,6 +99,10 @@ export const flowStories: FlowStory[] = [
       return [`${value} % 2 = ${remainder}`, `${remainder} == 0 → ${remainder === 0 ? 'True' : 'False'}`]
     },
     input: { placeholder: 'type a number, e.g. 7', hint: 'Type a whole number in the box, then press START FLOW.', typeHint: 'Whole numbers only', parse: wholeNumber, below: 'odd (n % 2 is 1)', above: 'even (n % 2 is 0)' },
+    briefing: {
+      lead: 'Now the test uses the remainder operator. Python divides your number by 2 and checks what is left over.',
+      watch: ['You type a whole number for n and press START FLOW.', 'Python calculates the condition n % 2 == 0.', 'Even numbers go TRUE. Odd numbers go FALSE.'],
+    },
   },
   {
     id: 'adult', title: 'Grown-up or not', narrative: 'An age check chooses between two very different answers. Try an age of your own.',
@@ -96,6 +110,10 @@ export const flowStories: FlowStory[] = [
     trueOutput: 'Adult', falseOutput: 'Minor', decide: (value) => value >= 18, format: String,
     calc: (value) => [`${value} >= 18 → ${value >= 18 ? 'True' : 'False'}`],
     input: { placeholder: 'type an age, e.g. 18', hint: 'Type a whole number in the box, then press START FLOW.', typeHint: 'Whole numbers only', parse: wholeNumber, below: 'under 18', above: '18 or more' },
+    briefing: {
+      lead: 'A door has to know if a visitor is an adult. One age value decides which label walks through.',
+      watch: ['You type an age and press START FLOW.', 'Python tests the condition age >= 18.', 'The answer chooses between Adult and Minor.'],
+    },
   },
 ]
 

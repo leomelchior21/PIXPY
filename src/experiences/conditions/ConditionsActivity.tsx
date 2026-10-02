@@ -1,5 +1,6 @@
 import { ArrowLeft, ArrowRight, Check, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
+import { PythonCode } from '../../components/PythonCode'
 import { conditionExperiences, type ConditionExperience } from '../../data/conditions'
 import { completeActivity } from '../../session/progressSession'
 import type { AppRoute, SessionProgress } from '../../types'
@@ -43,7 +44,7 @@ export function ConditionsActivity({ activity, progress, onProgress, onBack, onN
         <button onClick={() => next ? onNext(next.id) : onBack()}>{next ? `NEXT: ${next.title}` : 'BACK TO CONDITIONS'} <ArrowRight size={17} /></button></div>
     </section> : <section className="conditions-activity__layout">
       <div className="conditions-activity__lesson">
-        <span>THE CODE</span><pre><code>{challenge.code}</code></pre>
+        <span>THE CODE</span><pre><PythonCode code={challenge.code} /></pre>
         <p>Read the code from top to bottom. An indented line runs only when its condition chooses that path.</p>
       </div>
       <div className="conditions-activity__challenge">

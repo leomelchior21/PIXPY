@@ -90,10 +90,13 @@ async function main() {
           await evaluate(`document.querySelector('.cm-lesson-content .cm-primary').click()`)
           await sleep(30)
         }
-        await waitFor('.cm-story')
-        await capture('story-chromebook')
+        await waitFor('.cm-briefing')
+        await capture('briefing-chromebook')
         const storyValues = [['4', '7'], ['3', '8'], ['15', '18']]
         for (let storyIndex = 0; storyIndex < storyValues.length; storyIndex += 1) {
+          await evaluate(`document.querySelector('.cm-briefing .cm-primary').click()`)
+          await waitFor('.cm-story')
+          if (storyIndex === 0) await capture('story-chromebook')
           for (const value of storyValues[storyIndex]) {
             await evaluate(`(() => { const input = document.querySelector('.cm-value-field input'); const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; setter.call(input, ${JSON.stringify(value)}); input.dispatchEvent(new Event('input', { bubbles: true })); })()`)
             await sleep(60)

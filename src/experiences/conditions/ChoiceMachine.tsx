@@ -1,5 +1,6 @@
-import { ArrowLeft, ArrowRight, Check, Lightbulb, Play, RotateCcw, Sparkles, Trophy, Zap } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Binary, Check, GraduationCap, IdCard, Lightbulb, Play, RotateCcw, Sparkles, Trophy, Zap } from 'lucide-react'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { PythonCode } from '../../components/PythonCode'
 import { CHOICE_QUIZ_LENGTH, CHOICE_XP_PER_QUESTION, everydayChoices, flowStories, makeChoiceQuizQuestion } from '../../data/choiceMachine'
 import { completeActivity } from '../../session/progressSession'
 import type { AppRoute, SessionProgress } from '../../types'
@@ -13,9 +14,15 @@ interface Props {
   onNext: (route: AppRoute) => void
 }
 
-type Phase = 'intro' | 'choices' | 'stories' | 'quizIntro' | 'quiz' | 'complete'
+type Phase = 'intro' | 'choices' | 'storyIntro' | 'stories' | 'quizIntro' | 'quiz' | 'complete'
 type SeenPaths = Record<string, { yes: boolean; no: boolean }>
 type CoachKind = 'type' | 'press' | 'another' | 'fix'
+
+const storyBriefingIcons: Record<string, typeof GraduationCap> = {
+  grade: GraduationCap,
+  'even-odd': Binary,
+  adult: IdCard,
+}
 
 function StepDots({ current, total }: { current: number; total: number }) {
   return <div className="cm-step-dots" aria-label={`Step ${current + 1} of ${total}`}>
@@ -39,6 +46,7 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
 
   const lesson = everydayChoices[lessonIndex]
   const story = flowStories[storyIndex]
+  const BriefingIcon = storyBriefingIcons[story.id] ?? Sparkles
   const parsedDraft = story.input.parse(draft)
   const seen = seenPaths[story.id] ?? { yes: false, no: false }
   const bothPathsSeen = seen.yes && seen.no
@@ -102,10 +110,31 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
     setPhase('choices')
   }
 
+  const openBriefing = () => {
+    setDraft('')
+    setRunValue(null)
+    setFlowStep(0)
+    setPhase('storyIntro')
+  }
+
   const nextLesson = () => {
     if (lessonAnswer !== lesson.answer) return
-    if (lessonIndex + 1 === everydayChoices.length) setPhase('stories')
+    if (lessonIndex + 1 === everydayChoices.length) openBriefing()
     else { setLessonIndex(lessonIndex + 1); setLessonAnswer(null) }
+  }
+
+  const reviewStories = () => {
+    setStoryIndex(0)
+    openBriefing()
+  }
+
+  const openQuiz = () => setPhase(quizIndex === CHOICE_QUIZ_LENGTH || progress.completed.includes('choice-machine') ? 'complete' : 'quizIntro')
+
+  const startStory = () => {
+    setDraft('')
+    setRunValue(null)
+    setFlowStep(0)
+    setPhase('stories')
   }
 
   const startFlow = () => {
@@ -126,9 +155,7 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
       setPhase('quizIntro')
     } else {
       setStoryIndex(storyIndex + 1)
-      setDraft('')
-      setRunValue(null)
-      setFlowStep(0)
+      openBriefing()
     }
   }
 
@@ -165,7 +192,7 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
   const shownValue = flowStep >= 1 ? runValue : parsedDraft
   const lineActive = (index: number) => (flowStep === 1 && index === 0) || (flowStep === 2 && index === 1) || (flowStep >= 3 && index === (outcome ? 2 : 4))
 
-  const phaseLabel = phase === 'intro' ? 'INTRO' : phase === 'choices' ? 'REAL LIFE CHOICES' : phase === 'stories' ? 'LIVE FLOW' : phase === 'quizIntro' ? 'QUIZ READY' : phase === 'quiz' ? 'XP QUIZ' : 'COMPLETE'
+  const phaseLabel = phase === 'intro' ? 'INTRO' : phase === 'choices' ? 'REAL LIFE CHOICES' : phase === 'storyIntro' ? 'PRE-EXPERIMENT' : phase === 'stories' ? 'LIVE FLOW' : phase === 'quizIntro' ? 'QUIZ READY' : phase === 'quiz' ? 'XP QUIZ' : 'COMPLETE'
 
   return <main className={`cm-screen cm-screen--${phase}`} style={{ '--cm-accent': '#b9f352' } as CSSProperties}>
     <div className="cm-toolbar">
@@ -181,6 +208,7 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
         <div className="cm-intro-rule"><b>IF</b><span>the answer is YES</span><ArrowRight size={18} /><strong>do this</strong></div>
         <div className="cm-intro-rule cm-intro-rule--no"><b>ELSE</b><span>the answer is NO</span><ArrowRight size={18} /><strong>do that</strong></div>
         <button className="cm-primary" onClick={begin}>{progress.completed.includes('choice-machine') ? 'SEE MY RESULT' : quizIndex > 0 ? 'CONTINUE QUIZ' : progress.choiceMachineStoriesComplete ? 'OPEN THE QUIZ' : 'START LEARNING'} <ArrowRight size={19} /></button>
+        {progress.choiceMachineStoriesComplete && !progress.completed.includes('choice-machine') && <button className="cm-text-button" onClick={reviewStories}>Review the live flows</button>}
         {(progress.choiceMachineStoriesComplete || quizIndex > 0) && <button className="cm-text-button" onClick={startOver}>Start from the beginning</button>}
       </div>
       <div className="cm-intro-art" aria-label="A question splits into a yes path and a no path">
@@ -209,6 +237,34 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
       </div>
     </section>}
 
+    {phase === 'storyIntro' && <section className="cm-briefing cm-panel" key={story.id}>
+      <div className="cm-briefing-copy">
+        <span className="cm-kicker"><BriefingIcon size={15} /> PRE-EXPERIMENT · STORY {storyIndex + 1} OF {flowStories.length}</span>
+        <StepDots current={storyIndex} total={flowStories.length} />
+        <h2>{story.title}</h2>
+        <p>{story.briefing.lead}</p>
+        <ul className="cm-briefing-steps">
+          {story.briefing.watch.map((step, index) => <li key={step}><b>{index + 1}</b>{step}</li>)}
+        </ul>
+        <div className="cm-briefing-actions">
+          <button className="cm-primary" onClick={startStory}><Play size={17} fill="currentColor" /> START LIVE FLOW</button>
+          {progress.choiceMachineStoriesComplete && <button className="cm-text-button" onClick={openQuiz}>Go to the quiz <ArrowRight size={14} /></button>}
+        </div>
+      </div>
+      <div className="cm-briefing-art">
+        <span className="cm-briefing-art__spark cm-briefing-art__spark--one">✦</span>
+        <span className="cm-briefing-art__spark cm-briefing-art__spark--two">✦</span>
+        <span className="cm-briefing-art__badge"><BriefingIcon size={34} /></span>
+        <div className="cm-briefing-art__input"><small>YOU TYPE</small><b>{story.variable} = ?</b></div>
+        <span className="cm-briefing-art__arrow" aria-hidden="true" />
+        <div className="cm-briefing-art__question"><small>PYTHON ASKS</small><strong>{story.question}</strong><code>{story.condition}</code></div>
+        <div className="cm-briefing-art__paths">
+          <div><small>TRUE</small><b>{story.trueOutput}</b></div>
+          <div><small>FALSE</small><b>{story.falseOutput}</b></div>
+        </div>
+      </div>
+    </section>}
+
     {phase === 'stories' && <section className="cm-story cm-panel" key={story.id}>
       <div className="cm-story-top"><div><span className="cm-kicker">LIVE FLOW / STORY {storyIndex + 1} OF {flowStories.length}</span><h2>{story.title}</h2><p>{story.narrative}</p></div><div className="cm-story-seen"><span className={seen.yes ? 'is-seen' : ''}>✓ TRUE PATH</span><span className={seen.no ? 'is-seen' : ''}>✓ FALSE PATH</span></div></div>
       <div className="cm-story-grid">
@@ -217,7 +273,7 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
           <div className="cm-story-lines">
             {flowLines.map((line, index) => {
               const active = lineActive(index)
-              return <div key={index} className={active ? 'is-active' : ''}><span>{index + 1}</span><code>{line}</code>
+              return <div key={index} className={active ? 'is-active' : ''}><span>{index + 1}</span><PythonCode code={line} />
                 {index === 0 && flowStep >= 1 && shownValue !== null && <b className="cm-value-chip">{story.variable} = {story.format(shownValue)}</b>}
               </div>
             })}
@@ -281,7 +337,7 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
       {quizAnswer !== null && !quizCorrect && <div className="cm-crash" aria-hidden="true"><span>X</span><b>NOT YET</b><span>X</span></div>}
       <div className="cm-quiz-heading"><div><span className="cm-kicker">QUESTION {quizIndex + 1} / {CHOICE_QUIZ_LENGTH}</span><h2>{quiz.prompt}</h2></div><div className={`cm-xp ${quizCorrect ? 'is-kicked' : ''}`}><Zap size={20} fill="currentColor" /><b key={`${quizIndex}-${progress.choiceMachineXp}`}>{quizCorrect ? progress.choiceMachineXp + CHOICE_XP_PER_QUESTION : progress.choiceMachineXp}</b><span>XP</span>{quizCorrect && <em className="cm-xp-pop">+10</em>}</div></div>
       <div className="cm-quiz-progress" role="progressbar" aria-label="Quiz progress" aria-valuenow={quizIndex} aria-valuemin={0} aria-valuemax={CHOICE_QUIZ_LENGTH}><span style={{ width: `${(quizIndex / CHOICE_QUIZ_LENGTH) * 100}%` }} /></div>
-      <div className="cm-quiz-grid"><div className="cm-quiz-code"><span>READ THE CODE</span><pre><code>{quiz.code}</code></pre><small>Read line by line before choosing.</small></div><div className="cm-quiz-answer"><span>CHOOSE ONE ANSWER</span><div>{quiz.options.map((option, index) => <button key={option} disabled={quizAnswer !== null} className={quizAnswer === index ? quizCorrect ? 'is-correct' : 'is-wrong' : ''} onClick={() => setQuizAnswer(index)} aria-label={`${String.fromCharCode(65 + index)} ${option.replace(/\n/g, ' then ')}`}><b>{String.fromCharCode(65 + index)}</b><code>{option}</code>{quizAnswer === index && <i aria-hidden="true">{quizCorrect ? '✓' : '✗'}</i>}</button>)}</div></div></div>
+      <div className="cm-quiz-grid"><div className="cm-quiz-code"><span>READ THE CODE</span><pre><PythonCode code={quiz.code} /></pre><small>Read line by line before choosing.</small></div><div className="cm-quiz-answer"><span>CHOOSE ONE ANSWER</span><div>{quiz.options.map((option, index) => <button key={option} disabled={quizAnswer !== null} className={quizAnswer === index ? quizCorrect ? 'is-correct' : 'is-wrong' : ''} onClick={() => setQuizAnswer(index)} aria-label={`${String.fromCharCode(65 + index)} ${option.replace(/\n/g, ' then ')}`}><b>{String.fromCharCode(65 + index)}</b><code>{option}</code>{quizAnswer === index && <i aria-hidden="true">{quizCorrect ? '✓' : '✗'}</i>}</button>)}</div></div></div>
       <div className="cm-quiz-bottom"><div className="cm-quiz-feedback" role="status">{quizAnswer === null ? <span>Choose the result to earn 10 XP.</span> : quizCorrect ? <><Check size={24} /><span><b>+10 XP!</b> {quiz.explanation}</span></> : <><RotateCcw size={24} /><span><b>Not yet.</b> {quiz.explanation} Try the same idea with new values.</span></>}</div>{quizAnswer !== null && <button className="cm-primary" onClick={quizCorrect ? nextQuiz : () => { setQuizRetry(quizRetry + 1); setQuizAnswer(null) }}>{quizCorrect ? quizIndex + 1 === CHOICE_QUIZ_LENGTH ? 'SEE YOUR RESULT' : 'NEXT QUESTION' : 'TRY NEW VALUES'} <ArrowRight size={18} /></button>}</div>
     </section>}
 
