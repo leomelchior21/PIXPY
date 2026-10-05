@@ -572,21 +572,10 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 .logout-button svg { width: 18px; }
 
 /* Teacher dashboard, available alongside the complete PixPy site. */
-.teacher-dashboard { display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; width: min(1700px, calc(100% - 40px)); height: 100%; margin: auto; padding: 14px 0 18px; color: var(--ink); }
+.teacher-dashboard { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px; width: min(1700px, calc(100% - 40px)); height: 100%; margin: auto; padding: 14px 0 18px; color: var(--ink); }
 .teacher-refresh { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 0 13px; border: 2px solid var(--ink); border-radius: 8px; color: var(--ink); background: var(--lime); box-shadow: 2px 2px 0 var(--ink); font-size: 10px; font-weight: 900; }
 .teacher-refresh:hover:not(:disabled) { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
 .teacher-refresh svg { width: 17px; }
-.teacher-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.teacher-summary article { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 72px; padding: 10px; border: 2px solid var(--ink); border-radius: 11px; background: #fff; box-shadow: 3px 3px 0 var(--ink); }
-.teacher-summary article > span { display: grid; place-items: center; width: 40px; height: 40px; border: 2px solid var(--ink); border-radius: 9px; background: var(--lime); }
-.teacher-summary article:nth-child(2) > span { background: var(--cyan); }
-.teacher-summary article:nth-child(3) > span { background: var(--orange); }
-.teacher-summary article:nth-child(4) > span { background: var(--yellow); }
-.teacher-summary article svg { width: 21px; }
-.teacher-summary article div { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: 7px; }
-.teacher-summary article small { grid-column: 1 / -1; color: #666c63; font-size: 8px; font-weight: 900; letter-spacing: .1em; }
-.teacher-summary article strong { font-size: 23px; line-height: 1; }
-.teacher-summary article p { color: #62665f; font-size: 10px; }
 .teacher-cohorts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 10px 12px; background: #fff; }
 .teacher-filter-group { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 9px; min-width: 0; }
 .teacher-filter-group > span { color: #5c625a; font-size: 8px; font-weight: 900; letter-spacing: .1em; }
@@ -646,10 +635,6 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 
 @media screen and (orientation: landscape) and (max-width: 1100px) {
   .teacher-dashboard { gap: 8px; width: calc(100% - 26px); padding-block: 9px 12px; }
-  .teacher-summary { gap: 8px; }
-  .teacher-summary article { grid-template-columns: 38px minmax(0, 1fr); min-height: 62px; padding: 7px; }
-  .teacher-summary article > span { width: 36px; height: 36px; }
-  .teacher-summary article strong { font-size: 21px; }
   .teacher-cohorts { gap: 8px; padding: 7px; }
   .teacher-filter-group { grid-template-columns: 1fr; gap: 3px; }
   .teacher-filter-group button { min-height: 29px; padding-inline: 5px; font-size: 8px; }
@@ -660,9 +645,7 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 }
 
 @media screen and (orientation: landscape) and (max-height: 600px) and (min-width: 641px) {
-  .teacher-dashboard { grid-template-rows: auto auto minmax(0, 1fr); gap: 6px; padding-block: 6px; }
-  .teacher-summary article { min-height: 52px; }
-  .teacher-summary article > span { width: 31px; height: 31px; }
+  .teacher-dashboard { grid-template-rows: auto minmax(0, 1fr); gap: 6px; padding-block: 6px; }
   .teacher-filter-group button { min-height: 27px; }
   .teacher-roster > header { padding-bottom: 7px; }
 }

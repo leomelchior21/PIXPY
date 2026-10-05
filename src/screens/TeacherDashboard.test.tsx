@@ -51,14 +51,13 @@ describe('TeacherDashboard', () => {
 
     expect(screen.getByRole('button', { name: 'Variables' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('columnheader', { name: 'Final missions' })).toBeInTheDocument()
-    expect(screen.getByText('MISSIONS')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Class summary' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Conditions' }))
 
     expect(screen.getByRole('button', { name: 'Conditions' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('columnheader', { name: 'Backroom gates' })).toBeInTheDocument()
-    expect(screen.getByText('GATES')).toBeInTheDocument()
-    expect(screen.getByText('backroom gates')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Class summary' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('2 of 3 activities complete')).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Choice lab' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'IF/ELSE reasoning' })).toBeInTheDocument()

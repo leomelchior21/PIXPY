@@ -1,11 +1,12 @@
-import { ArrowDown, ArrowLeft, ArrowRight, Binary, Check, CloudRain, GraduationCap, GitBranch, IdCard, Lightbulb, Lock, Play, RotateCcw, Sparkles, Sun, Trophy, Umbrella, Zap } from 'lucide-react'
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { ArrowDown, ArrowLeft, ArrowRight, Binary, Check, CloudRain, DoorOpen, GraduationCap, GitBranch, IdCard, Lightbulb, Lock, Play, RotateCcw, ShieldX, Sparkles, Sun, Trophy, Umbrella, UmbrellaOff, Zap } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { PythonCode } from '../../components/PythonCode'
 import { CHOICE_QUIZ_LENGTH, CHOICE_XP_PER_QUESTION, everydayChoices, flowStories, makeChoiceQuizQuestion } from '../../data/choiceMachine'
 import { completeActivity } from '../../session/progressSession'
 import type { AppRoute, SessionProgress } from '../../types'
 import { ChoiceScene } from './ChoiceScenes'
 import './choiceMachine.css'
+import './choiceSituations.css'
 
 interface Props {
   progress: SessionProgress
@@ -24,6 +25,9 @@ const storyBriefingIcons: Record<string, typeof GraduationCap> = {
   adult: IdCard,
 }
 
+const situationIcons = { rain: CloudRain, password: Lock, grade: GraduationCap }
+const answerIcons = { rain: [Umbrella, UmbrellaOff], password: [DoorOpen, ShieldX], grade: [GraduationCap, RotateCcw] }
+
 function StepDots({ current, total }: { current: number; total: number }) {
   return <div className="cm-step-dots" aria-label={`Step ${current + 1} of ${total}`}>
     {Array.from({ length: total }, (_, index) => <span key={index} className={index <= current ? 'is-on' : ''} />)}
@@ -33,6 +37,7 @@ function StepDots({ current, total }: { current: number; total: number }) {
 const confettiColors = ['#b9f352', '#72dcff', '#ffcb47', '#a994ff', '#ff855e']
 
 export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
+  const screenRef = useRef<HTMLElement>(null)
   const [phase, setPhase] = useState<Phase>('steps')
   const [returning] = useState(() => progress.choiceMachineVisited || progress.choiceMachineStoriesComplete || progress.choiceMachineQuizIndex > 0)
   const [quizIndex, setQuizIndex] = useState(0)
@@ -47,6 +52,13 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null)
 
   const lesson = everydayChoices[lessonIndex]
+  const SituationIcon = situationIcons[lesson.id]
+
+  useEffect(() => {
+    if (phase !== 'choices') return
+    screenRef.current?.scrollTo?.({ top: 0 })
+    screenRef.current?.closest<HTMLElement>('.app-content')?.scrollTo?.({ top: 0 })
+  }, [lessonIndex, phase])
   const story = flowStories[storyIndex]
   const isGrade = story.id === 'grade'
   const BriefingIcon = storyBriefingIcons[story.id] ?? Sparkles
@@ -195,7 +207,7 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
     { title: 'Final quiz', copy: '20 questions. Put your decisions to the test.', icon: Trophy, enabled: returning || progress.choiceMachineStoriesComplete, done: progress.completed.includes('choice-machine'), action: openQuiz },
   ]
 
-  return <main className={`cm-screen cm-screen--${phase}`} style={{ '--cm-accent': '#b9f352' } as CSSProperties}>
+  return <main ref={screenRef} className={`cm-screen cm-screen--${phase}`} style={{ '--cm-accent': '#b9f352' } as CSSProperties}>
     <div className="cm-toolbar">
       <button className="cm-back-chip" onClick={onBack}><ArrowLeft size={14} /> CONDITIONS</button>
       {phase !== 'steps' && <button className="cm-back-chip" onClick={() => setPhase('steps')}>THREE STEPS</button>}
@@ -251,17 +263,21 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
       </div>
     </section>}
 
-    {phase === 'choices' && <section className={`cm-lesson cm-life-choice cm-life-choice--${lesson.id} cm-panel`} key={lessonIndex}>
+    {phase === 'choices' && <section className={`cm-lesson cm-life-choice cm-life-choice--${lesson.id} ${lessonAnswer === lesson.answer ? 'is-solved' : ''} cm-panel`} key={lessonIndex}>
       <div className="cm-lesson-visual">
         <div className="cm-situation-progress"><span>SITUATION 0{lessonIndex + 1} / 03</span><StepDots current={lessonIndex} total={everydayChoices.length} /></div>
-        <ChoiceScene id={lesson.id} />
-        <div className="cm-life-caption"><strong>{lesson.visualLabel}</strong><p>{lesson.situation}</p></div>
-        <div className={`cm-life-condition ${lessonAnswer === lesson.answer ? 'is-revealed' : ''}`}><small>THE QUESTION</small><strong>{lesson.condition}</strong>{lessonAnswer === lesson.answer && <span>{lesson.path} → {lesson.result}</span>}</div>
+        <div className="cm-situation-stage"><span className="cm-case-label">{lesson.visualLabel}</span><ChoiceScene id={lesson.id} revealed={lessonAnswer === lesson.answer} /><span className="cm-scene-spark cm-scene-spark--one" aria-hidden="true">✦</span><span className="cm-scene-spark cm-scene-spark--two" aria-hidden="true">✦</span></div>
+        <div className="cm-life-caption"><small>WHAT YOU KNOW</small><p>{lesson.situation}</p></div>
+        <div className={`cm-life-condition ${lessonAnswer === lesson.answer ? 'is-revealed' : ''}`}><small>THE QUESTION</small><strong>{lesson.condition}</strong>{lessonAnswer === lesson.answer && <span className="cm-situation-result"><b>{lesson.path}</b><ArrowRight size={14} /><b>{lesson.path === 'TRUE' ? 'IF' : 'ELSE'}</b><ArrowRight size={14} />{lesson.result}</span>}</div>
       </div>
       <div className="cm-lesson-content">
-        <span className="cm-kicker">{lesson.eyebrow}</span><h2>{lesson.title}</h2><p>{lesson.explanation}</p>
-        <div className="cm-lesson-question"><strong>{lesson.question}</strong>
-          <div className="cm-choice-buttons">{lesson.options.map((option, index) => <button key={option} aria-label={option} className={lessonAnswer === index ? index === lesson.answer ? 'is-correct' : 'is-wrong' : ''} onClick={() => setLessonAnswer(index)}><span>{String.fromCharCode(65 + index)}</span>{option}</button>)}</div>
+        <div className="cm-situation-heading"><span className="cm-situation-icon"><SituationIcon size={24} /></span><span className="cm-kicker">{lesson.eyebrow}</span><span className="cm-situation-tag">LOOK → DECIDE</span></div>
+        <h2>{lesson.title}</h2><p>{lesson.explanation}</p>
+        <div className="cm-lesson-question"><small>YOUR DECISION</small><strong>{lesson.question}</strong>
+          <div className="cm-choice-buttons">{lesson.options.map((option, index) => {
+            const Icon = answerIcons[lesson.id][index]
+            return <button key={option} aria-label={option} aria-pressed={lessonAnswer === index} className={lessonAnswer === index ? index === lesson.answer ? 'is-correct' : 'is-wrong' : ''} onClick={() => setLessonAnswer(index)}><span className="cm-answer-letter">{String.fromCharCode(65 + index)}</span><span className="cm-answer-art" aria-hidden="true"><Icon size={32} /></span><strong>{option}</strong>{lessonAnswer === index && <span className="cm-answer-mark" aria-hidden="true">{index === lesson.answer ? <Check size={16} /> : <RotateCcw size={16} />}</span>}</button>
+          })}</div>
         </div>
         <div className={`cm-feedback ${lessonAnswer !== null ? `is-visible ${lessonAnswer === lesson.answer ? 'is-correct' : 'is-wrong'}` : ''}`} role="status">{lessonAnswer === null ? 'Look at the picture, then choose what should happen.' : <><b>{lessonAnswer === lesson.answer ? <><Check size={18} /> GOOD EYE!</> : <><RotateCcw size={18} /> LOOK AGAIN</>}</b><span>{lessonAnswer === lesson.answer ? lesson.feedback : `Check the picture once more. ${lesson.condition}`}</span></>}</div>
         <button className="cm-primary" disabled={lessonAnswer !== lesson.answer} onClick={nextLesson}>{lessonIndex + 1 === everydayChoices.length ? 'FINISH INTRO' : 'NEXT SITUATION'} <ArrowRight size={18} /></button>

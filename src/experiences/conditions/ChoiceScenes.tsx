@@ -82,7 +82,7 @@ export function LockScene() {
         </div>
         <div className="cm-lock__screen">
           <small>TYPED CODE</small>
-          <strong>4728<b className="is-bad">8</b></strong>
+          <strong>472<b className="is-bad">8</b></strong>
         </div>
         <div className="cm-lock__secret">SECRET CODE <b>4729</b></div>
         <div className="cm-lock__keys">{lockKeys.map((key) => <span key={key} className={pressedKeys[key] ?? ''}>{key}</span>)}</div>
@@ -99,8 +99,8 @@ const gradeRows = [
   { name: 'EVA', grade: 5 },
 ]
 
-export function GradeScene() {
-  return <div className="cm-scene cm-scene--grade" role="img" aria-label="A grade book with the pass mark at 7. Carla has an 8, so her row is circled and stamped approved">
+export function GradeScene({ revealed = false }: { revealed?: boolean }) {
+  return <div className="cm-scene cm-scene--grade" role="img" aria-label={`A grade book with the pass mark at 7. Carla has an 8, and her row is circled${revealed ? ' and stamped approved' : ''}`}>
     <div className="cm-gradebook">
       <div className="cm-gradebook__rings" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <i key={index} />)}</div>
       <header><span>GRADE BOOK · CLASS 8B</span><b>PASS MARK: 7</b></header>
@@ -112,13 +112,13 @@ export function GradeScene() {
           {row.target && <em className="cm-gradebook__circle" aria-hidden="true" />}
         </li>)}
       </ul>
-      <span className="cm-gradebook__stamp" aria-hidden="true">APPROVED</span>
+      {revealed && <span className="cm-gradebook__stamp" aria-hidden="true">APPROVED</span>}
     </div>
   </div>
 }
 
-export function ChoiceScene({ id }: { id: 'rain' | 'password' | 'grade' }) {
+export function ChoiceScene({ id, revealed = false }: { id: 'rain' | 'password' | 'grade'; revealed?: boolean }) {
   if (id === 'rain') return <RainScene />
   if (id === 'password') return <LockScene />
-  return <GradeScene />
+  return <GradeScene revealed={revealed} />
 }

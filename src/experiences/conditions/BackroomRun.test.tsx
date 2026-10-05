@@ -48,6 +48,11 @@ describe('Backroom running pace', () => {
     return view
   }
 
+  function raiseEnergy() {
+    const increase = screen.getByRole('button', { name: 'Increase energy' })
+    act(() => { for (let count = 0; count < 31; count += 1) fireEvent.click(increase) })
+  }
+
   it('keeps the corridor pace all the way to a closed gate', () => {
     start()
     const before = approach(3.4)
@@ -62,7 +67,7 @@ describe('Backroom running pace', () => {
   it('continues moving while the door opens and crashes if the player solves too late', () => {
     start()
     const before = approach(.4)
-    for (let count = 0; count < 31; count += 1) fireEvent.click(screen.getByRole('button', { name: 'Increase energy' }))
+    raiseEnergy()
     const after = tick()
     expect(after.conditionTrue).toBe(true)
     expect(after.openAmount).toBeLessThan(.95)
@@ -74,7 +79,7 @@ describe('Backroom running pace', () => {
 
   it('maintains pace at an open gate and still awards progress when the gate is cleared', () => {
     start()
-    for (let count = 0; count < 31; count += 1) fireEvent.click(screen.getByRole('button', { name: 'Increase energy' }))
+    raiseEnergy()
     const before = approach(.4)
     const after = tick()
     expect(after.conditionTrue).toBe(true)
@@ -86,5 +91,46 @@ describe('Backroom running pace', () => {
     const passed = renderer.view!
     const next = tick()
     expect(next.depth - passed.depth).toBeCloseTo(speedForGate(2) * 1.6 * .05, 8)
+  })
+
+  it('restores game focus after the energy control is disabled and accepts arrows through the corridor transition', () => {
+    start()
+    const increase = screen.getByRole('button', { name: 'Increase energy' })
+    increase.focus()
+    raiseEnergy()
+    approach(0)
+    expect(increase).toBeDisabled()
+    expect(document.activeElement).toBe(document.querySelector('.br-screen'))
+
+    const before = renderer.view!.playerX
+    fireEvent.keyDown(document.body, { key: 'ArrowRight' })
+    tick()
+    expect(renderer.view!.playerX).toBeGreaterThan(before)
+    fireEvent.keyUp(document.body, { key: 'ArrowRight' })
+    approach(-1.8)
+    expect(renderer.view!.phase).toBe('turn')
+    expect(document.activeElement).toBe(document.querySelector('.br-screen'))
+    const turnPosition = renderer.view!.playerX
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowLeft' })
+    tick()
+    expect(renderer.view!.playerX).toBeLessThan(turnPosition)
+    fireEvent.keyUp(document.activeElement!, { key: 'ArrowLeft' })
+  })
+
+  it('returns focus when resuming and leaves typing controls alone', () => {
+    start()
+    fireEvent.click(screen.getByRole('button', { name: 'Pause run' }))
+    const resume = screen.getByRole('button', { name: 'KEEP RUNNING' })
+    resume.focus()
+    fireEvent.click(resume)
+    expect(document.activeElement).toBe(document.querySelector('.br-screen'))
+    const input = document.createElement('input')
+    document.body.append(input)
+    input.focus()
+    const before = renderer.view!.playerX
+    fireEvent.keyDown(input, { key: 'ArrowRight' })
+    tick()
+    expect(renderer.view!.playerX).toBe(before)
+    input.remove()
   })
 })

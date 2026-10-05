@@ -1,5 +1,5 @@
 import { ArrowLeft, ChevronLeft, ChevronRight, Footprints, Infinity as InfinityIcon, Lightbulb, Pause, Play, RotateCcw, Siren, Volume2, VolumeX, Zap } from 'lucide-react'
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { baseRunSpeed, corridorCenterAt, energyRange, evaluateCondition, gateCrossing, gateXp, generateChallenge, hitsObstacle, planCorridor, planCourse, speedForGate, type BackroomChallenge, type ComparisonOperator } from '../../lib/backroomEngine'
 import { completeActivity } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
@@ -96,6 +96,10 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
   useEffect(() => {
     if (status !== 'passing') game.current.status = status
   }, [status])
+
+  useEffect(() => {
+    if (status === 'running' || status === 'passing') screenRef.current?.focus({ preventScroll: true })
+  }, [phase, status])
 
   const playTone = (frequency: number, durationMs: number, type: OscillatorType, gain = 0.04) => {
     if (!audioOn) return
@@ -524,10 +528,13 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
     screenRef.current?.focus()
   }
 
-  const onKeyDown = (event: ReactKeyboardEvent) => {
-    const tag = (event.target as HTMLElement).tagName
+  const onKeyDown = (event: KeyboardEvent) => {
+    const target = event.target instanceof HTMLElement ? event.target : null
+    const tag = target?.tagName
+    if (target?.matches('input, textarea, select') || target?.isContentEditable) return
     const key = event.key
     if (key === 'ArrowLeft' || key === 'ArrowRight') {
+      if (game.current.status !== 'running') return
       event.preventDefault()
       steerDown(key === 'ArrowLeft' ? -1 : 1)
       return
@@ -538,29 +545,50 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
       togglePause()
       return
     }
-    if (key === 'a' || key === 'A') {
+    if (key === 'a' || key === 'A' || key === 'ArrowDown') {
+      if (game.current.status !== 'running') return
       event.preventDefault()
       changeValue(valueRef.current - 1)
-    } else if (key === 'd' || key === 'D') {
+    } else if (key === 'd' || key === 'D' || key === 'ArrowUp') {
+      if (game.current.status !== 'running') return
       event.preventDefault()
       changeValue(valueRef.current + 1)
     }
   }
 
-  const onKeyUp = (event: ReactKeyboardEvent) => {
+  const onKeyUp = (event: KeyboardEvent) => {
     const key = event.key
     if (key === 'ArrowLeft') steerUp(-1)
     if (key === 'ArrowRight') steerUp(1)
   }
+
+  const keysRef = useRef({ onKeyDown, onKeyUp, stopEnergyHold })
+  useEffect(() => { keysRef.current = { onKeyDown, onKeyUp, stopEnergyHold } })
+  useEffect(() => {
+    const down = (event: KeyboardEvent) => keysRef.current.onKeyDown(event)
+    const up = (event: KeyboardEvent) => keysRef.current.onKeyUp(event)
+    const release = () => {
+      steerRef.current.left = false
+      steerRef.current.right = false
+      keysRef.current.stopEnergyHold()
+    }
+    window.addEventListener('keydown', down, true)
+    window.addEventListener('keyup', up, true)
+    window.addEventListener('blur', release)
+    document.addEventListener('visibilitychange', release)
+    return () => {
+      window.removeEventListener('keydown', down, true)
+      window.removeEventListener('keyup', up, true)
+      window.removeEventListener('blur', release)
+      document.removeEventListener('visibilitychange', release)
+    }
+  }, [])
 
   return <main
     ref={screenRef}
     className={`br-screen br-screen--${status} ${phase === 'turn' ? 'is-neutral' : isTrue ? 'is-true' : 'is-false'}`}
     tabIndex={0}
     onPointerDown={focusScreen}
-    onKeyDown={onKeyDown}
-    onKeyUp={onKeyUp}
-    onBlur={() => { steerRef.current.left = false; steerRef.current.right = false }}
   >
     <canvas ref={canvasRef} className="br-canvas" aria-hidden="true" />
     <div className="br-wall-warning" aria-hidden="true"><i /><i /></div>

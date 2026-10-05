@@ -1,4 +1,4 @@
-import { Check, Circle, Cloud, DoorOpen, LoaderCircle, RefreshCcw, Search, Trophy, Users } from 'lucide-react'
+import { Check, Circle, LoaderCircle, RefreshCcw, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { variableExperiences } from '../data/variables'
 import { conditionExperiences } from '../data/conditions'
@@ -20,9 +20,9 @@ interface WorldExperience { id: ActivityId; title: string }
 const availableConditions = conditionExperiences.filter((activity) => !activity.disabled)
 const upcomingConditions = conditionExperiences.filter((activity) => activity.disabled).length
 
-const worldOptions: Array<{ id: WorldId; label: string; experiences: WorldExperience[]; unit: string }> = [
-  { id: 'variables', label: 'Variables', experiences: variableExperiences, unit: 'experiments' },
-  { id: 'conditions', label: 'Conditions', experiences: availableConditions, unit: 'available activities' },
+const worldOptions: Array<{ id: WorldId; label: string; experiences: WorldExperience[] }> = [
+  { id: 'variables', label: 'Variables', experiences: variableExperiences },
+  { id: 'conditions', label: 'Conditions', experiences: availableConditions },
 ]
 
 const classOptions: Array<{ value: ClassFilter; label: string }> = [
@@ -74,10 +74,6 @@ export function TeacherDashboard({ username }: TeacherDashboardProps) {
   }, [classFilter, query, students, teamFilter])
 
   const activeWorld = worldOptions.find((option) => option.id === world) ?? worldOptions[0]
-  const started = students.filter((student) => student.progress || student.lastLoginAt).length
-  const finished = students.filter((student) => completedActivities(student, activeWorld.experiences).length === activeWorld.experiences.length).length
-  const missions = students.reduce((total, student) => total + completedBosses(student), 0)
-  const gates = students.reduce((total, student) => total + backroomGates(student), 0)
   const countClass = (value: ClassFilter) => value === 'all' ? students.length : students.filter((student) => student.className === value).length
   const countTeam = (value: TeamFilter) => value === 'all'
     ? students.length
@@ -85,15 +81,6 @@ export function TeacherDashboard({ username }: TeacherDashboardProps) {
 
   return (
     <main className="teacher-dashboard">
-      <section className="teacher-summary" aria-label="Class summary">
-        <article><span><Users /></span><div><small>ROSTER</small><strong>{students.length || '—'}</strong><p>students</p></div></article>
-        <article><span><Cloud /></span><div><small>STARTED</small><strong>{started}</strong><p>profiles active</p></div></article>
-        {world === 'variables'
-          ? <article><span><Trophy /></span><div><small>MISSIONS</small><strong>{missions}</strong><p>bosses cleared</p></div></article>
-          : <article><span><DoorOpen /></span><div><small>GATES</small><strong>{gates}</strong><p>backroom gates</p></div></article>}
-        <article><span><Check /></span><div><small>FINISHED</small><strong>{finished}</strong><p>all {activeWorld.unit}</p></div></article>
-      </section>
-
       <section className="teacher-cohorts panel-surface" aria-label="Roster groups">
         <div className="teacher-filter-group">
           <span>CLASSES</span>
@@ -163,11 +150,6 @@ function completedActivities(student: ClassProgressRow, experiences: WorldExperi
 function completedBosses(student: ClassProgressRow): number {
   const value = student.progress?.bossProgress
   return Array.isArray(value) ? new Set(value.filter((item) => Number.isInteger(item) && item >= 1 && item <= 15)).size : 0
-}
-
-function backroomGates(student: ClassProgressRow): number {
-  const value = student.progress?.backroomRunGates
-  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0
 }
 
 function formatUpdate(value: string | null): string {
