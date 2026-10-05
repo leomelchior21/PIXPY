@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CHOICE_QUIZ_LENGTH, makeChoiceQuizQuestion } from '../../data/choiceMachine'
+import { CHOICE_QUIZ_LENGTH, everydayChoices, makeChoiceQuizQuestion } from '../../data/choiceMachine'
 import { createSession } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
 import { ChoiceMachine } from './ChoiceMachine'
@@ -22,7 +22,7 @@ describe('How the computer makes a choice', () => {
     act(() => { vi.advanceTimersByTime(1000) })
   }
 
-  it('teaches three real situations and both paths per story, then opens the 20-question XP quiz', () => {
+  it('teaches nine real situations and both paths per story, then opens the 20-question XP quiz', () => {
     render(<Harness />)
     expect(screen.getByRole('button', { name: 'Live flow' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Final quiz' })).toBeDisabled()
@@ -36,7 +36,7 @@ describe('How the computer makes a choice', () => {
     expect(screen.getByRole('button', { name: /next situation/i })).toBeDisabled()
     expect(screen.getByText('LOOK AGAIN')).toBeInTheDocument()
 
-    for (const answer of ['Take an umbrella', 'Show an error', 'Approved']) {
+    for (const answer of ['Take an umbrella', 'Show an error', 'Approved', 'Wait for green', 'Charge the phone', 'Choose another ride', 'Play the game', 'Keep the light off', 'Turn the fan on']) {
       fireEvent.click(screen.getByRole('button', { name: answer }))
       fireEvent.click(screen.getByRole('button', { name: /next situation|finish intro/i }))
     }
@@ -88,6 +88,35 @@ describe('How the computer makes a choice', () => {
 
     expect(screen.getByRole('heading', { name: /you know how python chooses/i })).toBeInTheDocument()
     expect(screen.getByText('200', { selector: '.cm-complete-xp b' })).toBeInTheDocument()
+  }, 40_000)
+
+  it('requires all nine situations, explains both paths, and permits a complete intro replay', () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Intro' }))
+    fireEvent.click(screen.getByRole('button', { name: /start learning/i }))
+    expect(everydayChoices).toHaveLength(9)
+    for (const [index, situation] of everydayChoices.entries()) {
+      expect(screen.getByRole('heading', { name: situation.title })).toBeInTheDocument()
+      expect(screen.getByText(`SITUATION ${String(index + 1).padStart(2, '0')} / 09`)).toBeInTheDocument()
+      expect(screen.getByLabelText(`Step ${index + 1} of 9`).children).toHaveLength(9)
+      expect(screen.getByRole('img')).toBeInTheDocument()
+      if (index < everydayChoices.length - 1) expect(screen.queryByRole('button', { name: 'FINISH INTRO' })).toBeNull()
+      const next = screen.getByRole('button', { name: index === 8 ? /finish intro/i : /next situation/i })
+      const wrong = situation.options[(situation.answer + 1) % 2]
+      expect(next).toBeDisabled()
+      fireEvent.click(screen.getByRole('button', { name: wrong }))
+      expect(next).toBeDisabled()
+      expect(screen.getByText('LOOK AGAIN')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: situation.options[situation.answer] }))
+      expect(next).toBeEnabled()
+      expect(document.querySelector('.cm-situation-result')?.textContent).toContain(`${situation.path}${situation.path === 'TRUE' ? 'IF' : 'ELSE'}${situation.result}`)
+      fireEvent.click(next)
+    }
+    expect(screen.getByRole('button', { name: 'Live flow' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Intro' }))
+    fireEvent.click(screen.getByRole('button', { name: /start learning/i }))
+    expect(screen.getByRole('heading', { name: 'A rainy day' })).toBeInTheDocument()
+    expect(screen.getByText('SITUATION 01 / 09')).toBeInTheDocument()
   }, 40_000)
 
   it('lets a returning student choose any of the three steps', () => {

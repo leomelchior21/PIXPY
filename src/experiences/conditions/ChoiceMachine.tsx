@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowLeft, ArrowRight, Binary, Check, CloudRain, DoorOpen, GraduationCap, GitBranch, IdCard, Lightbulb, Lock, Play, RotateCcw, ShieldX, Sparkles, Sun, Trophy, Umbrella, UmbrellaOff, Zap } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowRight, Battery, BatteryLow, Binary, Check, CloudRain, Coins, DoorOpen, Fan, Footprints, Gamepad2, GraduationCap, GitBranch, Hand, IdCard, Lightbulb, LightbulbOff, Lock, Play, PlugZap, Power, RotateCcw, Ruler, ShieldX, Sparkles, Sun, Thermometer, Ticket, Trophy, Umbrella, UmbrellaOff, Zap } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { PythonCode } from '../../components/PythonCode'
 import { CHOICE_QUIZ_LENGTH, CHOICE_XP_PER_QUESTION, everydayChoices, flowStories, makeChoiceQuizQuestion } from '../../data/choiceMachine'
@@ -25,8 +25,8 @@ const storyBriefingIcons: Record<string, typeof GraduationCap> = {
   adult: IdCard,
 }
 
-const situationIcons = { rain: CloudRain, password: Lock, grade: GraduationCap }
-const answerIcons = { rain: [Umbrella, UmbrellaOff], password: [DoorOpen, ShieldX], grade: [GraduationCap, RotateCcw] }
+const situationIcons = { rain: CloudRain, password: Lock, grade: GraduationCap, traffic: Footprints, battery: BatteryLow, ride: Ruler, arcade: Gamepad2, motion: LightbulbOff, temperature: Thermometer }
+const answerIcons = { rain: [Umbrella, UmbrellaOff], password: [DoorOpen, ShieldX], grade: [GraduationCap, RotateCcw], traffic: [Footprints, Hand], battery: [PlugZap, Battery], ride: [Ticket, ArrowLeft], arcade: [Gamepad2, Coins], motion: [Lightbulb, LightbulbOff], temperature: [Fan, Power] }
 
 function StepDots({ current, total }: { current: number; total: number }) {
   return <div className="cm-step-dots" aria-label={`Step ${current + 1} of ${total}`}>
@@ -202,7 +202,7 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
   const phaseLabel = phase === 'steps' ? 'YOUR THREE STEPS' : phase === 'intro' ? 'INTRO' : phase === 'choices' ? 'REAL LIFE CHOICES' : phase === 'storyIntro' ? 'PRE-EXPERIMENT' : phase === 'stories' ? 'LIVE FLOW' : phase === 'quizIntro' ? 'QUIZ READY' : phase === 'quiz' ? 'XP QUIZ' : 'COMPLETE'
 
   const stepOptions = [
-    { title: 'Intro', copy: 'Explore three everyday choices.', icon: Lightbulb, enabled: true, done: progress.choiceMachineIntroComplete, action: () => { setLessonIndex(0); setLessonAnswer(null); setPhase('intro') } },
+    { title: 'Intro', copy: `Explore ${everydayChoices.length} everyday choices.`, icon: Lightbulb, enabled: true, done: progress.choiceMachineIntroComplete, action: () => { setLessonIndex(0); setLessonAnswer(null); setPhase('intro') } },
     { title: 'Live flow', copy: 'Send a value through both paths.', icon: GitBranch, enabled: returning || progress.choiceMachineIntroComplete, done: progress.choiceMachineStoriesComplete, action: reviewStories },
     { title: 'Final quiz', copy: '20 questions. Put your decisions to the test.', icon: Trophy, enabled: returning || progress.choiceMachineStoriesComplete, done: progress.completed.includes('choice-machine'), action: openQuiz },
   ]
@@ -242,12 +242,12 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
       <div className="cm-intro-copy">
         <span className="cm-kicker"><Lightbulb size={15} /> INTRO / EVERYDAY DECISIONS</span>
         <h2>Every choice starts with <em>a question.</em></h2>
-        <p>Every day you choose what happens next. Look at three real situations: rain outside, a locked door, and a school result. Then type your own values and watch a computer make the same kinds of decisions.</p>
-        <div className="cm-intro-examples" aria-label="Three everyday situations"><span><CloudRain size={16} /> Rain outside</span><span><Lock size={16} /> A locked door</span><span><GraduationCap size={16} /> A school result</span></div>
+        <p>Every day you choose what happens next. Explore {everydayChoices.length} real situations, from weather and school results to lights, batteries, rides, and games. Then type your own values and watch a computer make the same kinds of decisions.</p>
+        <div className="cm-intro-examples" aria-label={`${everydayChoices.length} everyday situations`}><span><CloudRain size={16} /> Rain outside</span><span><Lock size={16} /> A locked door</span><span><GraduationCap size={16} /> A school result</span>{everydayChoices.length > 3 && <span><Sparkles size={16} /> +{everydayChoices.length - 3} more</span>}</div>
         <div className="cm-intro-rules"><div className="cm-intro-rule"><b>IF</b><span>the answer is YES</span><ArrowRight size={18} /><strong>do this</strong></div>
           <div className="cm-intro-rule cm-intro-rule--no"><b>ELSE</b><span>the answer is NO</span><ArrowRight size={18} /><strong>do that</strong></div></div>
         <button className="cm-primary" onClick={begin}>START LEARNING <ArrowRight size={19} /></button>
-        <span className="cm-intro-note">3 situations. One idea: the answer chooses the action.</span>
+        <span className="cm-intro-note">{everydayChoices.length} situations. One idea: the answer chooses the action.</span>
       </div>
       <div className="cm-intro-art" aria-label="A question splits into a yes path and a no path">
         <span className="cm-intro-art__spark cm-intro-art__spark--one">✦</span><span className="cm-intro-art__spark cm-intro-art__spark--two">✦</span>
@@ -265,8 +265,8 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
 
     {phase === 'choices' && <section className={`cm-lesson cm-life-choice cm-life-choice--${lesson.id} ${lessonAnswer === lesson.answer ? 'is-solved' : ''} cm-panel`} key={lessonIndex}>
       <div className="cm-lesson-visual">
-        <div className="cm-situation-progress"><span>SITUATION 0{lessonIndex + 1} / 03</span><StepDots current={lessonIndex} total={everydayChoices.length} /></div>
-        <div className="cm-situation-stage"><span className="cm-case-label">{lesson.visualLabel}</span><ChoiceScene id={lesson.id} revealed={lessonAnswer === lesson.answer} /><span className="cm-scene-spark cm-scene-spark--one" aria-hidden="true">✦</span><span className="cm-scene-spark cm-scene-spark--two" aria-hidden="true">✦</span></div>
+        <div className="cm-situation-progress"><span>SITUATION {String(lessonIndex + 1).padStart(2, '0')} / {String(everydayChoices.length).padStart(2, '0')}</span><StepDots current={lessonIndex} total={everydayChoices.length} /></div>
+        <div className="cm-situation-stage"><span className="cm-case-label">{lesson.visualLabel}</span><ChoiceScene id={lesson.id} visual={lesson.visual} result={lesson.result} revealed={lessonAnswer === lesson.answer} /><span className="cm-scene-spark cm-scene-spark--one" aria-hidden="true">✦</span><span className="cm-scene-spark cm-scene-spark--two" aria-hidden="true">✦</span></div>
         <div className="cm-life-caption"><small>WHAT YOU KNOW</small><p>{lesson.situation}</p></div>
         <div className={`cm-life-condition ${lessonAnswer === lesson.answer ? 'is-revealed' : ''}`}><small>THE QUESTION</small><strong>{lesson.condition}</strong>{lessonAnswer === lesson.answer && <span className="cm-situation-result"><b>{lesson.path}</b><ArrowRight size={14} /><b>{lesson.path === 'TRUE' ? 'IF' : 'ELSE'}</b><ArrowRight size={14} />{lesson.result}</span>}</div>
       </div>

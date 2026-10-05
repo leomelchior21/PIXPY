@@ -1,5 +1,7 @@
+export type EverydayChoiceId = 'rain' | 'password' | 'grade' | 'traffic' | 'battery' | 'ride' | 'arcade' | 'motion' | 'temperature'
+
 export interface EverydayChoice {
-  id: 'rain' | 'password' | 'grade'
+  id: EverydayChoiceId
   title: string
   eyebrow: string
   explanation: string
@@ -12,6 +14,7 @@ export interface EverydayChoice {
   path: 'TRUE' | 'FALSE'
   result: string
   visualLabel: string
+  visual?: { valueLabel: string; value: string; ruleLabel: string; rule: string; description: string }
 }
 
 export const everydayChoices: EverydayChoice[] = [
@@ -38,6 +41,60 @@ export const everydayChoices: EverydayChoice[] = [
     options: ['Approved', 'Try again'], answer: 0,
     feedback: '8 is at least 7. The answer is TRUE, so the result is Approved.',
     path: 'TRUE', result: 'Approved', visualLabel: 'GRADE CHECK',
+  },
+  {
+    id: 'traffic', eyebrow: '04 / THE CROSSING', title: 'The crossing light',
+    explanation: 'The crossing signal is red. You cross only when the signal is green.',
+    situation: 'Signal now: red · Cross when: green', condition: 'Is the signal green?', question: 'What should you do now?',
+    options: ['Cross the road', 'Wait for green'], answer: 1,
+    feedback: 'Red is not green. The answer is FALSE, so you wait. Only the ELSE action happens.',
+    path: 'FALSE', result: 'Wait for green', visualLabel: 'CROSSING SIGNAL',
+    visual: { valueLabel: 'SIGNAL NOW', value: 'RED', ruleLabel: 'CROSS WHEN', rule: 'GREEN', description: 'A red crossing signal beside a pedestrian crossing. The rule says to cross only on green.' },
+  },
+  {
+    id: 'battery', eyebrow: '05 / THE BATTERY', title: 'A low battery',
+    explanation: 'Your phone has 20% battery. You charge it when the battery is 20% or less.',
+    situation: 'Battery: 20% · Charge at: 20% or less', condition: 'Is 20 at most 20?', question: 'What do you do with the phone?',
+    options: ['Charge the phone', 'Keep using it'], answer: 0,
+    feedback: '20 is at most 20. The answer is TRUE, so you charge the phone. The limit itself counts.',
+    path: 'TRUE', result: 'Charge the phone', visualLabel: 'BATTERY CHECK',
+    visual: { valueLabel: 'BATTERY LEFT', value: '20%', ruleLabel: 'CHARGE AT', rule: '20% OR LESS', description: 'A phone with 20 percent battery remaining. The charging rule is 20 percent or less.' },
+  },
+  {
+    id: 'ride', eyebrow: '06 / THE RIDE', title: 'The ride entrance',
+    explanation: 'A ride requires a height of at least 130 cm. Your height is 125 cm.',
+    situation: 'Your height: 125 cm · Minimum: 130 cm', condition: 'Is 125 at least 130?', question: 'Which action matches the rule?',
+    options: ['Enter this ride', 'Choose another ride'], answer: 1,
+    feedback: '125 is below 130. The answer is FALSE, so you choose another ride. The IF action does not run.',
+    path: 'FALSE', result: 'Choose another ride', visualLabel: 'HEIGHT CHECK',
+    visual: { valueLabel: 'YOUR HEIGHT', value: '125 cm', ruleLabel: 'MINIMUM HEIGHT', rule: '130 cm', description: 'A person beside a height ruler. Their height is 125 centimetres and the ride minimum is marked at 130 centimetres.' },
+  },
+  {
+    id: 'arcade', eyebrow: '07 / THE ARCADE', title: 'One more game',
+    explanation: 'One arcade game costs 3 coins. You have exactly 3 coins. Play when you have at least the price.',
+    situation: 'Your coins: 3 · Game price: 3 coins', condition: 'Is 3 at least 3?', question: 'What can the machine let you do?',
+    options: ['Play the game', 'Add more coins'], answer: 0,
+    feedback: '3 is at least 3. The answer is TRUE, so you play. You have exactly enough; you do not need more.',
+    path: 'TRUE', result: 'Play the game', visualLabel: 'COIN CHECK',
+    visual: { valueLabel: 'YOUR COINS', value: '3', ruleLabel: 'GAME PRICE', rule: '3 COINS', description: 'An arcade cabinet with three coins beside it. One game costs three coins.' },
+  },
+  {
+    id: 'motion', eyebrow: '08 / THE SENSOR', title: 'The hallway light',
+    explanation: 'A sensor turns the light on if it detects movement. The hallway is empty and no movement is detected.',
+    situation: 'Movement detected: no · Light on when: movement', condition: 'Is movement detected?', question: 'What should the light do?',
+    options: ['Turn the light on', 'Keep the light off'], answer: 1,
+    feedback: 'No movement is detected. The answer is FALSE, so the light stays off. An IF question can be answered without a number.',
+    path: 'FALSE', result: 'Keep the light off', visualLabel: 'MOTION CHECK',
+    visual: { valueLabel: 'MOVEMENT', value: 'NONE', ruleLabel: 'LIGHT ON WHEN', rule: 'MOVEMENT', description: 'An empty hallway with a movement sensor and an unlit ceiling lamp. The sensor detects no movement.' },
+  },
+  {
+    id: 'temperature', eyebrow: '09 / THE TEMPERATURE', title: 'A warm afternoon',
+    explanation: 'The room is 28°C. A fan turns on when the temperature is more than 25°C.',
+    situation: 'Room temperature: 28°C · Fan on above: 25°C', condition: 'Is 28 more than 25?', question: 'What should the fan do?',
+    options: ['Turn the fan on', 'Leave the fan off'], answer: 0,
+    feedback: '28 is more than 25. The answer is TRUE, so the fan turns on. The value, the question, and the action form one decision.',
+    path: 'TRUE', result: 'Turn the fan on', visualLabel: 'TEMPERATURE CHECK',
+    visual: { valueLabel: 'ROOM TEMPERATURE', value: '28°C', ruleLabel: 'FAN ON ABOVE', rule: '25°C', description: 'A room thermometer reading 28 degrees Celsius beside a fan. The fan turns on above 25 degrees Celsius.' },
   },
 ]
 

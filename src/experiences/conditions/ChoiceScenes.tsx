@@ -1,3 +1,6 @@
+import { EverydayScene } from './EverydayScenes'
+import type { EverydayChoice } from '../../data/choiceMachine'
+
 const rainDrops = Array.from({ length: 40 }, (_, index) => ({
   x: 8 + ((index * 53) % 306),
   y: 28 + ((index * 37) % 186),
@@ -117,8 +120,9 @@ export function GradeScene({ revealed = false }: { revealed?: boolean }) {
   </div>
 }
 
-export function ChoiceScene({ id, revealed = false }: { id: 'rain' | 'password' | 'grade'; revealed?: boolean }) {
+export function ChoiceScene({ id, visual, result, revealed = false }: { id: EverydayChoice['id']; visual?: EverydayChoice['visual']; result?: string; revealed?: boolean }) {
   if (id === 'rain') return <RainScene />
   if (id === 'password') return <LockScene />
-  return <GradeScene revealed={revealed} />
+  if (id === 'grade') return <GradeScene revealed={revealed} />
+  return <EverydayScene id={id} visual={visual} result={result} revealed={revealed} />
 }

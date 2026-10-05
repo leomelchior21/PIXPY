@@ -128,7 +128,30 @@ async function main() {
       if (size.name === 'desktop') await capture('grade-desktop')
       await clickLabel('Approved')
       if (size.name === 'desktop') await capture('grade-correct-desktop')
-      await clickText('FINISH INTRO')
+      const extraSituations = [
+        { id: 'traffic', answer: 'Wait for green', wrong: 'Cross the road', path: 'FALSE' },
+        { id: 'battery', answer: 'Charge the phone', wrong: 'Keep using it', path: 'TRUE' },
+        { id: 'ride', answer: 'Choose another ride', wrong: 'Enter this ride', path: 'FALSE' },
+        { id: 'arcade', answer: 'Play the game', wrong: 'Add more coins', path: 'TRUE' },
+        { id: 'motion', answer: 'Keep the light off', wrong: 'Turn the light on', path: 'FALSE' },
+        { id: 'temperature', answer: 'Turn the fan on', wrong: 'Leave the fan off', path: 'TRUE' },
+      ]
+      await clickText('NEXT SITUATION')
+      for (const [index, situation] of extraSituations.entries()) {
+        await waitFor(`Boolean(document.querySelector('.cm-life-choice--${situation.id}'))`)
+        if (!await evaluate(`document.body.innerText.includes('SITUATION ${String(index + 4).padStart(2, '0')} / 09')`)) throw new Error('The situation counter is incorrect')
+        if (await evaluate("Boolean(document.querySelector('.cm-scene-response'))")) throw new Error('Scene reveals the answer before a choice')
+        if (index < 5 && await evaluate("[...document.querySelectorAll('button')].some(b => b.textContent.trim() === 'FINISH INTRO')")) throw new Error('Intro finishes before all nine situations')
+        await noOverflow(); await capture(`${situation.id}-${size.name}`)
+        await clickLabel(situation.wrong)
+        await waitFor("Boolean(document.querySelector('.cm-feedback.is-wrong'))")
+        if (!await evaluate("document.querySelector('.cm-life-choice .cm-primary').disabled")) throw new Error('A wrong answer advances the intro')
+        await clickLabel(situation.answer)
+        await waitFor("Boolean(document.querySelector('.cm-scene-response'))")
+        if (!await evaluate(`document.querySelector('.cm-situation-result').textContent.includes('${situation.path}')`)) throw new Error('The decision path is incorrect')
+        if (size.name === 'desktop') await capture(`${situation.id}-correct-desktop`)
+        await clickText(index === 5 ? 'FINISH INTRO' : 'NEXT SITUATION')
+      }
       await waitFor("Boolean(document.querySelector('.cm-step-cards'))")
       if (await evaluate("document.querySelector('[aria-label=\"Live flow\"]').disabled")) throw new Error('Intro did not unlock Live flow')
       await go('home'); await go('choice-machine')
@@ -142,7 +165,7 @@ async function main() {
       if (!await evaluate("document.body.innerText.includes('18 gates') && document.body.innerText.includes('Last check: Logic error') && document.body.innerText.includes('10 / 10 levels solved')")) throw new Error('Dashboard data missing')
       if (await evaluate("Boolean(document.querySelector('.teacher-summary'))")) throw new Error('The dashboard summary banner is still present')
       await noOverflow(); await capture(`dashboard-${size.name}`)
-      console.log(JSON.stringify({ viewport: size.name, equalWorldCards: true, pulse: true, choiceSteps: true, intro: true, dashboard: true, screenshotDir: outputDir }))
+      console.log(JSON.stringify({ viewport: size.name, equalWorldCards: true, pulse: true, choiceSteps: true, introSituations: 9, wrongAnswerRetry: true, dashboard: true, screenshotDir: outputDir }))
     }
     await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 637, deviceScaleFactor: 1, mobile: false })
     await go('backroom-run')
