@@ -138,6 +138,62 @@
 .ieb-finish h1 { margin: 0; font-size: 44px; letter-spacing: -.05em; }
 .ieb-finish p { max-width: 500px; margin: 0; line-height: 1.6; color: #7d7284; }
 .ieb-finish > div:last-child { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; }
+.ieb-outcome-backdrop { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 22px; overflow-y: auto; background: #161c36b5; backdrop-filter: blur(6px); animation: ieb-enter .2s ease both; }
+.ieb-outcome { position: relative; display: flex; flex-direction: column; align-items: center; gap: 15px; width: min(100%, 550px); max-height: calc(100dvh - 44px); overflow-y: auto; padding: 32px 34px; border: 3px solid #94c578; border-radius: 26px; background: #fcfff8; box-shadow: 0 9px 0 #3e664c, 0 24px 90px #080e2870; text-align: center; animation: ieb-victory .48s cubic-bezier(.2, 1.5, .5, 1) both; }
+.ieb-outcome-badge { position: relative; display: grid; place-items: center; flex: 0 0 90px; width: 90px; height: 90px; border: 3px solid #62994e; border-radius: 50%; color: #fff; background: #93c76d; box-shadow: 0 6px 0 #5e8849, 0 0 0 10px #e7f3d9; }
+.ieb-outcome-kicker { margin-top: 8px; color: #6c8e53; font-size: 11px; font-weight: 850; letter-spacing: .13em; }
+.ieb-outcome h2 { margin: 0; color: #335d36; font-size: clamp(36px, 4vw, 51px); font-weight: 900; letter-spacing: -.055em; line-height: 1; }
+.ieb-outcome > p { max-width: 430px; margin: 0; color: #5d7059; font-size: 15px; line-height: 1.55; }
+.ieb-outcome-output, .ieb-outcome-clue { width: 100%; padding: 14px 16px; border-radius: 12px; color: #c5f2cf; background: #223c30; text-align: left; }
+.ieb-outcome-output > span, .ieb-outcome-clue > span { display: block; margin-bottom: 7px; color: #9dbda3; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.ieb-outcome pre { margin: 0; font: 500 14px/1.5 'IBM Plex Mono', monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ieb-outcome-actions { display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 100%; padding-top: 3px; }
+.ieb-screen .ieb-outcome--success .ieb-primary { min-height: 54px; border-color: #4d8440; color: #fff; background: #81b85d; box-shadow: 0 2px 0 #4d8440; font-size: 15px; }
+.ieb-screen .ieb-outcome-review { min-height: 30px; padding: 4px 10px; border: 0; color: #6e875f; background: transparent; font-size: 11px; }
+.ieb-outcome--wrong { border-color: #e18c81; background: #fff9f5; box-shadow: 0 9px 0 #a35354, 0 24px 90px #080e2870; animation: ieb-error-pop .55s ease both; }
+.ieb-outcome--wrong .ieb-outcome-badge { border-color: #c05b60; color: #fff; background: #e5807e; box-shadow: 0 6px 0 #b35259, 0 0 0 10px #fde5dd; }
+.ieb-outcome--wrong .ieb-outcome-kicker { color: #b77266; }
+.ieb-outcome--wrong h2 { color: #ab414c; }
+.ieb-outcome--wrong > p { color: #886260; }
+.ieb-outcome-clue { color: #ffe5df; background: #4b2e39; }
+.ieb-outcome-clue > span { color: #efb2a7; }
+.ieb-outcome-clue small { display: block; margin-top: 8px; color: #cda9ad; font-size: 11px; }
+.ieb-screen .ieb-outcome-clue code, .ieb-screen .ieb-outcome-clue code * { font-family: 'IBM Plex Mono', monospace !important; }
+.ieb-outcome-clue .py-tok--keyword { color: #e6b0ed; }
+.ieb-outcome-clue .py-tok--name { color: #ffd5c4; }
+.ieb-outcome-clue .py-tok--number { color: #f8d89f; }
+.ieb-screen .ieb-outcome--wrong .ieb-primary { min-height: 54px; border-color: #b85461; background: #dd747b; box-shadow: 0 2px 0 #b85461; font-size: 15px; }
+.ieb-editor.is-wrong { border-color: #ed9195; box-shadow: 0 5px 0 #bc636c; animation: ieb-editor-shake .4s ease; }
+.ieb-screen .ieb-code .is-mistake button { border-color: #e1858d; background: #e9859325; }
+.ieb-code .is-mistake > span:first-child { color: #ffbbc1; font-weight: 800; }
+.ieb-feedback--wrong, .ieb-feedback--error { padding: 12px 14px; border: 1px solid #e8b5ac; border-radius: 12px; background: #fff0e8; }
+.ieb-feedback--correct { padding: 12px 14px; border: 1px solid #b9d2a9; border-radius: 12px; background: #ebf5df; }
+.ieb-feedback--correct b { color: #467b39; }
+.ieb-feedback--wrong b, .ieb-feedback--error b { color: #ae4753; }
+.ieb-confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.ieb-confetti i { position: absolute; top: -25px; left: var(--confetti-x); width: 10px; height: 17px; border-radius: 2px; background: var(--confetti-color); animation: ieb-confetti-fall 1.9s var(--confetti-delay) ease-in both; }
+.ieb-confetti i:nth-child(3n) { width: 12px; height: 12px; border-radius: 50%; }
+@keyframes ieb-victory { from { opacity: 0; transform: scale(.82) translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes ieb-error-pop { 0% { opacity: 0; transform: scale(.88); } 40% { opacity: 1; transform: translateX(-9px); } 60% { transform: translateX(8px); } 80% { transform: translateX(-4px); } 100% { transform: none; } }
+@keyframes ieb-editor-shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-3px); } }
+@keyframes ieb-confetti-fall { from { transform: translateY(-20px) rotate(0deg); opacity: 1; } to { transform: translateY(110dvh) rotate(var(--confetti-rotation)); opacity: .2; } }
+@media (max-height: 620px) {
+  .ieb-outcome { gap: 11px; padding: 22px 28px; }
+  .ieb-outcome-badge { flex-basis: 65px; width: 65px; height: 65px; }
+  .ieb-outcome-badge svg { width: 40px; height: 40px; }
+  .ieb-outcome h2 { font-size: 36px; }
+}
+@media (max-height: 500px) {
+  .ieb-outcome { gap: 8px; padding: 18px 26px; }
+  .ieb-outcome-badge { position: absolute; top: 22px; left: 22px; width: 43px; height: 43px; box-shadow: 0 3px 0 #5e8849, 0 0 0 5px #e7f3d9; }
+  .ieb-outcome-badge svg { width: 29px; height: 29px; }
+  .ieb-outcome-kicker { margin: 0; font-size: 9px; }
+  .ieb-outcome h2 { font-size: 32px; }
+  .ieb-outcome > p { font-size: 13px; }
+  .ieb-outcome-output, .ieb-outcome-clue { padding: 10px 12px; }
+  .ieb-outcome pre { font-size: 12px; }
+  .ieb-screen .ieb-outcome .ieb-primary { min-height: 46px; }
+}
 @keyframes ieb-enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
 @keyframes ieb-insert { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @media (min-width: 901px) and (max-height: 720px) {
