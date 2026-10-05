@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Check, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Lock, Sparkles } from 'lucide-react'
 import { conditionExperiences } from '../data/conditions'
 import type { AppRoute, SessionProgress } from '../types'
 
@@ -22,17 +22,17 @@ export function ConditionsHome({ progress, onNavigate }: Props) {
         {conditionExperiences.map((experience, index) => {
           const Icon = experience.icon
           const complete = progress.completed.includes(experience.id)
-          return <button key={experience.id} aria-label={`${experience.order} ${experience.title}: ${experience.description}`} className={`experience-card ${experience.id === 'backroom-run' ? 'is-backroom' : ''} ${complete ? 'is-complete' : ''} ${index === 0 ? 'is-start' : ''}`} style={{ '--card-accent': experience.color } as React.CSSProperties} onClick={() => onNavigate(experience.id)}>
+          return <button key={experience.id} disabled={experience.disabled} aria-label={`${experience.order} ${experience.title}: ${experience.disabled ? 'Coming soon' : experience.description}`} className={`experience-card ${experience.disabled ? 'is-disabled' : ''} ${experience.id === 'backroom-run' ? 'is-backroom' : ''} ${complete ? 'is-complete' : ''} ${index === 0 ? 'is-start' : ''}`} style={{ '--card-accent': experience.color } as React.CSSProperties} onClick={() => onNavigate(experience.id)}>
             <span className="experience-card__order">{experience.order}</span>
             <span className="experience-card__icon"><Icon /></span>
             <span className="experience-card__copy"><strong>{experience.title}</strong><p>{experience.description}</p></span>
             <code className="experience-card__preview" aria-hidden="true">{previews[index]}</code>
-            <span className="experience-card__state">{complete ? <><Check size={16} /> DONE · PLAY AGAIN</> : <>LET'S TRY IT <ArrowRight size={16} /></>}</span>
+            <span className="experience-card__state">{experience.disabled ? <><Lock size={16} /> COMING SOON</> : complete ? <><Check size={16} /> DONE · PLAY AGAIN</> : <>LET'S TRY IT <ArrowRight size={16} /></>}</span>
             {index === 0 && !complete && <i>START HERE</i>}
           </button>
         })}
       </section>
-      <footer className="variables-note"><span>NO LOCKS</span> Try these in order—or choose your own path.</footer>
+      <footer className="variables-note"><span>3 ACTIVITIES OPEN</span> Explore the first three. More challenges are coming soon.</footer>
     </main>
   )
 }

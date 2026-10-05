@@ -1,4 +1,4 @@
-import { BarChart3, Check, Cloud, CloudOff, GraduationCap, Home, List, LogOut, X } from 'lucide-react'
+import { BarChart3, Check, Cloud, CloudOff, GraduationCap, Home, List, Lock, LogOut, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { variableExperiences } from '../data/variables'
 import { conditionExperiences } from '../data/conditions'
@@ -64,12 +64,13 @@ export function AppHeader({ route, progress, syncState, onNavigate, onLogout }: 
             {world.experiences.map((experience) => {
               const Icon = experience.icon
               const done = progress.completed.includes(experience.id)
+              const disabled = 'disabled' in experience && experience.disabled === true
               return (
-                <button key={experience.id} className={route === experience.id ? 'is-current' : ''} onClick={() => navigate(experience.id)}>
+                <button key={experience.id} disabled={disabled} className={route === experience.id ? 'is-current' : ''} onClick={() => navigate(experience.id)}>
                   <span style={{ '--quick-accent': experience.color } as React.CSSProperties}><Icon /></span>
                   <i>{experience.order}</i>
                   <strong>{experience.title}</strong>
-                  {done ? <Check className="quick-done" /> : null}
+                  {disabled ? <Lock aria-label="Coming soon" size={16} /> : done ? <Check className="quick-done" /> : null}
                 </button>
               )
             })}

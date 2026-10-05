@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 import { buildStopStarter } from './lib/stopAnalyzer'
+import { createSession, saveSession } from './session/progressSession'
 
 vi.mock('./components/CodeEditor', () => ({
   CodeEditor: ({ value, onChange, label }: { value: string; onChange: (value: string) => void; label?: string }) => (
@@ -67,22 +68,40 @@ describe('PixPy classroom session', () => {
     expect(screen.getByRole('heading', { name: 'Conditions' })).toBeInTheDocument()
     for (const [index, title] of ['BACKROOM RUN', 'HOW THE COMPUTER MAKES A CHOICE', 'IF/ELSE', 'MAKE IT WORK', 'MORE THAN ONE CHOICE?', 'Final Bosses'].entries()) {
       const number = String(index + 1).padStart(2, '0')
-      expect(screen.getByRole('button', { name: new RegExp(`^${number} ${title.replace('?', '\\?')}:`, 'i') })).toBeEnabled()
+      const button = screen.getByRole('button', { name: new RegExp(`^${number} ${title.replace('?', '\\?')}:`, 'i') })
+      if (index < 3) expect(button).toBeEnabled()
+      else expect(button).toBeDisabled()
     }
     await user.click(screen.getByRole('button', { name: 'Open Conditions activity list' }))
     const list = screen.getByRole('complementary', { name: 'Conditions activities' })
     expect(list).toHaveTextContent('IF/ELSE')
     expect(list).not.toHaveTextContent('Dino Variables')
+    expect(within(list).getAllByRole('button').filter((button) => button.hasAttribute('disabled'))).toHaveLength(3)
     await user.click(screen.getByRole('button', { name: /^02 HOW THE COMPUTER MAKES A CHOICE:/i }))
-    expect(screen.getByText('INTRO', { selector: '.cm-phase-label' })).toBeInTheDocument()
+    expect(screen.getByText('YOUR THREE STEPS', { selector: '.cm-phase-label' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Open Conditions activity list' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /Every choice starts with a question/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Intro' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Live flow' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Intro' }))
     await user.click(screen.getByRole('button', { name: /start learning/i }))
     expect(screen.getByRole('heading', { name: 'A rainy day' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^CONDITIONS$/i }))
+    await user.click(screen.getByRole('button', { name: /^02 HOW THE COMPUTER MAKES A CHOICE:/i }))
+    for (const name of ['Intro', 'Live flow', 'Final quiz']) expect(screen.getByRole('button', { name })).toBeEnabled()
     await user.click(screen.getByRole('button', { name: /^CONDITIONS$/i }))
     await user.click(screen.getByRole('button', { name: /all worlds/i }))
     expect(screen.queryByRole('button', { name: /open .* activity list/i })).not.toBeInTheDocument()
   }, 15_000)
+
+  it('returns disabled activity URLs to the Conditions menu', () => {
+    saveSession(createSession('Maya'))
+    for (const route of ['make-it-work', 'more-than-one-choice', 'conditions-final-bosses']) {
+      window.history.replaceState(null, '', `#/${route}`)
+      const view = render(<App />)
+      expect(screen.getByRole('heading', { name: 'Conditions' })).toBeInTheDocument()
+      view.unmount()
+    }
+  })
 
   it('opens Extras with the STOP string sheet', async () => {
     const user = userEvent.setup()

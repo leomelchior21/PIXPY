@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Binary, Check, GraduationCap, IdCard, Lightbulb, Play, RotateCcw, Sparkles, Trophy, Zap } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Binary, Check, GraduationCap, GitBranch, IdCard, Lightbulb, Lock, Play, RotateCcw, Sparkles, Trophy, Zap } from 'lucide-react'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { PythonCode } from '../../components/PythonCode'
 import { CHOICE_QUIZ_LENGTH, CHOICE_XP_PER_QUESTION, everydayChoices, flowStories, makeChoiceQuizQuestion } from '../../data/choiceMachine'
@@ -14,7 +14,7 @@ interface Props {
   onNext: (route: AppRoute) => void
 }
 
-type Phase = 'intro' | 'choices' | 'storyIntro' | 'stories' | 'quizIntro' | 'quiz' | 'complete'
+type Phase = 'steps' | 'intro' | 'choices' | 'storyIntro' | 'stories' | 'quizIntro' | 'quiz' | 'complete'
 type SeenPaths = Record<string, { yes: boolean; no: boolean }>
 type CoachKind = 'type' | 'press' | 'another' | 'fix'
 
@@ -33,11 +33,13 @@ function StepDots({ current, total }: { current: number; total: number }) {
 const confettiColors = ['#b9f352', '#72dcff', '#ffcb47', '#a994ff', '#ff855e']
 
 export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
-  const [phase, setPhase] = useState<Phase>('intro')
+  const [phase, setPhase] = useState<Phase>('steps')
+  const [returning] = useState(() => progress.choiceMachineVisited || progress.choiceMachineStoriesComplete || progress.choiceMachineQuizIndex > 0)
+  const [quizIndex, setQuizIndex] = useState(0)
   const [lessonIndex, setLessonIndex] = useState(0)
   const [lessonAnswer, setLessonAnswer] = useState<number | null>(null)
   const [storyIndex, setStoryIndex] = useState(0)
-  const [draft, setDraft] = useState('')
+  const [draft, setDraft] = useState('4.5')
   const [runValue, setRunValue] = useState<number | null>(null)
   const [flowStep, setFlowStep] = useState(0)
   const [seenPaths, setSeenPaths] = useState<SeenPaths>({})
@@ -46,14 +48,18 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
 
   const lesson = everydayChoices[lessonIndex]
   const story = flowStories[storyIndex]
+  const isGrade = story.id === 'grade'
   const BriefingIcon = storyBriefingIcons[story.id] ?? Sparkles
   const parsedDraft = story.input.parse(draft)
   const seen = seenPaths[story.id] ?? { yes: false, no: false }
   const bothPathsSeen = seen.yes && seen.no
   const outcome = runValue === null ? null : story.decide(runValue)
-  const quizIndex = progress.choiceMachineQuizIndex
   const quiz = phase === 'quiz' && quizIndex < CHOICE_QUIZ_LENGTH ? makeChoiceQuizQuestion(quizIndex, quizRetry) : null
   const quizCorrect = quiz !== null && quizAnswer === quiz.answer
+
+  useEffect(() => {
+    if (!progress.choiceMachineVisited) onProgress({ ...progress, choiceMachineVisited: true })
+  }, [progress, onProgress])
 
   useEffect(() => {
     if (phase !== 'stories' || flowStep === 0 || flowStep >= 4) return
@@ -83,32 +89,9 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
     } as CSSProperties
   }), [])
 
-  const begin = () => {
-    if (progress.completed.includes('choice-machine') || quizIndex === CHOICE_QUIZ_LENGTH) setPhase('complete')
-    else if (quizIndex > 0) setPhase('quiz')
-    else if (progress.choiceMachineStoriesComplete) setPhase('quizIntro')
-    else setPhase('choices')
-  }
+  const begin = () => setPhase('choices')
 
-  const startOver = () => {
-    onProgress({
-      ...progress,
-      completed: progress.completed.filter((id) => id !== 'choice-machine'),
-      choiceMachineStoriesComplete: false,
-      choiceMachineQuizIndex: 0,
-      choiceMachineXp: 0,
-    })
-    setLessonIndex(0)
-    setLessonAnswer(null)
-    setStoryIndex(0)
-    setDraft('')
-    setRunValue(null)
-    setFlowStep(0)
-    setSeenPaths({})
-    setQuizRetry(0)
-    setQuizAnswer(null)
-    setPhase('choices')
-  }
+  const startOver = () => setPhase('steps')
 
   const openBriefing = () => {
     setDraft('')
@@ -119,19 +102,28 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
 
   const nextLesson = () => {
     if (lessonAnswer !== lesson.answer) return
-    if (lessonIndex + 1 === everydayChoices.length) openBriefing()
+    if (lessonIndex + 1 === everydayChoices.length) {
+      onProgress({ ...progress, choiceMachineIntroComplete: true })
+      setPhase('steps')
+    }
     else { setLessonIndex(lessonIndex + 1); setLessonAnswer(null) }
   }
 
   const reviewStories = () => {
     setStoryIndex(0)
+    setSeenPaths({})
     openBriefing()
   }
 
-  const openQuiz = () => setPhase(quizIndex === CHOICE_QUIZ_LENGTH || progress.completed.includes('choice-machine') ? 'complete' : 'quizIntro')
+  const openQuiz = () => {
+    setQuizIndex(progress.choiceMachineQuizIndex < CHOICE_QUIZ_LENGTH ? progress.choiceMachineQuizIndex : 0)
+    setQuizAnswer(null)
+    setQuizRetry(0)
+    setPhase('quizIntro')
+  }
 
   const startStory = () => {
-    setDraft('')
+    setDraft(isGrade ? '4.5' : '')
     setRunValue(null)
     setFlowStep(0)
     setPhase('stories')
@@ -143,16 +135,17 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
     setFlowStep(1)
   }
 
-  const changeDraft = (value: string) => {
+  const changeDraft = (value: string | ((current: string) => string)) => {
     setDraft(value)
     if (flowStep === 4) { setFlowStep(0); setRunValue(null) }
   }
 
   const nextRunOrStory = () => {
-    if (!bothPathsSeen) { setDraft(''); setRunValue(null); setFlowStep(0); return }
+    if (!bothPathsSeen) { setDraft(isGrade ? draft : ''); setRunValue(null); setFlowStep(0); return }
     if (storyIndex + 1 === flowStories.length) {
       onProgress({ ...progress, choiceMachineStoriesComplete: true })
-      setPhase('quizIntro')
+      openQuiz()
+      setPhase('quiz')
     } else {
       setStoryIndex(storyIndex + 1)
       openBriefing()
@@ -162,9 +155,11 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
   const nextQuiz = () => {
     if (!quizCorrect) return
     const nextIndex = quizIndex + 1
-    let nextProgress = { ...progress, choiceMachineQuizIndex: nextIndex, choiceMachineXp: nextIndex * CHOICE_XP_PER_QUESTION }
+    const savedIndex = Math.max(nextIndex, progress.choiceMachineQuizIndex)
+    let nextProgress = { ...progress, choiceMachineQuizIndex: savedIndex, choiceMachineXp: savedIndex * CHOICE_XP_PER_QUESTION }
     if (nextIndex === CHOICE_QUIZ_LENGTH) nextProgress = completeActivity(nextProgress, 'choice-machine')
     onProgress(nextProgress)
+    setQuizIndex(nextIndex)
     setQuizRetry(0)
     setQuizAnswer(null)
     if (nextIndex === CHOICE_QUIZ_LENGTH) setPhase('complete')
@@ -177,13 +172,13 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
         ? draft.trim() !== ''
           ? { kind: 'fix', title: 'WHOLE NUMBERS ONLY', copy: 'Letters and symbols cannot be compared. Erase it and type digits like 8 or 15.' }
           : { kind: 'type', title: 'YOUR TURN', copy: seen.yes || seen.no ? `Good. Now type a value that is ${otherPathHint}.` : story.input.hint }
-        : { kind: 'press', title: 'NOW PRESS START FLOW', copy: `Python will read ${story.variable} = ${story.format(parsedDraft)} and walk the flow below.` }
+        : { kind: 'press', title: 'NOW PRESS START FLOW', copy: isGrade ? `Tap the arrows to choose a grade. Python will compare ${story.format(parsedDraft)} with 7.` : `Python will read ${story.variable} = ${story.format(parsedDraft)} and walk the flow below.` }
       : flowStep === 4 && !bothPathsSeen
-        ? { kind: 'another', title: 'TRY ANOTHER VALUE', copy: `You saw the ${outcome ? 'TRUE' : 'FALSE'} path. Type a value that is ${otherPathHint} to see the other one.` }
+        ? { kind: 'another', title: 'TRY ANOTHER VALUE', copy: `You saw the ${outcome ? 'TRUE' : 'FALSE'} path. ${isGrade ? 'Tap the arrows to choose' : 'Type'} a value that is ${otherPathHint} to see the other one.` }
         : null
 
   const flowLines = [
-    `${story.variable} = int(input())`,
+    `${story.variable} = ${isGrade ? 'float' : 'int'}(input())`,
     `if ${story.condition}:`,
     `    print("${story.trueOutput}")`,
     'else:',
@@ -192,13 +187,33 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
   const shownValue = flowStep >= 1 ? runValue : parsedDraft
   const lineActive = (index: number) => (flowStep === 1 && index === 0) || (flowStep === 2 && index === 1) || (flowStep >= 3 && index === (outcome ? 2 : 4))
 
-  const phaseLabel = phase === 'intro' ? 'INTRO' : phase === 'choices' ? 'REAL LIFE CHOICES' : phase === 'storyIntro' ? 'PRE-EXPERIMENT' : phase === 'stories' ? 'LIVE FLOW' : phase === 'quizIntro' ? 'QUIZ READY' : phase === 'quiz' ? 'XP QUIZ' : 'COMPLETE'
+  const phaseLabel = phase === 'steps' ? 'YOUR THREE STEPS' : phase === 'intro' ? 'INTRO' : phase === 'choices' ? 'REAL LIFE CHOICES' : phase === 'storyIntro' ? 'PRE-EXPERIMENT' : phase === 'stories' ? 'LIVE FLOW' : phase === 'quizIntro' ? 'QUIZ READY' : phase === 'quiz' ? 'XP QUIZ' : 'COMPLETE'
+
+  const stepOptions = [
+    { title: 'Intro', copy: 'Explore three everyday choices.', icon: Lightbulb, enabled: true, done: progress.choiceMachineIntroComplete, action: () => { setLessonIndex(0); setLessonAnswer(null); setPhase('intro') } },
+    { title: 'Live flow', copy: 'Send a value through both paths.', icon: GitBranch, enabled: returning || progress.choiceMachineIntroComplete, done: progress.choiceMachineStoriesComplete, action: reviewStories },
+    { title: 'Final quiz', copy: '20 questions. Put your decisions to the test.', icon: Trophy, enabled: returning || progress.choiceMachineStoriesComplete, done: progress.completed.includes('choice-machine'), action: openQuiz },
+  ]
 
   return <main className={`cm-screen cm-screen--${phase}`} style={{ '--cm-accent': '#b9f352' } as CSSProperties}>
     <div className="cm-toolbar">
       <button className="cm-back-chip" onClick={onBack}><ArrowLeft size={14} /> CONDITIONS</button>
+      {phase !== 'steps' && <button className="cm-back-chip" onClick={() => setPhase('steps')}>THREE STEPS</button>}
       <span className="cm-phase-label"><span />{phaseLabel}</span>
     </div>
+
+    {phase === 'steps' && <section className="cm-steps cm-panel">
+      <span className="cm-kicker"><Sparkles size={15} /> THE DECISION LAB</span>
+      <h1>How the computer makes a choice</h1>
+      <p>{returning ? 'Welcome back. Choose any step to practice again.' : 'Start with the intro. Each finished step opens the next.'}</p>
+      <div className="cm-step-cards">{stepOptions.map((option, index) => {
+        const Icon = option.icon
+        return <button key={option.title} className={`cm-step-card ${option.done ? 'is-done' : ''}`} disabled={!option.enabled} onClick={option.action} aria-label={option.title}>
+          <span className="cm-step-card__number">0{index + 1}</span><Icon size={36} /><h2>{option.title}</h2><p>{option.copy}</p>
+          <span className="cm-step-card__state">{!option.enabled ? <><Lock size={16} /> Finish the previous step</> : option.done ? <><RotateCcw size={16} /> Practice again</> : <>Start this step <ArrowRight size={16} /></>}</span>
+        </button>
+      })}</div>
+    </section>}
 
     {phase === 'intro' && <section className="cm-intro cm-panel">
       <div className="cm-intro-copy">
@@ -207,9 +222,7 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
         <p>Every day you choose what happens next. Look at three real situations: rain outside, a locked door, and a school result. Then type your own values and watch a computer make the same kinds of decisions.</p>
         <div className="cm-intro-rule"><b>IF</b><span>the answer is YES</span><ArrowRight size={18} /><strong>do this</strong></div>
         <div className="cm-intro-rule cm-intro-rule--no"><b>ELSE</b><span>the answer is NO</span><ArrowRight size={18} /><strong>do that</strong></div>
-        <button className="cm-primary" onClick={begin}>{progress.completed.includes('choice-machine') ? 'SEE MY RESULT' : quizIndex > 0 ? 'CONTINUE QUIZ' : progress.choiceMachineStoriesComplete ? 'OPEN THE QUIZ' : 'START LEARNING'} <ArrowRight size={19} /></button>
-        {progress.choiceMachineStoriesComplete && !progress.completed.includes('choice-machine') && <button className="cm-text-button" onClick={reviewStories}>Review the live flows</button>}
-        {(progress.choiceMachineStoriesComplete || quizIndex > 0) && <button className="cm-text-button" onClick={startOver}>Start from the beginning</button>}
+        <button className="cm-primary" onClick={begin}>START LEARNING <ArrowRight size={19} /></button>
       </div>
       <div className="cm-intro-art" aria-label="A question splits into a yes path and a no path">
         <span className="cm-intro-art__spark cm-intro-art__spark--one">✦</span><span className="cm-intro-art__spark cm-intro-art__spark--two">✦</span>
@@ -233,7 +246,7 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
           <div className="cm-choice-buttons">{lesson.options.map((option, index) => <button key={option} aria-label={option} className={lessonAnswer === index ? index === lesson.answer ? 'is-correct' : 'is-wrong' : ''} onClick={() => setLessonAnswer(index)}><span>{String.fromCharCode(65 + index)}</span>{option}</button>)}</div>
         </div>
         <div className={`cm-feedback ${lessonAnswer !== null ? 'is-visible' : ''}`} role="status">{lessonAnswer === null ? 'Look at the picture, then choose what should happen.' : <><b>{lessonAnswer === lesson.answer ? 'GOOD EYE!' : 'LOOK AGAIN'}</b><span>{lessonAnswer === lesson.answer ? lesson.feedback : `Check the picture once more. ${lesson.condition}`}</span></>}</div>
-        <button className="cm-primary" disabled={lessonAnswer !== lesson.answer} onClick={nextLesson}>{lessonIndex + 1 === everydayChoices.length ? 'OPEN THE LIVE FLOW' : 'NEXT SITUATION'} <ArrowRight size={18} /></button>
+        <button className="cm-primary" disabled={lessonAnswer !== lesson.answer} onClick={nextLesson}>{lessonIndex + 1 === everydayChoices.length ? 'FINISH INTRO' : 'NEXT SITUATION'} <ArrowRight size={18} /></button>
       </div>
     </section>}
 
@@ -255,7 +268,7 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
         <span className="cm-briefing-art__spark cm-briefing-art__spark--one">✦</span>
         <span className="cm-briefing-art__spark cm-briefing-art__spark--two">✦</span>
         <span className="cm-briefing-art__badge"><BriefingIcon size={34} /></span>
-        <div className="cm-briefing-art__input"><small>YOU TYPE</small><b>{story.variable} = ?</b></div>
+        <div className="cm-briefing-art__input"><small>{isGrade ? 'YOU CHOOSE' : 'YOU TYPE'}</small><b>{story.variable} = ?</b></div>
         <span className="cm-briefing-art__arrow" aria-hidden="true" />
         <div className="cm-briefing-art__question"><small>PYTHON ASKS</small><strong>{story.question}</strong><code>{story.condition}</code></div>
         <div className="cm-briefing-art__paths">
@@ -279,11 +292,16 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
             })}
           </div>
           <div className={`cm-value-picker ${coach && coach.kind !== 'press' ? 'needs-attention' : ''} ${coach?.kind === 'press' ? 'is-ready' : ''}`}>
-            <strong>TYPE A VALUE FOR {story.variable.toUpperCase()}</strong>
-            <label className="cm-value-field">
+            <strong>{isGrade ? 'CHOOSE A GRADE' : `TYPE A VALUE FOR ${story.variable.toUpperCase()}`}</strong>
+            {isGrade ? <div className="cm-value-field cm-grade-picker">
+              <span>grade =</span>
+              <button aria-label="Decrease grade" disabled={(flowStep > 0 && flowStep < 4) || Number(draft) <= 0} onClick={() => changeDraft((current) => String(Math.max(0, Number(current) - 0.25)))}><ArrowLeft size={22} /></button>
+              <output aria-label="grade value" aria-live="polite">{Number(draft)}</output>
+              <button aria-label="Increase grade" disabled={(flowStep > 0 && flowStep < 4) || Number(draft) >= 10} onClick={() => changeDraft((current) => String(Math.min(10, Number(current) + 0.25)))}><ArrowRight size={22} /></button>
+            </div> : <label className="cm-value-field">
               <span>{story.variable} =</span>
               <input value={draft} onChange={(event) => changeDraft(event.target.value)} disabled={flowStep > 0 && flowStep < 4} inputMode="numeric" placeholder={story.input.placeholder} aria-label={`${story.variable} value`} />
-            </label>
+            </label>}
             <small>{story.input.typeHint} · then press the green button</small>
             {coach && coach.kind !== 'press' && <aside className={`cm-try-popup cm-try-popup--${coach.kind}`} role="status"><Lightbulb /><div><strong>{coach.title}</strong><p>{coach.copy}</p></div></aside>}
           </div>
@@ -330,12 +348,12 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
       </div>
     </section>}
 
-    {phase === 'quizIntro' && <section className="cm-quiz-intro cm-panel"><span className="cm-quiz-intro-icon"><Trophy size={62} /></span><span className="cm-kicker">ALL THREE STORIES COMPLETE</span><h2>Ready to choose on your own?</h2><p>20 questions. One decision at a time. Each correct answer earns <b>10 XP</b>. If you miss one, try the same idea with new values.</p><div className="cm-quiz-intro-stats"><span><b>20</b> QUESTIONS</span><span><b>200</b> XP POSSIBLE</span><span><b>∞</b> TRIES</span></div><button className="cm-primary" onClick={() => setPhase('quiz')}>START THE XP QUIZ <ArrowRight size={19} /></button></section>}
+    {phase === 'quizIntro' && <section className="cm-quiz-intro cm-panel"><span className="cm-quiz-intro-icon"><Trophy size={62} /></span><span className="cm-kicker">FINAL QUIZ</span><h2>Ready to choose on your own?</h2><p>20 questions. One decision at a time. Each correct answer earns <b>10 XP</b>. If you miss one, try the same idea with new values.</p><div className="cm-quiz-intro-stats"><span><b>20</b> QUESTIONS</span><span><b>200</b> XP POSSIBLE</span><span><b>∞</b> TRIES</span></div><button className="cm-primary" onClick={() => setPhase('quiz')}>START THE XP QUIZ <ArrowRight size={19} /></button></section>}
 
     {phase === 'quiz' && quiz && <section className={`cm-quiz cm-panel ${quizAnswer !== null ? quizCorrect ? 'is-right' : 'is-wrong' : ''}`} key={quizIndex}>
       {quizCorrect && <div className="cm-burst" aria-hidden="true">{confetti.map((style, index) => <i key={index} style={style} />)}</div>}
       {quizAnswer !== null && !quizCorrect && <div className="cm-crash" aria-hidden="true"><span>X</span><b>NOT YET</b><span>X</span></div>}
-      <div className="cm-quiz-heading"><div><span className="cm-kicker">QUESTION {quizIndex + 1} / {CHOICE_QUIZ_LENGTH}</span><h2>{quiz.prompt}</h2></div><div className={`cm-xp ${quizCorrect ? 'is-kicked' : ''}`}><Zap size={20} fill="currentColor" /><b key={`${quizIndex}-${progress.choiceMachineXp}`}>{quizCorrect ? progress.choiceMachineXp + CHOICE_XP_PER_QUESTION : progress.choiceMachineXp}</b><span>XP</span>{quizCorrect && <em className="cm-xp-pop">+10</em>}</div></div>
+      <div className="cm-quiz-heading"><div><span className="cm-kicker">QUESTION {quizIndex + 1} / {CHOICE_QUIZ_LENGTH}</span><h2>{quiz.prompt}</h2></div><div className={`cm-xp ${quizCorrect ? 'is-kicked' : ''}`}><Zap size={20} fill="currentColor" /><b key={`${quizIndex}-${progress.choiceMachineXp}`}>{(quizIndex + (quizCorrect ? 1 : 0)) * CHOICE_XP_PER_QUESTION}</b><span>XP</span>{quizCorrect && <em className="cm-xp-pop">+10</em>}</div></div>
       <div className="cm-quiz-progress" role="progressbar" aria-label="Quiz progress" aria-valuenow={quizIndex} aria-valuemin={0} aria-valuemax={CHOICE_QUIZ_LENGTH}><span style={{ width: `${(quizIndex / CHOICE_QUIZ_LENGTH) * 100}%` }} /></div>
       <div className="cm-quiz-grid"><div className="cm-quiz-code"><span>READ THE CODE</span><pre><PythonCode code={quiz.code} /></pre><small>Read line by line before choosing.</small></div><div className="cm-quiz-answer"><span>CHOOSE ONE ANSWER</span><div>{quiz.options.map((option, index) => <button key={option} disabled={quizAnswer !== null} className={quizAnswer === index ? quizCorrect ? 'is-correct' : 'is-wrong' : ''} onClick={() => setQuizAnswer(index)} aria-label={`${String.fromCharCode(65 + index)} ${option.replace(/\n/g, ' then ')}`}><b>{String.fromCharCode(65 + index)}</b><code>{option}</code>{quizAnswer === index && <i aria-hidden="true">{quizCorrect ? '✓' : '✗'}</i>}</button>)}</div></div></div>
       <div className="cm-quiz-bottom"><div className="cm-quiz-feedback" role="status">{quizAnswer === null ? <span>Choose the result to earn 10 XP.</span> : quizCorrect ? <><Check size={24} /><span><b>+10 XP!</b> {quiz.explanation}</span></> : <><RotateCcw size={24} /><span><b>Not yet.</b> {quiz.explanation} Try the same idea with new values.</span></>}</div>{quizAnswer !== null && <button className="cm-primary" onClick={quizCorrect ? nextQuiz : () => { setQuizRetry(quizRetry + 1); setQuizAnswer(null) }}>{quizCorrect ? quizIndex + 1 === CHOICE_QUIZ_LENGTH ? 'SEE YOUR RESULT' : 'NEXT QUESTION' : 'TRY NEW VALUES'} <ArrowRight size={18} /></button>}</div>

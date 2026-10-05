@@ -7,13 +7,47 @@ export function runGuidedPython(code: string, inputs: string[] = []): ScriptRunR
   const output: string[] = []
   let inputIndex = 0
   const lines = code.split('\n')
+  const branches: Array<{ indent: number; bodyIndent: number | null; parentActive: boolean; condition: boolean; active: boolean; hasElse: boolean }> = []
+  let needsBody = false
 
   for (let index = 0; index < lines.length; index += 1) {
-    const line = stripPythonComment(lines[index]).trim()
+    const raw = stripPythonComment(lines[index])
+    const line = raw.trim()
     if (!line) continue
+    const whitespace = raw.match(/^\s*/)?.[0] ?? ''
+    if (whitespace.includes('\t')) throw new Error(`Line ${index + 1}: use spaces for indentation.`)
+    const indent = whitespace.length
+    const previous = branches.at(-1)
+    if (needsBody && (!previous || indent <= previous.indent)) throw new Error(`Line ${index + 1}: indent the code inside the condition.`)
+    needsBody = false
+    while (branches.length && (indent < branches.at(-1)!.indent || (indent === branches.at(-1)!.indent && line !== 'else:'))) branches.pop()
+
+    if (line === 'else:') {
+      const branch = branches.at(-1)
+      if (!branch || branch.indent !== indent || branch.hasElse) throw new Error(`Line ${index + 1}: else needs a matching if.`)
+      branch.hasElse = true
+      branch.active = branch.parentActive && !branch.condition
+      branch.bodyIndent = null
+      needsBody = true
+      continue
+    }
+    const parent = branches.at(-1)
+    if (parent) {
+      parent.bodyIndent ??= indent
+      if (indent !== parent.bodyIndent || indent <= parent.indent) throw new Error(`Line ${index + 1}: check the indentation.`)
+    } else if (indent !== 0) throw new Error(`Line ${index + 1}: unexpected indentation.`)
+    const active = parent?.active ?? true
+    const ifMatch = line.match(/^if\s+(.+):$/)
+    if (ifMatch) {
+      const condition = active && readCondition(ifMatch[1], variables, inputs, () => inputIndex++)
+      branches.push({ indent, bodyIndent: null, parentActive: active, condition, active: condition, hasElse: false })
+      needsBody = true
+      continue
+    }
 
     const printMatch = line.match(/^print\((.*)\)$/)
     if (printMatch) {
+      if (!active) continue
       const printed = splitTopLevel(printMatch[1], ',').map((argument) => argument.trim() === '' ? '' : formatValue(readValue(argument, variables, inputs, () => inputIndex++))).join(' ')
       output.push(printed)
       continue
@@ -21,6 +55,7 @@ export function runGuidedPython(code: string, inputs: string[] = []): ScriptRunR
 
     const assignment = line.match(/^([A-Za-z_]\w*)\s*(\+=|=)(?!=)\s*(.+)$/)
     if (assignment) {
+      if (!active) continue
       const name = assignment[1]
       const value = readValue(assignment[3], variables, inputs, () => inputIndex++)
       if (assignment[2] === '+=') {
@@ -35,7 +70,23 @@ export function runGuidedPython(code: string, inputs: string[] = []): ScriptRunR
     throw new Error(`Line ${index + 1} needs an assignment or print().`)
   }
 
+  if (needsBody) throw new Error('Indent a line of code after the condition.')
+
   return { stdout: output.join('\n'), variables }
+}
+
+function readCondition(expression: string, variables: Record<string, Value>, inputs: string[], takeInput: () => number): boolean {
+  const comparison = expression.match(/^(.+?)\s*(==|!=|>=|<=|>|<)\s*(.+)$/)
+  if (!comparison) return Boolean(readValue(expression, variables, inputs, takeInput))
+  const left = readValue(comparison[1], variables, inputs, takeInput)
+  const right = readValue(comparison[3], variables, inputs, takeInput)
+  if (comparison[2] === '==') return left === right
+  if (comparison[2] === '!=') return left !== right
+  if (typeof left !== 'number' || typeof right !== 'number') throw new Error('Use numbers on both sides of this comparison.')
+  if (comparison[2] === '>=') return left >= right
+  if (comparison[2] === '<=') return left <= right
+  if (comparison[2] === '>') return left > right
+  return left < right
 }
 
 function stripPythonComment(line: string): string {

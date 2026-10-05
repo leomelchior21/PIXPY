@@ -1,0 +1,86 @@
+.ieb-screen { display: flex; flex-direction: column; gap: 12px; width: min(1320px, calc(100% - 44px)); height: 100%; margin: auto; padding: 10px 0 18px; overflow-y: auto; color: var(--ink); }
+.ieb-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 700 11px 'IBM Plex Mono', monospace; }
+.ieb-screen button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 2px solid var(--ink); border-radius: 8px; color: var(--ink); background: #fff; box-shadow: 2px 3px 0 var(--ink); cursor: pointer; font: 700 11px 'IBM Plex Mono', monospace; }
+.ieb-screen button:hover:not(:disabled) { background: #e2faff; transform: translateY(-1px); }
+.ieb-screen button:disabled { opacity: .4; cursor: default; box-shadow: none; }
+.ieb-screen button:focus-visible, .ieb-screen input:focus-visible { outline: 3px solid #168b9d; outline-offset: 3px; }
+.ieb-progress { display: flex; gap: 6px; flex-shrink: 0; }
+.ieb-progress span { flex: 1; height: 8px; border: 1px solid var(--ink); border-radius: 8px; background: #e9e8df; }
+.ieb-progress .is-done { background: #b9f352; }
+.ieb-progress .is-current { background: #72dcff; }
+.ieb-layout { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 20px; flex: 1; }
+.ieb-problem, .ieb-workspace, .ieb-finish { min-width: 0; padding: clamp(18px, 2vw, 28px); border: 2px solid var(--ink); border-radius: 12px; background: #fffdf8; box-shadow: 4px 4px 0 var(--ink); }
+.ieb-problem { background: #e9faff; }
+.ieb-kicker { font: 700 10px 'IBM Plex Mono', monospace; letter-spacing: .06em; }
+.ieb-problem h1 { margin: 14px 0; font: 700 clamp(30px, 3.3vw, 46px)/1 var(--pixel); }
+.ieb-problem > p { margin: 12px 0; font-size: clamp(14px, 1.3vw, 17px); line-height: 1.65; }
+.ieb-brief { margin: 22px 0; padding: 16px; border: 1px solid #99bdc8; border-radius: 9px; background: #fff; }
+.ieb-brief > span, .ieb-bank > span, .ieb-input > span, .ieb-output > span { display: block; margin-bottom: 12px; font: 700 10px 'IBM Plex Mono', monospace; letter-spacing: .06em; }
+.ieb-brief > div { display: flex; align-items: center; gap: 12px; margin-top: 9px; }
+.ieb-brief b { width: 50px; padding: 5px; border-radius: 5px; background: #d8f7a7; text-align: center; font: 700 11px 'IBM Plex Mono', monospace; flex-shrink: 0; }
+.ieb-brief > div:last-child b { background: #e5dcff; }
+.ieb-brief code { overflow-wrap: anywhere; font: 500 12px/1.5 'IBM Plex Mono', monospace; }
+.ieb-problem aside { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border-radius: 8px; background: #fff5d4; }
+.ieb-problem aside svg { flex-shrink: 0; }
+.ieb-problem aside p { margin: 0; font-size: 13px; line-height: 1.55; }
+.ieb-problem > .ieb-tip { font-size: 12px; color: #526167; }
+.ieb-workspace { display: flex; flex-direction: column; gap: 16px; }
+.ieb-workspace > header { display: flex; align-items: center; justify-content: space-between; font: 700 11px 'IBM Plex Mono', monospace; }
+.ieb-workspace > header button { min-height: 32px; padding: 4px 8px; font-size: 10px; }
+.ieb-code { display: grid; gap: 4px; padding: 12px 10px; border: 1px solid #c1c9ca; border-radius: 9px; background: #f3f7f6; }
+.ieb-code > div { display: flex; align-items: center; gap: 10px; min-height: 40px; min-width: 0; }
+.ieb-code > div > span:first-child { width: 16px; text-align: right; color: #748380; font: 400 11px 'IBM Plex Mono', monospace; flex-shrink: 0; }
+.ieb-code button { justify-content: space-between; width: 100%; min-width: 0; border: 1px solid #adbab8; box-shadow: 0 2px 0 #adbab8; padding: 8px 10px; text-align: left; }
+.ieb-code code, .ieb-bank code { font: 500 clamp(10px, 1vw, 13px)/1.5 'IBM Plex Mono', monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ieb-code button svg { flex-shrink: 0; color: #73807a; }
+.ieb-placeholder { font: 400 11px 'IBM Plex Mono', monospace; color: #758079; }
+.ieb-bank > div { display: flex; flex-wrap: wrap; gap: 10px; }
+.ieb-bank button { min-height: 43px; justify-content: flex-start; max-width: 100%; text-align: left; }
+.ieb-bank button.is-used { background: #eceee9; }
+.ieb-input { display: grid; gap: 5px; padding: 13px; border: 1px solid #78adbd; border-radius: 9px; background: #e9faff; }
+.ieb-input > span { margin-bottom: 2px; }
+.ieb-input input { width: 100%; padding: 10px; border: 2px solid #73888d; border-radius: 7px; background: #fff; color: var(--ink); font: 500 14px 'IBM Plex Mono', monospace; }
+.ieb-input small { color: #58656c; font-size: 11px; }
+.ieb-output { padding: 12px; border-radius: 8px; color: #e0ffc5; background: #192b2a; }
+.ieb-output > span { color: #93b2a0; margin-bottom: 5px; }
+.ieb-output pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 500 13px/1.5 'IBM Plex Mono', monospace; }
+.ieb-output.is-error { background: #753b3b; }
+.ieb-feedback { position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; border: 2px solid var(--ink); border-radius: 10px; background: #fff; }
+.ieb-feedback > div { display: flex; align-items: center; gap: 10px; }
+.ieb-feedback p { margin: 0; font-size: 13px; line-height: 1.5; }
+.ieb-feedback b { display: block; }
+.ieb-feedback svg { flex-shrink: 0; }
+.ieb-feedback--correct { background: #e8ffd2; }
+.ieb-feedback--wrong, .ieb-feedback--error { background: #fff0df; }
+.ieb-screen .ieb-primary { background: #72dcff; min-height: 46px; flex-shrink: 0; }
+.ieb-finish { display: grid; place-content: center; justify-items: center; gap: 18px; flex: 1; text-align: center; }
+.ieb-finish > svg { color: #168b9d; }
+.ieb-finish h1 { margin: 0; font: 700 44px var(--pixel); }
+.ieb-finish p { max-width: 520px; margin: 0; line-height: 1.6; }
+.ieb-finish > div { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; }
+@media (min-width: 651px) and (max-height: 700px) {
+  .ieb-screen { gap: 10px; padding: 8px 0 12px; }
+  .ieb-problem, .ieb-workspace { padding: 18px; }
+  .ieb-problem > p { font-size: 14px; line-height: 1.5; }
+  .ieb-problem h1 { margin: 12px 0; }
+  .ieb-brief { margin: 14px 0; padding: 12px; }
+  .ieb-workspace { gap: 12px; }
+  .ieb-code > div { min-height: 34px; }
+  .ieb-code button { min-height: 34px; padding: 6px 8px; }
+  .ieb-bank button { min-height: 40px; }
+  .ieb-feedback { padding: 10px 14px; }
+}
+@media (max-width: 850px) {
+  .ieb-layout { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 12px; }
+  .ieb-problem, .ieb-workspace { padding: 15px; }
+  .ieb-brief { margin: 14px 0; padding: 10px; }
+  .ieb-code { padding: 8px 5px; }
+  .ieb-code > div { gap: 6px; }
+}
+@media (max-width: 650px) {
+  .ieb-screen { width: calc(100% - 24px); }
+  .ieb-toolbar { flex-wrap: wrap; font-size: 9px; }
+  .ieb-layout { grid-template-columns: 1fr; }
+  .ieb-feedback { flex-direction: column; align-items: stretch; }
+  .ieb-code code, .ieb-bank code { font-size: 12px; }
+}

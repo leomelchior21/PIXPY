@@ -4,6 +4,13 @@ import type { SessionProgress } from '../types'
 describe('session-only progress', () => {
   beforeEach(() => sessionStorage.clear())
 
+  it('persists choice step visits and introductory completion, including older progress', () => {
+    saveSession({ ...createSession('Maya'), choiceMachineVisited: true, choiceMachineIntroComplete: true })
+    expect(loadSession()).toMatchObject({ choiceMachineVisited: true, choiceMachineIntroComplete: true })
+    const legacy = restoreProgress('maya', 'Maya', { name: 'Maya', choiceMachineStoriesComplete: true })
+    expect(legacy).toMatchObject({ choiceMachineVisited: true, choiceMachineIntroComplete: true })
+  })
+
   it('stores progress in sessionStorage', () => {
     const progress = completeActivity(createSession('Leo'), 'dino-variables')
     saveSession(progress)

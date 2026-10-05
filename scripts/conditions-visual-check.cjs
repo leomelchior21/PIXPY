@@ -57,7 +57,7 @@ async function main() {
       fs.writeFileSync(screenshotPath, Buffer.from(screenshot.data, 'base64'))
       const metrics = await evaluate(`(() => {
         const box = (selector) => { const r = document.querySelector(selector)?.getBoundingClientRect(); return r && { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height), bottom: Math.round(r.bottom) } }
-        return { viewport: { width: innerWidth, height: innerHeight }, documentScroll: document.documentElement.scrollHeight > innerHeight + 1, world: box('.conditions-home'), firstCard: box('.conditions-home .experience-card:first-child'), secondCard: box('.conditions-home .experience-card:nth-child(2)'), fifthCard: box('.conditions-home .experience-card:nth-child(5)'), intro: box('.cm-intro'), lesson: box('.cm-lesson'), story: box('.cm-story'), quiz: box('.cm-quiz'), screenshotPath: ${JSON.stringify(screenshotPath)} }
+        return { viewport: { width: innerWidth, height: innerHeight }, documentScroll: document.documentElement.scrollHeight > innerHeight + 1, home: box('.playground-home'), homeCards: [...document.querySelectorAll('.world-card')].map((card) => ({ title: card.querySelector('strong').textContent, width: Math.round(card.getBoundingClientRect().width) })), world: box('.conditions-home'), firstCard: box('.conditions-home .experience-card:first-child'), secondCard: box('.conditions-home .experience-card:nth-child(2)'), fifthCard: box('.conditions-home .experience-card:nth-child(5)'), intro: box('.cm-intro'), lesson: box('.cm-lesson'), story: box('.cm-story'), quiz: box('.cm-quiz'), quizCodeSize: document.querySelector('.cm-quiz-code pre') && getComputedStyle(document.querySelector('.cm-quiz-code pre')).fontSize, screenshotPath: ${JSON.stringify(screenshotPath)} }
       })()`)
       console.log(JSON.stringify({ name, ...metrics }))
     }
@@ -77,6 +77,9 @@ async function main() {
       await waitFor('.conditions-home')
       await capture(`world-${size.name}`)
       await send('Page.navigate', { url: `${appUrl}#/choice-machine` })
+      await waitFor('.cm-steps')
+      await capture(`steps-${size.name}`)
+      await evaluate(`document.querySelector('.cm-step-card').click()`)
       await waitFor('.cm-intro')
       await capture(`intro-${size.name}`)
       await evaluate(`document.querySelector('.cm-intro .cm-primary').click()`)
@@ -90,6 +93,8 @@ async function main() {
           await evaluate(`document.querySelector('.cm-lesson-content .cm-primary').click()`)
           await sleep(30)
         }
+        await waitFor('.cm-steps')
+        await evaluate(`document.querySelectorAll('.cm-step-card')[1].click()`)
         await waitFor('.cm-briefing')
         await capture('briefing-chromebook')
         const storyValues = [['4', '7'], ['3', '8'], ['15', '18']]
@@ -98,7 +103,11 @@ async function main() {
           await waitFor('.cm-story')
           if (storyIndex === 0) await capture('story-chromebook')
           for (const value of storyValues[storyIndex]) {
-            await evaluate(`(() => { const input = document.querySelector('.cm-value-field input'); const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; setter.call(input, ${JSON.stringify(value)}); input.dispatchEvent(new Event('input', { bubbles: true })); })()`)
+            if (storyIndex === 0) {
+              const current = Number(await evaluate("document.querySelector('.cm-grade-picker output').textContent"))
+              const target = Number(value)
+              await evaluate(`(() => { const button = document.querySelector('[aria-label="${target > current ? 'Increase' : 'Decrease'} grade"]'); for (let tap = 0; tap < ${Math.abs(target - current) * 4}; tap += 1) button.click() })()`)
+            } else await evaluate(`(() => { const input = document.querySelector('.cm-value-field input'); const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; setter.call(input, ${JSON.stringify(value)}); input.dispatchEvent(new Event('input', { bubbles: true })); })()`)
             await sleep(60)
             await evaluate(`document.querySelector('.cm-story-bottom .cm-primary').click()`)
             await sleep(3400)
@@ -107,11 +116,34 @@ async function main() {
             await sleep(80)
           }
         }
-        await waitFor('.cm-quiz-intro')
-        await evaluate(`document.querySelector('.cm-quiz-intro .cm-primary').click()`)
         await waitFor('.cm-quiz')
         await capture('quiz-chromebook')
       }
+      await send('Page.navigate', { url: `${appUrl}#/if-else` })
+      await waitFor('.ieb-screen')
+      await capture(`builder-${size.name}`)
+      const overflow = await evaluate('document.documentElement.scrollWidth > innerWidth + 1')
+      if (overflow) throw new Error(`Code builder overflows horizontally at ${size.name}`)
+      if (size.width > 650) {
+        for (let index = 0; index < 5; index += 1) {
+          const order = index % 2 === 0 ? [3, 1, 5, 2, 0] : [4, 5, 1, 0, 3]
+          for (const bankIndex of order) {
+            await evaluate(`document.querySelectorAll('.ieb-bank button')[${bankIndex}].click()`)
+            await sleep(25)
+          }
+          await evaluate(`document.querySelector('.ieb-feedback .ieb-primary').click()`)
+          await waitFor('.ieb-feedback--correct')
+          await evaluate(`document.querySelector('.ieb-feedback .ieb-primary').click()`)
+          await sleep(30)
+        }
+        await waitFor('.ieb-input')
+        await capture(`builder-input-${size.name}`)
+      }
+      await send('Page.navigate', { url: `${appUrl}#/make-it-work` })
+      await waitFor('.conditions-home')
+      const disabled = await evaluate("document.querySelectorAll('.conditions-home .experience-card:disabled').length")
+      if (disabled !== 3) throw new Error('Expected three disabled activities')
+
     }
   } finally {
     socket?.close()

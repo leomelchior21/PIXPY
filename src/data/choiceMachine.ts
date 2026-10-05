@@ -80,14 +80,18 @@ function wholeNumber(raw: string): number | null {
 
 export const flowStories: FlowStory[] = [
   {
-    id: 'grade', title: 'The school result', narrative: 'A grade decides which message the student sees. Type any whole number and watch Python choose a path.',
+    id: 'grade', title: 'The school result', narrative: 'A grade decides which message the student sees. Tap the arrows to adjust it and watch Python choose a path.',
     variable: 'grade', question: 'Is the grade at least 7?', condition: 'grade >= 7',
     trueOutput: 'Approved', falseOutput: 'Try again', decide: (value) => value >= 7, format: String,
     calc: (value) => [`${value} >= 7 → ${value >= 7 ? 'True' : 'False'}`],
-    input: { placeholder: 'type a number, e.g. 8', hint: 'Type a whole number in the box, then press START FLOW.', typeHint: 'Whole numbers only', parse: wholeNumber, below: 'less than 7', above: '7 or more' },
+    input: { placeholder: '', hint: 'Tap the arrows to choose a grade, then press START FLOW.', typeHint: '0 to 10 · arrows change by 0.25', parse: (raw) => {
+      if (!/^\d+(\.\d+)?$/.test(raw.trim())) return null
+      const value = Number(raw)
+      return value >= 0 && value <= 10 && Number.isInteger(value * 4) ? value : null
+    }, below: 'less than 7', above: '7 or more' },
     briefing: {
       lead: 'A grade comes in from a student. Python compares it with the pass mark of 7 and chooses which message appears.',
-      watch: ['You type a whole number for grade and press START FLOW.', 'Python tests the condition grade >= 7.', 'The glow follows TRUE to Approved or FALSE to Try again.'],
+      watch: ['You tap the arrows to choose a grade from 0 to 10 and press START FLOW.', 'Python tests the condition grade >= 7.', 'The glow follows TRUE to Approved or FALSE to Try again.'],
     },
   },
   {

@@ -10,7 +10,7 @@ import { TeacherDashboard } from './screens/TeacherDashboard'
 import { VariablesHome } from './screens/VariablesHome'
 import { ConditionsHome } from './screens/ConditionsHome'
 import { ExtrasHome } from './screens/ExtrasHome'
-import { ConditionsActivity } from './experiences/conditions/ConditionsActivity'
+import { IfElseBuilder } from './experiences/conditions/IfElseBuilder'
 import { ChoiceMachine } from './experiences/conditions/ChoiceMachine'
 import { BackroomRun } from './experiences/conditions/BackroomRun'
 import { conditionExperiences, isConditionActivity } from './data/conditions'
@@ -76,7 +76,7 @@ export default function App() {
 
   if (!progress) return <NameEntryScreen onStart={start} />
   const experienceProps = { progress, onProgress: setProgress, onBack: () => navigate('variables') }
-  const visibleRoute = route === 'teacher' && !progress.isTeacher ? 'home' : route
+  const visibleRoute = route === 'teacher' && !progress.isTeacher ? 'home' : isConditionActivity(route) && conditionExperiences.find((item) => item.id === route)?.disabled ? 'conditionals' : route
 
   return (
     <div className={`app-shell route-${visibleRoute}`}>
@@ -97,7 +97,7 @@ export default function App() {
           {visibleRoute === 'stop' && <StopStringSheet progress={progress} onProgress={setProgress} onBack={() => navigate('extras')} />}
           {visibleRoute === 'backroom-run' && <BackroomRun progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} />}
           {visibleRoute === 'choice-machine' && <ChoiceMachine progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} onNext={navigate} />}
-          {isConditionActivity(visibleRoute) && visibleRoute !== 'choice-machine' && visibleRoute !== 'backroom-run' && <ConditionsActivity key={visibleRoute} activity={conditionExperiences.find((item) => item.id === visibleRoute)!} progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} onNext={navigate} />}
+          {visibleRoute === 'if-else' && <IfElseBuilder progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} />}
         </Suspense>
       </div>
       <PrintProgress progress={progress} />

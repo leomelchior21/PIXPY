@@ -33,6 +33,8 @@ export interface SessionProgress {
   backroomRunBest: number
   backroomRunGates: number
   backroomRunOperators: string[]
+  choiceMachineVisited: boolean
+  choiceMachineIntroComplete: boolean
   choiceMachineStoriesComplete: boolean
   choiceMachineQuizIndex: number
   choiceMachineXp: number

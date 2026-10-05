@@ -22,8 +22,11 @@ describe('How the computer makes a choice', () => {
     act(() => { vi.advanceTimersByTime(1000) })
   }
 
-  it('teaches three real situations, two typed paths per story, then opens the 20-question XP quiz', () => {
+  it('teaches three real situations and both paths per story, then opens the 20-question XP quiz', () => {
     render(<Harness />)
+    expect(screen.getByRole('button', { name: 'Live flow' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Final quiz' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Intro' }))
     expect(screen.getByRole('heading', { name: /every choice starts with a question/i })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /start learning/i }))
 
@@ -35,28 +38,37 @@ describe('How the computer makes a choice', () => {
 
     for (const answer of ['Take an umbrella', 'Show an error', 'Approved']) {
       fireEvent.click(screen.getByRole('button', { name: answer }))
-      fireEvent.click(screen.getByRole('button', { name: /next situation|open the live flow/i }))
+      fireEvent.click(screen.getByRole('button', { name: /next situation|finish intro/i }))
     }
 
+    expect(screen.getByRole('button', { name: 'Live flow' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Final quiz' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Live flow' }))
     expect(screen.getByRole('heading', { name: 'The school result' })).toBeInTheDocument()
     expect(screen.getByText('PRE-EXPERIMENT · STORY 1 OF 3')).toBeInTheDocument()
     expect(screen.getByText(/is the grade at least 7/i)).toBeInTheDocument()
     const storyValues = [['4', '7'], ['3', '8'], ['15', '18']]
     storyValues.forEach(([first, second], index) => {
       fireEvent.click(screen.getByRole('button', { name: /start live flow/i }))
-      expect(screen.getByText('YOUR TURN')).toBeInTheDocument()
-      fireEvent.change(screen.getByLabelText(/value$/), { target: { value: first } })
+      if (index === 0) {
+        expect(screen.getByLabelText('grade value')).toHaveTextContent('4.5')
+        fireEvent.click(screen.getByRole('button', { name: 'Decrease grade' }))
+        fireEvent.click(screen.getByRole('button', { name: 'Decrease grade' }))
+      } else {
+        expect(screen.getByText('YOUR TURN')).toBeInTheDocument()
+        fireEvent.change(screen.getByLabelText(/value$/), { target: { value: first } })
+      }
       runFlow()
       expect(screen.getByRole('button', { name: /try another value/i })).toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: /try another value/i }))
-      fireEvent.change(screen.getByLabelText(/value$/), { target: { value: second } })
+      if (index === 0) {
+        const increase = screen.getByRole('button', { name: 'Increase grade' })
+        for (let tap = 0; tap < 12; tap += 1) fireEvent.click(increase)
+      } else fireEvent.change(screen.getByLabelText(/value$/), { target: { value: second } })
       runFlow()
       fireEvent.click(screen.getByRole('button', { name: /next story|open the quiz/i }))
       if (index < storyValues.length - 1) expect(screen.getByText(`PRE-EXPERIMENT · STORY ${index + 2} OF 3`)).toBeInTheDocument()
     })
-
-    expect(screen.getByRole('heading', { name: /ready to choose on your own/i })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /start the xp quiz/i }))
 
     const first = makeChoiceQuizQuestion(0)
     const wrong = (first.answer + 1) % first.options.length
@@ -78,31 +90,85 @@ describe('How the computer makes a choice', () => {
     expect(screen.getByText('200', { selector: '.cm-complete-xp b' })).toBeInTheDocument()
   }, 40_000)
 
-  it('lets a returning student open the quiz directly from the intro', () => {
+  it('lets a returning student choose any of the three steps', () => {
     render(<Harness initial={{ ...createSession('Maya'), choiceMachineStoriesComplete: true }} />)
-    expect(screen.getByRole('button', { name: /open the quiz/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /review the live flows/i })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /open the quiz/i }))
+    for (const name of ['Intro', 'Live flow', 'Final quiz']) expect(screen.getByRole('button', { name })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Final quiz' }))
     expect(screen.getByRole('heading', { name: /ready to choose on your own/i })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /start the xp quiz/i }))
     expect(screen.getByText(/question 1 \/ 20/i)).toBeInTheDocument()
   })
 
+  it('adjusts grades by quarters, clamps at 0 and 10, and locks the arrows during a flow', () => {
+    render(<Harness initial={{ ...createSession('Maya'), choiceMachineStoriesComplete: true }} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Live flow' }))
+    fireEvent.click(screen.getByRole('button', { name: /start live flow/i }))
+    const grade = screen.getByLabelText('grade value')
+    const less = screen.getByRole('button', { name: 'Decrease grade' })
+    const more = screen.getByRole('button', { name: 'Increase grade' })
+    expect(grade).toHaveTextContent('4.5')
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    fireEvent.click(more)
+    expect(grade).toHaveTextContent('4.75')
+    fireEvent.click(less)
+    expect(grade).toHaveTextContent('4.5')
+    for (let tap = 0; tap < 20; tap += 1) fireEvent.click(less)
+    expect(grade).toHaveTextContent('0')
+    expect(less).toBeDisabled()
+    for (let tap = 0; tap < 42; tap += 1) fireEvent.click(more)
+    expect(grade).toHaveTextContent('10')
+    expect(more).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: /start flow/i }))
+    expect(less).toBeDisabled()
+    expect(more).toBeDisabled()
+    expect(document.querySelector('.cm-story-lines')?.textContent).toContain('float(input())')
+    act(() => { vi.advanceTimersByTime(900) })
+    act(() => { vi.advanceTimersByTime(1000) })
+    act(() => { vi.advanceTimersByTime(1000) })
+    fireEvent.click(less)
+    expect(grade).toHaveTextContent('9.75')
+    expect(document.querySelector('.cm-flow-step')).toHaveTextContent('READY')
+  }, 40_000)
+
   it('resumes a started quiz and lets the briefing jump to the quiz', () => {
     const returning: SessionProgress = { ...createSession('Maya'), choiceMachineStoriesComplete: true, choiceMachineQuizIndex: 4, choiceMachineXp: 40 }
     render(<Harness initial={returning} />)
-    fireEvent.click(screen.getByRole('button', { name: /continue quiz/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Final quiz' }))
+    fireEvent.click(screen.getByRole('button', { name: /start the xp quiz/i }))
     expect(screen.getByText(/question 5 \/ 20/i)).toBeInTheDocument()
   })
 
   it('shows the pre-experiment briefing for every story with a start button', () => {
     render(<Harness initial={{ ...createSession('Maya'), choiceMachineStoriesComplete: true }} />)
-    fireEvent.click(screen.getByRole('button', { name: /review the live flows/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Live flow' }))
     expect(screen.getByText('PRE-EXPERIMENT · STORY 1 OF 3')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /start live flow/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /go to the quiz/i })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /go to the quiz/i }))
     expect(screen.getByRole('heading', { name: /ready to choose on your own/i })).toBeInTheDocument()
+  })
+
+  it('unlocks all steps after leaving even an unfinished first visit', () => {
+    let saved = createSession('Maya')
+    const first = render(<ChoiceMachine progress={saved} onProgress={(value) => { saved = value }} onBack={() => {}} onNext={() => {}} />)
+    expect(screen.getByRole('button', { name: 'Live flow' })).toBeDisabled()
+    expect(saved.choiceMachineVisited).toBe(true)
+    first.unmount()
+    render(<Harness initial={saved} />)
+    for (const name of ['Intro', 'Live flow', 'Final quiz']) expect(screen.getByRole('button', { name })).toBeEnabled()
+  })
+
+  it('replays a completed quiz from question one without clearing earned progress', () => {
+    const initial = { ...createSession('Maya'), choiceMachineVisited: true, choiceMachineIntroComplete: true, choiceMachineStoriesComplete: true, choiceMachineQuizIndex: 20, choiceMachineXp: 200, completed: ['choice-machine'] } as SessionProgress
+    const onProgress = vi.fn()
+    render(<ChoiceMachine progress={initial} onProgress={onProgress} onBack={() => {}} onNext={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Final quiz' }))
+    fireEvent.click(screen.getByRole('button', { name: /start the xp quiz/i }))
+    expect(screen.getByText(/question 1 \/ 20/i)).toBeInTheDocument()
+    const question = makeChoiceQuizQuestion(0)
+    fireEvent.click(within(document.querySelector('.cm-quiz-answer') as HTMLElement).getAllByRole('button')[question.answer])
+    fireEvent.click(screen.getByRole('button', { name: /next question/i }))
+    expect(onProgress).toHaveBeenLastCalledWith(expect.objectContaining({ choiceMachineQuizIndex: 20, choiceMachineXp: 200, completed: ['choice-machine'] }))
   })
 
   it('changes values on retries for all 20 questions', () => {
