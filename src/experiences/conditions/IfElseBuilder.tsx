@@ -1,10 +1,13 @@
 import { AlertTriangle, ArrowLeft, ArrowRight, Binary, Check, Code2, Film, Gamepad2, GraduationCap, KeyRound, Lightbulb, LockKeyhole, Play, RotateCcw, ShieldCheck, Sparkles, Truck, Trophy, Undo2, Vote, Wind, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { PythonCode } from '../../components/PythonCode'
-import { ifElseProblems, parseProblemInput, problemLines } from '../../data/ifElseBuilder'
-import { pythonRunner } from '../../lib/pythonRunner'
+import { ifElseProblems, parseProblemInput, problemLines, type IfElseProblem } from '../../data/ifElseBuilder'
+import { ifElsePedagogy, type IfElsePedagogy } from '../../data/ifElsePedagogy'
+import { codePieces, diagnoseProgram, executionTrace, initialExpression, initialProgram, learningFeedback, structureLabels, type Diagnosis, type ExecutionTrace, type LearningError } from '../../lib/ifElseLearning'
+import { PythonRunError, pythonRunner } from '../../lib/pythonRunner'
 import { completeActivity } from '../../session/progressSession'
-import type { SessionProgress } from '../../types'
+import type { IfElseLearningEvent, SessionProgress } from '../../types'
+import { BranchEditor, ExpressionEditor, PredictionCard, PredictionComparison, ProvidedCode, TracePanel, TwoPaths } from './IfElseLearningPanels'
 import './ifElseBuilder.css'
 
 interface Props {
@@ -28,52 +31,91 @@ const sceneDetails = [
 
 export function IfElseBuilder({ progress, onProgress, onBack }: Props) {
   const [index, setIndex] = useState(0)
-  const [selected, setSelected] = useState<number[]>([])
+  const [finished, setFinished] = useState(false)
+  const [passed, setPassed] = useState(false)
+  const progressRef = useRef(progress)
+  progressRef.current = progress
+  const record = (event: IfElseLearningEvent) => {
+    const updated = { ...progressRef.current, ifElseLearning: [...(progressRef.current.ifElseLearning ?? []), event].slice(-200) }
+    progressRef.current = updated
+    onProgress(updated)
+  }
+  const next = () => {
+    if (!passed) return
+    if (index === ifElseProblems.length - 1) {
+      onProgress(completeActivity(progressRef.current, 'if-else'))
+      setFinished(true)
+    } else { setPassed(false); setIndex(index + 1) }
+  }
+  if (finished) return <main className="ieb-screen">
+    <header className="ieb-toolbar"><button className="ieb-back" onClick={onBack}><ArrowLeft size={18} /> Conditions</button><div className="ieb-brand"><Code2 size={20} /><b>IF / ELSE</b></div><div className="ieb-counter"><Trophy size={19} /> Complete!</div></header>
+    <ProgressBar index={10} passed={false} />
+    <section className="ieb-finish"><div className="ieb-trophy"><Trophy size={64} /><Sparkles size={28} /></div><p className="ieb-kicker">ALL 10 PROGRAMS COMPLETE</p><h1>You built both paths.</h1><p>You predicted decisions, tested comparisons, repaired logic, and translated a rule into IF/ELSE.</p><div><button className="ieb-primary" onClick={() => { setIndex(0); setPassed(false); setFinished(false) }}><RotateCcw size={18} /> PLAY AGAIN</button><button onClick={onBack}>BACK TO CONDITIONS <ArrowRight size={18} /></button></div></section>
+  </main>
+  return <IfElseLevel key={index} index={index} problem={ifElseProblems[index]} pedagogy={ifElsePedagogy[index]} onBack={onBack} onNext={next} onPassed={setPassed} onRecord={record} />
+}
+
+function ProgressBar({ index, passed }: { index: number; passed: boolean }) {
+  return <div className="ieb-progress" role="progressbar" aria-label="Problems completed" aria-valuenow={index + (passed ? 1 : 0)} aria-valuemin={0} aria-valuemax={10}>{ifElseProblems.map((_, i) => <span key={i} className={i < index || (passed && i === index) ? 'is-done' : i === index ? 'is-current' : ''}><i /></span>)}</div>
+}
+
+const errorLabels: Record<LearningError, string> = { structure: 'STRUCTURE ERROR', condition: 'CONDITION ERROR', logic: 'LOGIC ERROR', output: 'OUTPUT ERROR', runtime: 'RUN INTERRUPTED' }
+const errorTitles: Record<LearningError, string> = { structure: 'Check the structure.', condition: 'Check the condition.', logic: 'The logic needs fixing.', output: 'Check the branch action.', runtime: 'Run paused.' }
+
+function IfElseLevel({ index, problem, pedagogy, onBack, onNext, onPassed, onRecord }: { index: number; problem: IfElseProblem; pedagogy: IfElsePedagogy; onBack: () => void; onNext: () => void; onPassed: (passed: boolean) => void; onRecord: (event: IfElseLearningEvent) => void }) {
+  const [program, setProgram] = useState(() => initialProgram(problem, pedagogy))
+  const [codeExpanded, setCodeExpanded] = useState(pedagogy.showProgramByDefault !== false)
+  const [expression, setExpression] = useState(() => initialExpression(problem, pedagogy.construction === 'operator', pedagogy.requireDebugRun))
   const [draft, setDraft] = useState('')
+  const [prediction, setPrediction] = useState<{ text: string; kind: 'output' | 'truth' } | null>(null)
+  const [pathsExpanded, setPathsExpanded] = useState(false)
+  const [debugRan, setDebugRan] = useState(false)
   const [status, setStatus] = useState<'idle' | 'wrong' | 'running' | 'correct' | 'error'>('idle')
   const [output, setOutput] = useState('')
-  const [finished, setFinished] = useState(false)
+  const [trace, setTrace] = useState<ExecutionTrace | null>(null)
+  const [traceStep, setTraceStep] = useState(-1)
+  const [diagnosis, setDiagnosis] = useState<Diagnosis | null>(null)
+  const [attempts, setAttempts] = useState<Partial<Record<LearningError, number>>>({})
+  const [checks, setChecks] = useState(0)
   const [showOutcome, setShowOutcome] = useState(false)
+  const [showModel, setShowModel] = useState(false)
   const outcomeRef = useRef<HTMLDivElement>(null)
-  const editorRef = useRef<HTMLDivElement>(null)
+  const workspaceRef = useRef<HTMLDivElement>(null)
+  const predictionRef = useRef<HTMLDivElement>(null)
   const runVersion = useRef(0)
-  useEffect(() => () => { runVersion.current += 1 }, [])
+  const traceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { runVersion.current += 1; if (traceTimer.current) clearTimeout(traceTimer.current) }, [])
 
-  const problem = ifElseProblems[index]
   const scene = sceneDetails[index]
   const SceneIcon = scene.icon
-  const interactive = index >= 5
-  const lines = problemLines(problem, interactive)
-  const chunks = [...lines, `if ${problem.wrongCondition}:`]
-  // Mix the bank without changing the identity of each removable chunk.
-  const bankOrder = index % 2 === 0 ? [4, 1, 3, 0, 5, 2] : [3, 2, 5, 4, 0, 1]
-  const full = selected.length === lines.length
+  const expressionMode = ['operator', 'expression', 'independent'].includes(pedagogy.construction)
+  const expressionComplete = Boolean(expression.left && expression.operator && expression.right)
+  const lines = [...program]
+  if (expressionMode) lines[1] = expressionComplete ? `if ${expression.left} ${expression.operator} ${expression.right}:` : null
+  const pieces = codePieces(problem, pedagogy)
+  const pieceIsUsed = (code: string) => program.some((line, i) => line === code && (pedagogy.construction !== 'slot' || !pedagogy.prefilledLines.includes(i)))
+  const full = lines.every((line) => line !== null)
   const busy = status === 'running'
   const passed = status === 'correct'
-  const value = interactive ? parseProblemInput(problem, draft) : problem.initial
-  const code = selected.map((id) => chunks[id]).join('\n')
-  const wrongLine = status === 'wrong' ? selected.findIndex((id, position) => id !== position) : -1
-  const orderHints = ['Start with the line that assigns the input value.', 'The if condition belongs directly after the input.', 'The indented IF action belongs here.', 'Put else: after the IF action.', 'Finish with the indented ELSE action.']
-  const wrongHint = wrongLine < 0 ? '' : selected[wrongLine] === 5 ? problem.explanation : orderHints[wrongLine]
-
-  const dismissOutcome = () => {
-    setShowOutcome(false)
-  }
+  const predictionLocksBuild = pedagogy.requirePrediction === 'output' && prediction === null
+  const debugLocksEdit = pedagogy.requireDebugRun && !debugRan
+  const value = pedagogy.useInput ? parseProblemInput(problem, draft) : problem.initial
+  const needsPrediction = Boolean(pedagogy.requirePrediction && !prediction)
+  const ready = full && value !== null && !busy && !needsPrediction
+  const predictionAction = predictionLocksBuild || needsPrediction && full && value !== null
+  const errorAttempt = diagnosis ? attempts[diagnosis.kind] ?? 0 : 0
+  const feedback = diagnosis ? learningFeedback(problem, diagnosis, errorAttempt, value ?? problem.initial) : ''
+  const record = (kind: IfElseLearningEvent['kind'], extra: Partial<IfElseLearningEvent> = {}) => onRecord({ level: index + 1, mode: pedagogy.mode, kind, attempt: checks, value, prediction: prediction?.text ?? null, actualOutput: null, conditionResult: null, errorKind: null, at: Date.now(), ...extra })
 
   useEffect(() => {
     if (!showOutcome) return
-    const dialog = outcomeRef.current
-    const editor = editorRef.current
-    const buttons = dialog?.querySelectorAll<HTMLButtonElement>('button')
+    const workspace = workspaceRef.current
+    const buttons = outcomeRef.current?.querySelectorAll<HTMLButtonElement>('button')
     buttons?.[0]?.focus()
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        setShowOutcome(false)
-      }
+      if (event.key === 'Escape') { event.preventDefault(); setShowOutcome(false) }
       if (event.key === 'Tab' && buttons?.length) {
-        const first = buttons[0]
-        const last = buttons[buttons.length - 1]
+        const first = buttons[0], last = buttons[buttons.length - 1]
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
       }
@@ -81,96 +123,131 @@ export function IfElseBuilder({ progress, onProgress, onBack }: Props) {
     document.addEventListener('keydown', handleKey)
     return () => {
       document.removeEventListener('keydown', handleKey)
-      const selector = wrongLine >= 0 ? `[aria-label="Remove line ${wrongLine + 1}"]` : '[aria-label="Clear program"]'
-      const target = editor?.querySelector<HTMLButtonElement>(selector) ?? editor?.querySelector<HTMLButtonElement>('[aria-label="Clear program"]')
-      target?.focus()
+      const target = diagnosis && workspace?.querySelector<HTMLButtonElement>(`[data-line-edit="${diagnosis.line}"]:not(:disabled)`)
+      const fallback = workspace?.querySelector<HTMLButtonElement>('[aria-label="Clear program"]')
+      ;(target || fallback)?.focus()
     }
-  }, [showOutcome, wrongLine])
+  }, [showOutcome, diagnosis, showModel])
 
-  const clearResult = () => { setStatus('idle'); setOutput(''); setShowOutcome(false) }
-  const reset = () => { runVersion.current += 1; setSelected([]); setDraft(''); clearResult() }
-
+  const clearResult = () => { setStatus('idle'); setOutput(''); setTrace(null); setTraceStep(-1); setDiagnosis(null); setShowOutcome(false); setShowModel(false); onPassed(false) }
+  const reset = () => { runVersion.current += 1; setProgram(initialProgram(problem, pedagogy)); setExpression(initialExpression(problem, pedagogy.construction === 'operator', pedagogy.requireDebugRun)); clearResult(); if (pedagogy.requirePrediction === 'truth') setPrediction(null) }
+  const changeExpression = (next: typeof expression) => { setExpression(next); clearResult(); if (pedagogy.requirePrediction === 'truth') setPrediction(null) }
+  const setInput = (next: string) => { setDraft(next); clearResult(); if (pedagogy.requirePrediction === 'truth') setPrediction(null) }
+  const addPiece = (code: string) => {
+    if (busy || predictionLocksBuild) return
+    const slot = program.findIndex((line) => line === null)
+    if (slot >= 0) { setProgram(program.map((line, i) => i === slot ? code : line)); clearResult() }
+  }
+  const removeLine = (line: number) => {
+    if (expressionMode && line === 1) { changeExpression({ ...expression, operator: '' }); return }
+    setProgram(program.map((code, i) => i === line ? null : code)); clearResult()
+  }
+  const predict = (text: string) => {
+    const kind = pedagogy.requirePrediction
+    if (!kind || value === null) return
+    clearResult(); setPrediction({ kind, text })
+    record('prediction', { prediction: text })
+  }
+  const revealPaths = () => { setPathsExpanded(true); record('hint') }
+  const goToPrediction = () => {
+    predictionRef.current?.scrollIntoView?.({ block: 'center' })
+    predictionRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({ preventScroll: true })
+  }
+  const displayResult = (issue: Diagnosis | null, stdout: string, nextTrace: ExecutionTrace | null, attempt: number) => {
+    setOutput(stdout); setDiagnosis(issue); setDebugRan(true)
+    if (issue) setAttempts((previous) => ({ ...previous, [issue.kind]: (previous[issue.kind] ?? 0) + 1 }))
+    setStatus(issue ? issue.kind === 'runtime' ? 'error' : 'wrong' : 'correct')
+    onPassed(!issue)
+    setShowOutcome(true)
+    record('check', { attempt, errorKind: issue?.kind ?? null, actualOutput: nextTrace ? stdout : null, conditionResult: nextTrace?.truth ?? null })
+  }
   const check = async () => {
-    if (!full || value === null || busy) return
-    if (selected.some((id, position) => id !== position)) {
-      setStatus('wrong')
-      setOutput('')
-      setShowOutcome(true)
-      return
-    }
+    if (!ready || value === null) return
+    const built = lines as string[]
+    setCodeExpanded(true)
+    const issue = diagnoseProgram(problem, pedagogy, built, value)
+    const attempt = checks + 1
+    setChecks(attempt); setShowModel(false)
+    // A structural problem cannot be executed meaningfully. Logically wrong
+    // but valid Python always runs before it is assessed against the mission.
+    if (issue?.kind === 'structure') { setTrace(null); displayResult(issue, '', null, attempt); return }
     const version = ++runVersion.current
-    setStatus('running')
+    setStatus('running'); setDiagnosis(null); setTrace(null); setTraceStep(-1)
     try {
-      const result = await pythonRunner.runScript(code, interactive ? [draft.trim()] : [])
+      const result = await pythonRunner.runScript(built.join('\n'), pedagogy.useInput ? [draft.trim()] : [])
       if (version !== runVersion.current) return
-      setOutput(result.stdout)
-      setStatus('correct')
-      setShowOutcome(true)
+      const nextTrace = executionTrace(problem, built, value, result.stdout)
+      setOutput(result.stdout); setTrace(nextTrace)
+      const reducedMotion = typeof window.matchMedia !== 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      const animate = (step: number) => {
+        if (version !== runVersion.current) return
+        setTraceStep(step)
+        if (step < nextTrace.steps.length - 1 && pedagogy.executionVisualization && !reducedMotion) traceTimer.current = setTimeout(() => animate(step + 1), 320)
+        else if (step < nextTrace.steps.length - 1) animate(nextTrace.steps.length - 1)
+        else { traceTimer.current = null; displayResult(issue, result.stdout, nextTrace, attempt) }
+      }
+      animate(0)
     } catch (error) {
       if (version !== runVersion.current) return
-      setStatus('error')
-      setOutput(error instanceof Error ? error.message : 'Could not run the code. Try again.')
-      setShowOutcome(true)
+      const line = error instanceof PythonRunError && error.line ? error.line - 1 : 1
+      displayResult({ kind: 'runtime', line }, error instanceof Error ? error.message : 'Could not run the code. Try again.', null, attempt)
     }
   }
 
-  const next = () => {
-    if (!passed) return
-    setShowOutcome(false)
-    if (index === ifElseProblems.length - 1) {
-      onProgress(completeActivity(progress, 'if-else'))
-      setFinished(true)
-    } else { setIndex(index + 1); reset() }
-  }
+  const nextInstruction = predictionLocksBuild ? 'Choose a prediction to unlock the build.' : debugLocksEdit ? 'Choose an input and run the program before editing.' : !full ? pedagogy.instruction : value === null ? 'Choose a valid input value, then run the code.' : needsPrediction ? 'Predict TRUE or FALSE for your input, then test it.' : 'Run the program and follow the decision.'
 
-  return <main className={`ieb-screen ${passed ? 'ieb-screen--success' : ''} ${interactive ? 'ieb-screen--interactive' : ''}`} style={{ '--ieb-scene': scene.color } as React.CSSProperties}>
-    <header className="ieb-toolbar" inert={showOutcome}>
-      <button className="ieb-back" onClick={onBack}><ArrowLeft size={18} /><span>Conditions</span></button>
-      <div className="ieb-brand"><span><Code2 size={20} /></span><div><b>IF / ELSE</b><small>THE CODE BUILDER</small></div></div>
-      <div className="ieb-counter"><span>{finished ? <Trophy size={19} /> : <Sparkles size={18} />}</span><b>{finished ? 'Complete!' : `Challenge ${String(index + 1).padStart(2, '0')}`}<small> / 10</small></b></div>
-    </header>
-    <div className="ieb-progress" role="progressbar" aria-label="Problems completed" aria-valuenow={finished ? 10 : index + (passed ? 1 : 0)} aria-valuemin={0} aria-valuemax={10}>{ifElseProblems.map((_, i) => <span key={i} className={finished || i < index || (passed && i === index) ? 'is-done' : i === index ? 'is-current' : ''}><i /></span>)}</div>
-    {finished ? <section className="ieb-finish"><div className="ieb-trophy"><Trophy size={64} /><Sparkles size={28} /></div><p className="ieb-kicker">ALL 10 PROGRAMS COMPLETE</p><h1>You built both paths.</h1><p>You arranged real Python code, chose the right conditions, and tested your own values.</p><div><button className="ieb-primary" onClick={() => { setIndex(0); reset(); setFinished(false) }}><RotateCcw size={18} /> PLAY AGAIN</button><button onClick={onBack}>BACK TO CONDITIONS <ArrowRight size={18} /></button></div></section> : <>
-      <section className="ieb-layout" inert={showOutcome} aria-hidden={showOutcome ? true : undefined}>
-        <div className="ieb-problem" key={index}>
-          <div className="ieb-mission-label"><span className="ieb-kicker">YOUR MISSION</span><span>{interactive ? 'BUILD + TEST' : 'BUILD THE CODE'}</span></div>
-          <h1>{problem.title}<span aria-hidden="true">.</span></h1>
-          <div className="ieb-scene" aria-label={`${scene.label}: ${interactive ? 'choose your input' : `${problem.variable} equals ${problem.initial}`}`}>
-            <div className="ieb-ticket"><div className="ieb-ticket__main"><span>{scene.label}</span><SceneIcon size={42} strokeWidth={1.6} /><small>{scene.caption}</small></div><div className="ieb-ticket__stub"><span>{interactive ? 'YOU CHOOSE' : problem.variable.replaceAll('_', ' ').toUpperCase()}</span><b>{interactive ? '?' : problem.initial}</b><div className="ieb-barcode" aria-hidden="true" /></div></div>
-            <Sparkles className="ieb-scene-star ieb-scene-star--one" aria-hidden="true" size={22} /><Sparkles className="ieb-scene-star ieb-scene-star--two" aria-hidden="true" size={14} />
-          </div>
-          <p className="ieb-scenario">{problem.scenario}</p>
-          {!interactive && <>
-          <div className="ieb-brief"><div><b>IF <ArrowRight size={13} /></b><code>{problem.trueOutput}</code></div><div><b>ELSE <ArrowRight size={13} /></b><code>{problem.falseOutput}</code></div></div>
-          <aside><Lightbulb size={19} /><p>{interactive ? 'Your turn to experiment. Build it, enter a value, and try both paths.' : 'Tap the pieces in order. One condition is a decoy. Can you spot it?'}</p></aside>
-          </>}
-          {interactive && <label className="ieb-input"><span><span className="ieb-section-number">02</span> Try your own value <code>{problem.variable}</code></span><div><input type="text" inputMode={problem.decimal ? 'decimal' : 'text'} value={draft} disabled={busy} onChange={(event) => { setDraft(event.target.value); clearResult() }} placeholder="Type a value..." aria-label={`${problem.variable} input`} /><span><ArrowRight size={18} /></span></div><small>{problem.inputHint}{draft.trim() !== '' && value === null ? ' - Enter a valid value in this range.' : ''}</small></label>}
+  return <main className={`ieb-screen ieb-mode--${pedagogy.mode} ${passed ? 'ieb-screen--success' : ''} ${pedagogy.useInput ? 'ieb-screen--interactive' : ''}`} style={{ '--ieb-scene': scene.color } as React.CSSProperties}>
+    <header className="ieb-toolbar" inert={showOutcome}><button className="ieb-back" onClick={onBack}><ArrowLeft size={18} /><span>Conditions</span></button><div className="ieb-brand"><span><Code2 size={20} /></span><div><b>IF / ELSE</b><small>THE CODE BUILDER</small></div></div><div className="ieb-counter"><span><Sparkles size={18} /></span><b>Challenge {String(index + 1).padStart(2, '0')}<small> / 10</small></b></div></header>
+    <ProgressBar index={index} passed={passed} />
+    <section className="ieb-layout" inert={showOutcome} aria-hidden={showOutcome ? true : undefined}>
+      <div className="ieb-problem">
+        <div className="ieb-mission-label"><span className="ieb-kicker">YOUR MISSION</span><span>{pedagogy.title.toUpperCase()}</span></div>
+        <h1>{problem.title}<span aria-hidden="true">.</span></h1>
+        <div className="ieb-scene" aria-label={`${scene.label}: ${problem.variable} starts at ${problem.initial}`}><div className="ieb-ticket"><div className="ieb-ticket__main"><span>{scene.label}</span><SceneIcon size={42} strokeWidth={1.6} /><small>{scene.caption}</small></div><div className="ieb-ticket__stub"><span>{problem.variable.replaceAll('_', ' ').toUpperCase()}</span><b>{pedagogy.useInput ? value ?? problem.initial : problem.initial}</b><div className="ieb-barcode" aria-hidden="true" /></div></div><Sparkles className="ieb-scene-star ieb-scene-star--one" aria-hidden="true" size={22} /><Sparkles className="ieb-scene-star ieb-scene-star--two" aria-hidden="true" size={14} /></div>
+        <p className="ieb-scenario">{problem.scenario}</p>
+        {pedagogy.showCondition && pedagogy.requirePrediction !== 'output' && <div className="ieb-given-condition"><span>CONDITION</span><code>{problem.condition}</code></div>}
+        {pedagogy.useInput && <label className="ieb-input"><span>Choose your input <code>{problem.variable}</code></span><div><input type="text" inputMode={problem.decimal ? 'decimal' : 'numeric'} value={draft} disabled={busy} onChange={(event) => setInput(event.target.value)} placeholder={`Starting value: ${problem.initial}`} aria-label={`${problem.variable} input`} /><span><ArrowRight size={18} /></span></div><small>{problem.inputHint}{draft.trim() !== '' && value === null ? ' - Enter a valid value in this range.' : ''}</small><button type="button" disabled={busy} onClick={() => setInput(String(problem.initial))}>Use starting value ({problem.initial})</button></label>}
+        {pedagogy.requirePrediction && <div ref={predictionRef}><PredictionCard problem={problem} kind={pedagogy.requirePrediction} value={value} prediction={prediction?.text ?? null} showCondition={pedagogy.showCondition} disabled={busy || value === null || pedagogy.requirePrediction === 'truth' && !expressionComplete} onPredict={predict} /></div>}
+        <TwoPaths problem={problem} visibility={pedagogy.showTwoPaths} expanded={pathsExpanded} onHint={revealPaths} />
+        <aside><Lightbulb size={19} /><p>{pedagogy.instruction}</p></aside>
+        <div className="ieb-support" aria-label={`Guidance: ${pedagogy.support} of 10`}><span>GUIDANCE</span><div aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <i key={i} className={i < pedagogy.support ? 'is-on' : ''} />)}</div></div>
+      </div>
+      <div className="ieb-workspace" ref={workspaceRef}>
+        {predictionLocksBuild && <div className="ieb-build-lock"><Lightbulb size={18} /> Make your prediction on the left to unlock the pieces.</div>}
+        <div className={`ieb-editor ${passed ? 'is-correct' : diagnosis ? 'is-wrong' : ''}`}>
+          <header><div className="ieb-window-dots" aria-hidden="true"><i /><i /><i /></div><span>your_program.py</span>{pedagogy.showProgramByDefault === false && <button disabled={busy} aria-expanded={codeExpanded} aria-controls="ieb-program-code" onClick={() => setCodeExpanded(!codeExpanded)}>{codeExpanded ? 'Hide program' : 'Show program'}</button>}<button onClick={reset} disabled={busy || predictionLocksBuild} aria-label="Clear program"><RotateCcw size={15} /><span>Reset</span></button></header>
+          <div className="ieb-editor-label"><span><Code2 size={15} /> YOUR PROGRAM</span><b>{lines.filter(Boolean).length}<span> / 5 lines</span>{full && <Check size={14} />}</b></div>
+          <div id="ieb-program-code" className="ieb-code" hidden={!codeExpanded} aria-label="Built Python program">{lines.map((line, position) => {
+            const editable = expressionMode && position === 1 || !pedagogy.prefilledLines.includes(position)
+            const active = trace?.steps[traceStep]?.line === position
+            return <div key={position} className={`${line === null ? 'is-empty' : 'is-filled'} ${diagnosis?.line === position ? 'is-mistake' : ''} ${active ? 'is-executing' : ''}`}><span>{position + 1}</span>{line === null ? <span className="ieb-placeholder">{pedagogy.showOrderLabels ? structureLabels[position] : expressionMode && position === 1 ? 'Build the condition below' : pedagogy.construction === 'independent' ? 'Choose this branch action below' : 'Tap a piece to fill this gap'}</span> : editable ? <button disabled={busy || predictionLocksBuild || debugLocksEdit} onClick={() => removeLine(position)} aria-label={`Remove line ${position + 1}`} data-line-edit={position}><PythonCode code={line} /><Undo2 size={16} /></button> : <ProvidedCode code={line} />}</div>
+          })}</div>
+          {output && (!busy || traceStep === 4) && <div className={`ieb-output ${status === 'error' ? 'is-error' : ''}`}><span><span /> {status === 'error' ? 'RUN ERROR' : 'OUTPUT'}</span><pre>{output}</pre></div>}
         </div>
-        <div className="ieb-workspace">
-          <div ref={editorRef} className={`ieb-editor ${passed ? 'is-correct' : status === 'wrong' ? 'is-wrong' : ''}`}>
-            <header><div className="ieb-window-dots" aria-hidden="true"><i /><i /><i /></div><span>your_program.py</span><button onClick={reset} disabled={busy} aria-label="Clear program"><RotateCcw size={15} /><span>Reset</span></button></header>
-            <div className="ieb-editor-label"><span><Code2 size={15} /> YOUR PROGRAM</span><b>{selected.length}<span> / 5 lines</span>{full && <Check size={14} />}</b></div>
-            <div className="ieb-code" aria-label="Built Python program">{lines.map((_, position) => <div key={position} className={selected[position] === undefined ? `is-empty ${position === selected.length ? 'is-next' : ''}` : `is-filled ${position === wrongLine ? 'is-mistake' : ''}`}><span>{position + 1}</span>{selected[position] === undefined ? <span className="ieb-placeholder">{position === selected.length ? <><span>+</span> Tap a piece to add your next line</> : <i />}</span> : <button disabled={busy} onClick={() => { setSelected(selected.filter((__, i) => i !== position)); clearResult() }} aria-label={`Remove line ${position + 1}`}><PythonCode code={chunks[selected[position]]} /><Undo2 size={16} /></button>}</div>)}</div>
-            {output && <div className={`ieb-output ${status === 'error' ? 'is-error' : ''}`}><span><span /> {status === 'error' ? 'RUN ERROR' : 'OUTPUT'}</span><pre>{output}</pre></div>}
-          </div>
-          <div className="ieb-bank"><header><div><span className="ieb-section-number">01</span><div><h2>Pick your pieces</h2><p>Tap to add. Tap a line above to take it back.</p></div></div><span className="ieb-spare">1 DECOY</span></header><div>{bankOrder.map((id) => <button key={id} disabled={busy || full || selected.includes(id)} className={`ieb-piece ieb-piece--${id === 0 ? 'value' : id === 1 || id === 5 ? 'condition' : id === 3 ? 'else' : 'print'} ${selected.includes(id) ? 'is-used' : ''}`} onClick={() => { setSelected([...selected, id]); clearResult() }} aria-label={`Add ${chunks[id].trim()}`}><PythonCode code={chunks[id]} />{selected.includes(id) && <Check size={13} />}</button>)}</div></div>
-
-        </div>
-      </section>
-      <footer className={`ieb-feedback ieb-feedback--${status}`} inert={showOutcome} aria-hidden={showOutcome ? true : undefined}><div role="status"><span className="ieb-feedback-icon">{passed ? <Check size={23} /> : status === 'wrong' || status === 'error' ? <Lightbulb size={23} /> : <Code2 size={23} />}</span>{passed ? <p><b>Level cleared!</b> {problem.explanation}{interactive && ' Try another input or move on.'}</p> : status === 'wrong' ? <p><b>Try another order or condition.</b> Line {wrongLine + 1}: {wrongHint} Tap a line to remove it, then rebuild.</p> : <p><b>{busy ? "Let's see what happens..." : full ? 'Ready when you are.' : "You've got this."}</b>{busy ? 'Running your Python program...' : status === 'error' ? 'Try running again.' : !full ? 'Build a decision, one piece at a time.' : interactive && value === null ? 'Enter a value before running your program.' : 'Check your code and discover its path.'}</p>}</div>{passed ? <button className="ieb-primary" onClick={next}>{index === 9 ? 'FINISH ACTIVITY' : 'NEXT PROBLEM'} <ArrowRight size={19} /></button> : <button className="ieb-primary" disabled={!full || value === null || busy} onClick={() => void check()}><Play size={18} fill="currentColor" /> {busy ? 'RUNNING...' : interactive ? 'CHECK + RUN' : 'CHECK CODE'}</button>}</footer>
-    </>}
+        {busy ? null : expressionMode ? <>
+          {debugLocksEdit ? <div className="ieb-build-lock"><Play size={18} /> Run the program first. Then you can change its comparison.</div> : <ExpressionEditor problem={problem} expression={expression} operatorOnly={pedagogy.construction === 'operator'} independent={pedagogy.construction === 'independent'} disabled={busy} onChange={changeExpression} />}
+          {pedagogy.construction === 'independent' && <BranchEditor problem={problem} lines={lines} disabled={busy} onChange={(line, code) => { setProgram(program.map((current, i) => i === line ? code : current)); clearResult() }} />}
+        </> : <div className="ieb-bank"><header><div><span className="ieb-section-number">01</span><div><h2>{pedagogy.construction === 'slot' ? 'Fill the missing piece' : 'Pick your pieces'}</h2><p>{pedagogy.showOrderLabels ? 'All five pieces belong. Use the labels to place them.' : 'Tap to add. Tap an editable line to take it back.'}</p></div></div>{pedagogy.distractorCount > 0 && <span className="ieb-spare">{pedagogy.distractorCount} {pedagogy.distractorCount === 1 ? 'EXTRA' : 'EXTRAS'}</span>}</header><div>{pieces.map((piece) => <button key={piece.id} disabled={busy || predictionLocksBuild || full || pieceIsUsed(piece.code)} className={`ieb-piece ieb-piece--${piece.role} ${pieceIsUsed(piece.code) ? 'is-used' : ''}`} onClick={() => addPiece(piece.code)} aria-label={`Add ${piece.code.trim()}`}><PythonCode code={piece.code} />{pieceIsUsed(piece.code) && <Check size={13} />}</button>)}</div></div>}
+        {trace && <TracePanel trace={trace} step={traceStep} />}
+      </div>
+    </section>
+    <footer className={`ieb-feedback ieb-feedback--${status}`} inert={showOutcome} aria-hidden={showOutcome ? true : undefined}><div role="status"><span className="ieb-feedback-icon">{passed ? <Check size={23} /> : diagnosis ? <Lightbulb size={23} /> : <Code2 size={23} />}</span><p><b>{passed ? 'Level cleared!' : busy ? 'Follow the decision...' : diagnosis ? errorLabels[diagnosis.kind] : 'What to do next'}</b>{passed ? 'Review the trace, try another value, or move on.' : diagnosis ? feedback : busy ? 'Python reads a value, tests a condition, and follows one path.' : nextInstruction}</p></div>{passed ? <button className="ieb-primary" onClick={onNext}>{index === 9 ? 'FINISH ACTIVITY' : 'NEXT PROBLEM'} <ArrowRight size={19} /></button> : predictionAction ? <button className="ieb-primary" onClick={goToPrediction}>MAKE A PREDICTION <ArrowRight size={19} /></button> : <button className="ieb-primary" disabled={!ready} onClick={() => void check()}><Play size={18} fill="currentColor" /> {busy ? 'RUNNING...' : 'CHECK CODE + RUN'}</button>}</footer>
     {showOutcome && <div className={`ieb-outcome-backdrop ieb-outcome-backdrop--${passed ? 'success' : 'wrong'}`}>
       {passed && <div className="ieb-confetti" aria-hidden="true">{Array.from({ length: 28 }, (_, i) => <i key={i} style={{ '--confetti-x': `${(i * 37) % 100}%`, '--confetti-delay': `${(i % 7) * 70}ms`, '--confetti-rotation': `${i * 51}deg`, '--confetti-color': ['#b1e685', '#be9df2', '#ffd379', '#83d6cb'][i % 4] } as React.CSSProperties} />)}</div>}
-      <div ref={outcomeRef} className={`ieb-outcome ieb-outcome--${passed ? 'success' : 'wrong'}`} role="dialog" aria-modal="true" aria-labelledby="ieb-outcome-title" aria-describedby="ieb-outcome-copy">
-        <span className="ieb-outcome-badge">{passed ? <Check size={54} strokeWidth={3} /> : status === 'error' ? <AlertTriangle size={50} /> : <X size={54} strokeWidth={3} />}</span>
-        <span className="ieb-outcome-kicker">{passed ? `CHALLENGE ${String(index + 1).padStart(2, '0')} / 10` : status === 'error' ? 'RUN INTERRUPTED' : 'KEEP GOING. YOU CAN FIX THIS.'}</span>
-        <h2 id="ieb-outcome-title">{passed ? index === 9 ? 'Final level cleared!' : 'Level cleared!' : status === 'error' ? 'Run paused.' : 'Not quite!'}</h2>
-        <p id="ieb-outcome-copy">{passed ? `You built a working decision. ${problem.explanation}` : status === 'error' ? output : wrongLine >= 0 ? `Line ${wrongLine + 1} needs attention. ${wrongHint}` : 'Check the order of your pieces and try again.'}</p>
-        {passed ? <div className="ieb-outcome-output"><span>YOUR PROGRAM PRINTED</span><pre>{output}</pre></div> : wrongLine >= 0 && <div className="ieb-outcome-clue"><span>LOOK AT LINE {wrongLine + 1}</span><pre><PythonCode code={chunks[selected[wrongLine]]} /></pre><small>{selected[wrongLine] === 5 ? 'Check which values the condition should include.' : 'This piece belongs in a different position.'}</small></div>}
-        <div className="ieb-outcome-actions">{passed ? <>
-          <button className="ieb-primary" onClick={next}>{index === 9 ? 'FINISH ACTIVITY' : 'NEXT PROBLEM'} <ArrowRight size={20} /></button>
-          <button className="ieb-outcome-review" onClick={dismissOutcome}>{interactive ? 'TRY ANOTHER VALUE' : 'REVIEW MY CODE'}</button>
-        </> : <button className="ieb-primary" onClick={dismissOutcome}><RotateCcw size={19} /> {status === 'error' ? 'BACK TO MY CODE' : 'TRY AGAIN'}</button>}</div>
+      <div ref={outcomeRef} className={`ieb-outcome ${trace ? 'ieb-outcome--learning' : ''} ieb-outcome--${passed ? 'success' : 'wrong'}`} role="dialog" aria-modal="true" aria-labelledby="ieb-outcome-title" aria-describedby="ieb-outcome-copy">
+        <span className="ieb-outcome-badge">{passed ? <Check size={54} strokeWidth={3} /> : diagnosis?.kind === 'runtime' ? <AlertTriangle size={50} /> : <X size={54} strokeWidth={3} />}</span>
+        <span className="ieb-outcome-kicker">{passed ? `CHALLENGE ${String(index + 1).padStart(2, '0')} / 10` : diagnosis ? errorLabels[diagnosis.kind] : 'KEEP GOING'}</span>
+        <h2 id="ieb-outcome-title">{passed ? index === 9 ? 'Final level cleared!' : 'Level cleared!' : diagnosis ? errorTitles[diagnosis.kind] : 'Try again.'}</h2>
+        <p id="ieb-outcome-copy">{passed ? problem.explanation : diagnosis?.kind === 'runtime' ? output : feedback}</p>
+        <div className="ieb-outcome-detail">
+          {trace && <>
+            {!passed && <p className="ieb-run-distinction">The code runs, but it does not match the mission.{diagnosis?.witness !== undefined && diagnosis.witness !== value ? ' This input can look right even when the rule fails for another value.' : ''}</p>}
+            {prediction && <PredictionComparison prediction={prediction} trace={trace} />}
+            <TracePanel trace={trace} compact />
+          </>}
+          {showModel && diagnosis && <div className="ieb-outcome-clue"><span>MODEL FOR THIS PIECE</span><pre><PythonCode code={problemLines(problem, pedagogy.useInput)[diagnosis.line]} /></pre></div>}
+        </div>
+        <div className="ieb-outcome-actions">{passed ? <><button className="ieb-primary" onClick={() => { setShowOutcome(false); onNext() }}>{index === 9 ? 'FINISH ACTIVITY' : 'NEXT PROBLEM'} <ArrowRight size={20} /></button><button className="ieb-outcome-review" onClick={() => setShowOutcome(false)}>{pedagogy.useInput ? 'TRY ANOTHER VALUE' : 'REVIEW MY CODE'}</button></> : <><button className="ieb-primary" onClick={() => setShowOutcome(false)}><RotateCcw size={19} /> {diagnosis?.kind === 'runtime' ? 'BACK TO MY CODE' : 'TRY AGAIN'}</button>{errorAttempt >= 4 && !showModel && <button className="ieb-outcome-review" onClick={() => { setShowModel(true); record('hint', { errorKind: diagnosis?.kind ?? null }) }}>SHOW A MODEL OF THIS PIECE</button>}</>}</div>
       </div>
     </div>}
   </main>

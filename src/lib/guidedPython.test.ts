@@ -16,6 +16,10 @@ describe('guided Python fallback', () => {
   it('supports Python arithmetic operators safely', () => {
     expect(evaluateMath('seconds // 60', { seconds: 125 })).toBe(2)
     expect(evaluateMath('seconds % 60', { seconds: 125 })).toBe(5)
+    expect(evaluateMath('number % 2', { number: -3 })).toBe(1)
+    expect(evaluateMath('3 % -2', {})).toBe(-1)
+    expect(evaluateMath('-3 % -2', {})).toBe(-1)
+    expect(evaluateMath('-4 % 2', {})).toBe(0)
     expect(evaluateMath('number ** 2', { number: 7 })).toBe(49)
   })
 

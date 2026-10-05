@@ -221,7 +221,11 @@ export function evaluateMath(expression: string, variables: Record<string, Value
       if (operator === '*') value *= right
       if (operator === '/') value /= right
       if (operator === '//') value = Math.floor(value / right)
-      if (operator === '%') value %= right
+      if (operator === '%') {
+        const remainder = value % right
+        // Python's remainder has the divisor's sign, including negative inputs.
+        value = remainder === 0 ? 0 : Math.sign(remainder) !== Math.sign(right) ? remainder + right : remainder
+      }
     }
     return value
   }

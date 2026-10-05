@@ -6,6 +6,7 @@ import {
   type PrintActivityId,
   type PrintActivityOutputState,
   type SessionProgress,
+  type IfElseLearningEvent,
 } from '../types'
 
 const SESSION_KEY = 'pixpy.session.v3'
@@ -21,6 +22,7 @@ export const emptyProgress: Omit<SessionProgress, 'name' | 'username' | 'isTeach
   choiceMachineStoriesComplete: false,
   choiceMachineQuizIndex: 0,
   choiceMachineXp: 0,
+  ifElseLearning: [],
   blackBoxLevels: [],
   blackBoxQuizAnswers: [],
   blackBoxQuizStartedAt: null,
@@ -95,6 +97,7 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
     choiceMachineStoriesComplete: parsed.choiceMachineStoriesComplete === true,
     choiceMachineQuizIndex: cleanChoiceQuizIndex(parsed.choiceMachineQuizIndex),
     choiceMachineXp: cleanChoiceXp(parsed.choiceMachineXp),
+    ifElseLearning: cleanIfElseLearning(parsed.ifElseLearning),
     blackBoxQuizAnswers,
     blackBoxQuizStartedAt: cleanTimestamp(parsed.blackBoxQuizStartedAt),
     blackBoxQuizElapsedMs: cleanElapsed(parsed.blackBoxQuizElapsedMs),
@@ -174,6 +177,24 @@ function cleanActivityIds(value: unknown): ActivityId[] {
 function cleanQuizAnswers(value: unknown): number[] {
   if (!Array.isArray(value)) return []
   return value.filter((answer) => Number.isInteger(answer) && answer >= 0 && answer <= 3).slice(0, 10)
+}
+
+function cleanIfElseLearning(value: unknown): IfElseLearningEvent[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is IfElseLearningEvent => {
+    if (!item || typeof item !== 'object') return false
+    const event = item as Partial<IfElseLearningEvent>
+    return Number.isInteger(event.level) && event.level! >= 1 && event.level! <= 10
+      && typeof event.mode === 'string' && event.mode.length <= 30
+      && ['prediction', 'check', 'hint'].includes(event.kind ?? '')
+      && Number.isInteger(event.attempt) && event.attempt! >= 0
+      && (event.value === null || typeof event.value === 'number' && Number.isFinite(event.value))
+      && (event.prediction === null || typeof event.prediction === 'string' && event.prediction.length <= 200)
+      && (event.actualOutput === null || typeof event.actualOutput === 'string' && event.actualOutput.length <= 500)
+      && (event.conditionResult === null || typeof event.conditionResult === 'boolean')
+      && (event.errorKind === null || ['structure', 'condition', 'logic', 'output', 'runtime'].includes(event.errorKind ?? ''))
+      && typeof event.at === 'number' && Number.isFinite(event.at)
+  }).slice(-200)
 }
 
 const comparisonOperators = ['>', '<', '>=', '<=', '==', '!='] as const

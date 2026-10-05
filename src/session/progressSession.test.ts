@@ -1,8 +1,18 @@
 import { cleanUsername, completeActivity, createSession, emptyProgress, loadSession, resetActivityProgress, restoreProgress, saveSession } from './progressSession'
-import type { SessionProgress } from '../types'
+import type { IfElseLearningEvent, SessionProgress } from '../types'
 
 describe('session-only progress', () => {
   beforeEach(() => sessionStorage.clear())
+
+  it('retains IF/ELSE learning history in session and restored cloud progress, safely handling legacy or malformed history', () => {
+    const event: IfElseLearningEvent = { level: 4, mode: 'prediction', kind: 'prediction', attempt: 0, value: 75, prediction: 'Level unlocked', actualOutput: null, conditionResult: null, errorKind: null, at: 1234 }
+    saveSession({ ...createSession('Maya'), ifElseLearning: [event] })
+    expect(loadSession()?.ifElseLearning).toEqual([event])
+    expect(restoreProgress('maya', 'Maya', { ifElseLearning: [event] }).ifElseLearning).toEqual([event])
+    expect(restoreProgress('maya', 'Maya', {}).ifElseLearning).toEqual([])
+    expect(restoreProgress('maya', 'Maya', { ifElseLearning: [null, { ...event, level: 11 }, { ...event, value: Infinity }, event] }).ifElseLearning).toEqual([event])
+    expect(restoreProgress('maya', 'Maya', { ifElseLearning: Array.from({ length: 210 }, (_, at) => ({ ...event, at })) }).ifElseLearning).toHaveLength(200)
+  })
 
   it('persists choice step visits and introductory completion, including older progress', () => {
     saveSession({ ...createSession('Maya'), choiceMachineVisited: true, choiceMachineIntroComplete: true })

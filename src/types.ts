@@ -24,6 +24,19 @@ export type AppRoute =
   | 'extras'
   | ActivityId
 
+export interface IfElseLearningEvent {
+  level: number
+  mode: string
+  kind: 'prediction' | 'check' | 'hint'
+  attempt: number
+  value: number | null
+  prediction: string | null
+  actualOutput: string | null
+  conditionResult: boolean | null
+  errorKind: 'structure' | 'condition' | 'logic' | 'output' | 'runtime' | null
+  at: number
+}
+
 export interface SessionProgress {
   name: string
   username: string
@@ -38,6 +51,7 @@ export interface SessionProgress {
   choiceMachineStoriesComplete: boolean
   choiceMachineQuizIndex: number
   choiceMachineXp: number
+  ifElseLearning?: IfElseLearningEvent[]
   blackBoxLevels: number[]
   blackBoxQuizAnswers: number[]
   blackBoxQuizStartedAt: number | null
