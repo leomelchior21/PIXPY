@@ -3,9 +3,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { variableExperiences } from '../data/variables'
 import { conditionExperiences } from '../data/conditions'
 import { CHOICE_QUIZ_LENGTH, CHOICE_XP_PER_QUESTION } from '../data/choiceMachine'
+import { ifElsePedagogy } from '../data/ifElsePedagogy'
 import { milestoneGates } from '../lib/backroomEngine'
+import { conditionsProgress } from '../lib/conditionsProgress'
 import { loadClassProgress, type ClassProgressRow, type RosterClass, type RosterTeam } from '../lib/classroomCloud'
 import type { ActivityId } from '../types'
+import './teacherDashboard.css'
 
 interface TeacherDashboardProps { username: string }
 type ClassFilter = 'all' | RosterClass
@@ -14,9 +17,12 @@ type WorldId = 'variables' | 'conditions'
 
 interface WorldExperience { id: ActivityId; title: string }
 
+const availableConditions = conditionExperiences.filter((activity) => !activity.disabled)
+const upcomingConditions = conditionExperiences.filter((activity) => activity.disabled).length
+
 const worldOptions: Array<{ id: WorldId; label: string; experiences: WorldExperience[]; unit: string }> = [
   { id: 'variables', label: 'Variables', experiences: variableExperiences, unit: 'experiments' },
-  { id: 'conditions', label: 'Conditions', experiences: conditionExperiences, unit: 'activities' },
+  { id: 'conditions', label: 'Conditions', experiences: availableConditions, unit: 'available activities' },
 ]
 
 const classOptions: Array<{ value: ClassFilter; label: string }> = [
@@ -99,9 +105,9 @@ export function TeacherDashboard({ username }: TeacherDashboardProps) {
         </div>
       </section>
 
-      <section className="teacher-roster panel-surface">
+      <section className={`teacher-roster panel-surface ${world === 'conditions' ? 'teacher-roster--conditions' : ''}`}>
         <header>
-          <div><small>STUDENT PROGRESS</small><h2>{filtered.length} {filtered.length === 1 ? 'student' : 'students'} in view</h2></div>
+          <div><small>STUDENT PROGRESS</small><h2>{filtered.length} {filtered.length === 1 ? 'student' : 'students'} in view</h2>{world === 'conditions' && <p className="teacher-roster-caption">{availableConditions.length} available activities · {upcomingConditions} coming later · Recent IF/ELSE practice</p>}</div>
           <div className="teacher-roster-tools">
             <button className="teacher-refresh" onClick={() => void refresh()} disabled={loading}><RefreshCcw className={loading ? 'spin' : ''} /> Refresh</button>
             <div className="teacher-world-switch" role="group" aria-label="World progress">
@@ -114,12 +120,13 @@ export function TeacherDashboard({ username }: TeacherDashboardProps) {
         {error ? <div className="teacher-state is-error" role="alert"><p>{error}</p><button onClick={() => void refresh()}>TRY AGAIN</button></div> : loading && students.length === 0 ? <div className="teacher-state"><LoaderCircle className="spin" /><p>Loading classroom progress…</p></div> : (
           <div className="teacher-table-wrap">
             <table>
-              <thead><tr><th>Student</th><th>Group</th><th>Activities</th><th>{world === 'variables' ? 'Final missions' : 'Backroom gates'}</th><th>Last update</th></tr></thead>
+              <thead><tr><th>Student</th><th>Group</th><th>Activities</th><th>{world === 'variables' ? 'Final missions' : 'Backroom gates'}</th>{world === 'conditions' && <><th>Choice lab</th><th>IF/ELSE reasoning</th></>}<th>Last update</th></tr></thead>
               <tbody>
                 {filtered.map((student) => {
                   const completed = completedActivities(student, activeWorld.experiences)
                   const bossCount = completedBosses(student)
-                  const gateCount = backroomGates(student)
+                  const learning = conditionsProgress(student.progress)
+                  const isFinished = completed.length === activeWorld.experiences.length
                   return (
                     <tr key={student.username}>
                       <td><strong>{student.displayName}</strong><small>{student.username}</small></td>
@@ -128,9 +135,13 @@ export function TeacherDashboard({ username }: TeacherDashboardProps) {
                       <td>
                         {world === 'variables'
                           ? <><div className="teacher-boss-progress"><i style={{ width: `${(bossCount / 15) * 100}%` }} /></div><strong>{bossCount} / 15</strong></>
-                          : <><div className="teacher-boss-progress"><i style={{ width: `${Math.min(gateCount / milestoneGates, 1) * 100}%` }} /></div><strong>{Math.min(gateCount, milestoneGates)} / {milestoneGates} gates</strong><small className="teacher-choice-xp">Choice XP {choiceMachineXp(student)} / {CHOICE_QUIZ_LENGTH * CHOICE_XP_PER_QUESTION}</small></>}
+                          : <div className="teacher-learning-cell"><strong>{learning.gates} gates</strong><small>Best run: {learning.bestRun} · {learning.runXp} XP</small><span className={learning.gates >= milestoneGates ? 'teacher-milestone is-done' : 'teacher-milestone'}>{learning.gates >= milestoneGates ? <><Check size={11} /> {milestoneGates}-gate milestone reached</> : `${learning.gates} / ${milestoneGates} to the first milestone`}</span></div>}
                       </td>
-                      <td><span className={student.progress ? 'teacher-status is-active' : 'teacher-status'}>{student.progress ? 'IN PROGRESS' : student.lastLoginAt ? 'SIGNED IN' : 'NOT STARTED'}</span><small>{formatUpdate(student.updatedAt ?? student.lastLoginAt)}</small></td>
+                      {world === 'conditions' && <>
+                        <td><div className="teacher-learning-cell"><div className="teacher-choice-steps" aria-label="Choice lab steps">{[{ title: 'Intro', done: learning.introComplete }, { title: 'Live flow', done: learning.liveComplete }, { title: 'Quiz', done: learning.quizComplete }].map((step) => <span key={step.title} className={step.done ? 'is-done' : ''} title={`${step.title}: ${step.done ? 'complete' : 'not complete'}`}>{step.done ? <Check size={10} /> : <Circle size={10} />}{step.title}</span>)}</div><strong>{learning.quizIndex} / {CHOICE_QUIZ_LENGTH} quiz questions</strong><small className="teacher-choice-xp">Choice XP {learning.choiceXp} / {CHOICE_QUIZ_LENGTH * CHOICE_XP_PER_QUESTION}</small></div></td>
+                        <td><div className="teacher-learning-cell"><strong>{learning.solvedLevels} / {ifElsePedagogy.length} levels solved</strong><div className="teacher-level-track" aria-hidden="true"><i style={{ width: `${learning.solvedLevels / ifElsePedagogy.length * 100}%` }} /></div><small>{learning.ifElseComplete ? 'Activity complete' : learning.lastLevel ? `L${learning.lastLevel} · ${learning.lastMode}` : 'No practice recorded'}</small>{learning.lastError && <span className="teacher-learning-error">Last check: {learning.lastError}</span>}<small>{learning.checkCount} checks · {learning.hints} hints{learning.testedPredictions > 0 && <><br />Predictions: {learning.matchedPredictions} / {learning.testedPredictions} matched Python</>}</small></div></td>
+                      </>}
+                      <td><span className={isFinished || student.progress ? 'teacher-status is-active' : 'teacher-status'}>{isFinished ? 'COMPLETE' : student.progress ? 'IN PROGRESS' : student.lastLoginAt ? 'SIGNED IN' : 'NOT STARTED'}</span><small>{formatUpdate(student.updatedAt ?? student.lastLoginAt)}</small></td>
                     </tr>
                   )
                 })}
@@ -146,7 +157,7 @@ export function TeacherDashboard({ username }: TeacherDashboardProps) {
 
 function completedActivities(student: ClassProgressRow, experiences: WorldExperience[]): ActivityId[] {
   const value = student.progress?.completed
-  return Array.isArray(value) ? value.filter((item): item is ActivityId => experiences.some((activity) => activity.id === item)) : []
+  return Array.isArray(value) ? [...new Set(value.filter((item): item is ActivityId => experiences.some((activity) => activity.id === item)))] : []
 }
 
 function completedBosses(student: ClassProgressRow): number {
@@ -156,11 +167,6 @@ function completedBosses(student: ClassProgressRow): number {
 
 function backroomGates(student: ClassProgressRow): number {
   const value = student.progress?.backroomRunGates
-  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0
-}
-
-function choiceMachineXp(student: ClassProgressRow): number {
-  const value = student.progress?.choiceMachineXp
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0
 }
 

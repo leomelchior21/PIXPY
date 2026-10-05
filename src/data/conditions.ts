@@ -30,7 +30,7 @@ export const conditionExperiences: ConditionExperience[] = [
     challenges: [],
   },
   {
-    id: 'if-else', order: '03', title: 'IF/ELSE', description: 'Build ten programs, one code chunk at a time.', color: '#72dcff', icon: GitBranch,
+    id: 'if-else', order: '03', title: 'IF/ELSE', description: 'Predict, build, and debug ten decisions.', color: '#72dcff', icon: GitBranch,
     challenges: [
       { prompt: 'Which path runs?', code: 'age = 10\nif age >= 12:\n    print("Big ride")\nelse:\n    print("Small ride")', options: ['Big ride', 'Small ride', 'Both'], answer: 1, explanation: '10 is below 12, so the else path runs.' },
       { prompt: 'What belongs after if?', code: 'if temperature > 30:\n    print("Hot")\n____:\n    print("Cool")', options: ['if', 'else', 'print'], answer: 1, explanation: 'else: gives a path when the if condition is false.' },

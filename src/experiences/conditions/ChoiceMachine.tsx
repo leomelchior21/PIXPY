@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Binary, Check, GraduationCap, GitBranch, IdCard, Lightbulb, Lock, Play, RotateCcw, Sparkles, Trophy, Zap } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowRight, Binary, Check, CloudRain, GraduationCap, GitBranch, IdCard, Lightbulb, Lock, Play, RotateCcw, Sparkles, Sun, Trophy, Umbrella, Zap } from 'lucide-react'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { PythonCode } from '../../components/PythonCode'
 import { CHOICE_QUIZ_LENGTH, CHOICE_XP_PER_QUESTION, everydayChoices, flowStories, makeChoiceQuizQuestion } from '../../data/choiceMachine'
@@ -203,39 +203,57 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
     </div>
 
     {phase === 'steps' && <section className="cm-steps cm-panel">
-      <span className="cm-kicker"><Sparkles size={15} /> THE DECISION LAB</span>
-      <h1>How the computer makes a choice</h1>
-      <p>{returning ? 'Welcome back. Choose any step to practice again.' : 'Start with the intro. Each finished step opens the next.'}</p>
+      <div className="cm-steps-heading">
+        <div><span className="cm-kicker"><Sparkles size={15} /> THE DECISION LAB</span>
+          <h1>How the computer <span>makes a choice</span></h1>
+          <p>{returning ? 'Welcome back. Choose any step to practice again.' : 'Start with the intro. Each finished step opens the next.'}</p></div>
+        <div className="cm-journey-stamp" aria-hidden="true"><GitBranch /><span>ONE QUESTION.<br />TWO PATHS.</span></div>
+      </div>
       <div className="cm-step-cards">{stepOptions.map((option, index) => {
         const Icon = option.icon
-        return <button key={option.title} className={`cm-step-card ${option.done ? 'is-done' : ''}`} disabled={!option.enabled} onClick={option.action} aria-label={option.title}>
-          <span className="cm-step-card__number">0{index + 1}</span><Icon size={36} /><h2>{option.title}</h2><p>{option.copy}</p>
+        return <button key={option.title} className={`cm-step-card cm-step-card--${index + 1} ${option.done ? 'is-done' : ''}`} disabled={!option.enabled} onClick={option.action} aria-label={option.title}>
+          <span className="cm-step-card__top"><span className="cm-step-card__number">0{index + 1}</span><span>{!option.enabled ? <><Lock size={12} /> LOCKED</> : option.done ? <><Check size={12} /> COMPLETE</> : index === 0 && !returning ? 'START HERE' : 'READY'}</span></span>
+          <span className="cm-step-art" aria-hidden="true">
+            <span className="cm-step-art__orbit" /><span className="cm-step-art__icon"><Icon /></span>
+            {index === 0 ? <><span className="cm-step-art__chip cm-step-art__chip--left">IF <b>YES</b></span><span className="cm-step-art__chip cm-step-art__chip--right">ELSE <b>NO</b></span></>
+              : index === 1 ? <><span className="cm-step-art__chip cm-step-art__chip--left"><Zap size={14} /> VALUE</span><span className="cm-step-art__chip cm-step-art__chip--right">TRUE <ArrowRight size={14} /></span><span className="cm-step-art__signal" /></>
+                : <><span className="cm-step-art__chip cm-step-art__chip--left"><Check size={16} /> TRUE?</span><span className="cm-step-art__chip cm-step-art__chip--right">20 <b>QUESTIONS</b></span></>}
+          </span>
+          <span className="cm-step-card__copy"><small>{['NOTICE THE DECISION', 'FOLLOW THE VALUE', 'TEST YOUR REASONING'][index]}</small><h2>{option.title}</h2><p>{option.copy}</p></span>
           <span className="cm-step-card__state">{!option.enabled ? <><Lock size={16} /> Finish the previous step</> : option.done ? <><RotateCcw size={16} /> Practice again</> : <>Start this step <ArrowRight size={16} /></>}</span>
         </button>
       })}</div>
+      <div className="cm-journey-footer"><span><Lightbulb size={15} /> Look for the question. Follow the path.</span><span>OBSERVE <ArrowRight size={13} /> EXPERIMENT <ArrowRight size={13} /> UNDERSTAND</span></div>
     </section>}
 
     {phase === 'intro' && <section className="cm-intro cm-panel">
       <div className="cm-intro-copy">
-        <span className="cm-kicker"><Sparkles size={15} /> THE DECISION LAB</span>
+        <span className="cm-kicker"><Lightbulb size={15} /> INTRO / EVERYDAY DECISIONS</span>
         <h2>Every choice starts with <em>a question.</em></h2>
         <p>Every day you choose what happens next. Look at three real situations: rain outside, a locked door, and a school result. Then type your own values and watch a computer make the same kinds of decisions.</p>
-        <div className="cm-intro-rule"><b>IF</b><span>the answer is YES</span><ArrowRight size={18} /><strong>do this</strong></div>
-        <div className="cm-intro-rule cm-intro-rule--no"><b>ELSE</b><span>the answer is NO</span><ArrowRight size={18} /><strong>do that</strong></div>
+        <div className="cm-intro-examples" aria-label="Three everyday situations"><span><CloudRain size={16} /> Rain outside</span><span><Lock size={16} /> A locked door</span><span><GraduationCap size={16} /> A school result</span></div>
+        <div className="cm-intro-rules"><div className="cm-intro-rule"><b>IF</b><span>the answer is YES</span><ArrowRight size={18} /><strong>do this</strong></div>
+          <div className="cm-intro-rule cm-intro-rule--no"><b>ELSE</b><span>the answer is NO</span><ArrowRight size={18} /><strong>do that</strong></div></div>
         <button className="cm-primary" onClick={begin}>START LEARNING <ArrowRight size={19} /></button>
+        <span className="cm-intro-note">3 situations. One idea: the answer chooses the action.</span>
       </div>
       <div className="cm-intro-art" aria-label="A question splits into a yes path and a no path">
         <span className="cm-intro-art__spark cm-intro-art__spark--one">✦</span><span className="cm-intro-art__spark cm-intro-art__spark--two">✦</span>
-        <div className="cm-intro-art__terminal"><span>ONE SIMPLE QUESTION</span><strong>Is it raining?</strong></div>
-        <div className="cm-intro-art__split"><span>YES</span><span className="cm-intro-art__diamond" aria-hidden="true" /><span>NO</span></div>
-        <div className="cm-intro-art__outcomes"><div><b>?</b><small>YOUR CHOICE</small></div><div><b>?</b><small>YOUR CHOICE</small></div></div>
-        <div className="cm-intro-art__pulse" />
+        <div className="cm-intro-monitor">
+          <div className="cm-intro-monitor__bar"><span><i /><i /><i /></span><small>DECISION.PY</small><span className="cm-intro-monitor__live">LIVE</span></div>
+          <div className="cm-intro-weather"><CloudRain size={58} /><span>LOOK AT THE VALUE<small>Rain outside</small></span></div>
+          <ArrowDown className="cm-intro-connector" size={22} />
+          <div className="cm-intro-art__terminal"><span>ASK A QUESTION</span><strong>Is it raining?</strong></div>
+          <div className="cm-intro-art__split"><span>TRUE / YES</span><GitBranch size={32} /><span>FALSE / NO</span></div>
+          <div className="cm-intro-art__outcomes"><div><Umbrella size={34} /><small>IF</small><strong>Take an umbrella</strong></div><div><Sun size={34} /><small>ELSE</small><strong>Leave the umbrella</strong></div></div>
+          <div className="cm-intro-monitor__footer"><span /><small>One answer. One action.</small></div>
+        </div>
       </div>
     </section>}
 
     {phase === 'choices' && <section className={`cm-lesson cm-life-choice cm-life-choice--${lesson.id} cm-panel`} key={lessonIndex}>
       <div className="cm-lesson-visual">
-        <StepDots current={lessonIndex} total={everydayChoices.length} />
+        <div className="cm-situation-progress"><span>SITUATION 0{lessonIndex + 1} / 03</span><StepDots current={lessonIndex} total={everydayChoices.length} /></div>
         <ChoiceScene id={lesson.id} />
         <div className="cm-life-caption"><strong>{lesson.visualLabel}</strong><p>{lesson.situation}</p></div>
         <div className={`cm-life-condition ${lessonAnswer === lesson.answer ? 'is-revealed' : ''}`}><small>THE QUESTION</small><strong>{lesson.condition}</strong>{lessonAnswer === lesson.answer && <span>{lesson.path} → {lesson.result}</span>}</div>
@@ -245,7 +263,7 @@ export function ChoiceMachine({ progress, onProgress, onBack, onNext }: Props) {
         <div className="cm-lesson-question"><strong>{lesson.question}</strong>
           <div className="cm-choice-buttons">{lesson.options.map((option, index) => <button key={option} aria-label={option} className={lessonAnswer === index ? index === lesson.answer ? 'is-correct' : 'is-wrong' : ''} onClick={() => setLessonAnswer(index)}><span>{String.fromCharCode(65 + index)}</span>{option}</button>)}</div>
         </div>
-        <div className={`cm-feedback ${lessonAnswer !== null ? 'is-visible' : ''}`} role="status">{lessonAnswer === null ? 'Look at the picture, then choose what should happen.' : <><b>{lessonAnswer === lesson.answer ? 'GOOD EYE!' : 'LOOK AGAIN'}</b><span>{lessonAnswer === lesson.answer ? lesson.feedback : `Check the picture once more. ${lesson.condition}`}</span></>}</div>
+        <div className={`cm-feedback ${lessonAnswer !== null ? `is-visible ${lessonAnswer === lesson.answer ? 'is-correct' : 'is-wrong'}` : ''}`} role="status">{lessonAnswer === null ? 'Look at the picture, then choose what should happen.' : <><b>{lessonAnswer === lesson.answer ? <><Check size={18} /> GOOD EYE!</> : <><RotateCcw size={18} /> LOOK AGAIN</>}</b><span>{lessonAnswer === lesson.answer ? lesson.feedback : `Check the picture once more. ${lesson.condition}`}</span></>}</div>
         <button className="cm-primary" disabled={lessonAnswer !== lesson.answer} onClick={nextLesson}>{lessonIndex + 1 === everydayChoices.length ? 'FINISH INTRO' : 'NEXT SITUATION'} <ArrowRight size={18} /></button>
       </div>
     </section>}

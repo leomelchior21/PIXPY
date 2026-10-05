@@ -51,11 +51,23 @@ button:focus-visible, input:focus-visible { outline: 3px solid #14708c !importan
 .variables-note span { font-size: 9px; }
 .playground-home { max-width: 1320px; padding-block: 42px; gap: 36px; }
 .home-intro h1 { font-size: clamp(32px, 3.3vw, 50px); line-height: 1.15; }
-.world-grid { grid-template-columns: 1.4fr 1fr 1fr; }
+.world-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .8fr); }
 .world-card { border-width: 2px; padding: 32px; box-shadow: 5px 5px 0 var(--ink); }
+.world-card.is-featured { background: color-mix(in srgb, var(--world-accent) 24%, #fff); animation: conditions-world-pulse 2.4s ease-in-out infinite; }
+.world-card.is-featured .start-flag { background: var(--world-accent); }
+@keyframes conditions-world-pulse {
+  0%, 100% { box-shadow: 5px 5px 0 var(--ink), 0 0 0 0 #72dcff00; }
+  50% { box-shadow: 5px 5px 0 var(--ink), 0 0 0 9px #72dcff55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-card.is-featured { animation: none; box-shadow: 5px 5px 0 var(--ink), 0 0 0 4px #72dcff55; }
+}
 .world-card__copy strong { font-size: clamp(28px, 3vw, 44px); letter-spacing: -1px; }
 .world-card__copy small, .world-card__copy p { font-size: 14px; line-height: 1.5; }
 .world-card__footer b, .world-card__footer i { font-size: 11px; }
+@media (max-width: 640px) {
+  .world-grid { grid-template-columns: 1fr; }
+}
 
 /* A stable shell with the question readable beneath the title. */
 .experience-screen { grid-template-rows: 68px minmax(0, 1fr); padding: 15px 24px 20px; gap: 14px; max-width: 1700px; margin: auto; }

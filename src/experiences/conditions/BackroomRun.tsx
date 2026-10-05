@@ -18,7 +18,6 @@ const START_DISTANCE = 9
 const PASS_CLEARANCE = 1.8
 const OPEN_SECONDS = 0.7
 const CLOSE_SECONDS = 0.4
-const SLOW_DISTANCE = 3.4
 const STEER_SPEED = 0.72
 const WALL_LIMIT = 0.78
 const MILESTONE_GATES = 5
@@ -286,15 +285,9 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
         g.playerX += (g.gateCenter - g.playerX) * Math.min(1, dt * 2.8)
       }
 
-      let factor = g.phase === 'turn' ? 1.6 : 1
-      if (g.phase === 'gate') {
-        if (g.true && g.openAmount < 0.95) factor = 0.3
-        else if (g.true) factor = 1.22
-        else if (distance < SLOW_DISTANCE) factor = 0.55
-      }
       const previousDepth = g.depth
-      if (g.status === 'running') g.depth += dt * g.speed * factor
-      if (g.phase === 'gate' && g.true && g.openAmount < 0.95) g.depth = Math.min(g.depth, g.gateZ - 0.35)
+      // Keep the corridor pace through the gate, including while it opens.
+      if (g.status === 'running') g.depth += dt * g.speed * 1.6
 
       const bend = g.phase === 'turn' ? g.bends.find((item) => g.depth >= item.startZ - 3 && g.depth < item.endZ) : undefined
       const hint = bend?.dir ?? 0
@@ -662,7 +655,9 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
         ? 'The corridor turned. Use the left and right arrow keys to follow it.'
         : crashReason === 'obstacle'
           ? 'Watch the floor ahead. Use the left and right arrow keys to move around chairs and trash.'
-          : <>The condition was <b className="is-false">FALSE</b>, so the gate never opened. Check the energy value, then try again.</>}</p>
+          : game.current.true
+            ? <>The condition was <b className="is-true">TRUE</b>, but you reached the gate before it finished opening. Change the energy earlier and keep running.</>
+            : <>The condition was <b className="is-false">FALSE</b>, so the gate never opened. Check the energy value, then try again.</>}</p>
       <div className="br-summary-grid">
         <article><strong>{sessionGates}</strong><span>GATES OPENED</span></article>
         <article><strong>{sessionXp}</strong><span>XP THIS RUN</span></article>
