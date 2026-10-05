@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { useState } from 'react'
 import { ifElseProblems, parseProblemInput, problemLines } from '../../data/ifElseBuilder'
 import { createSession } from '../../session/progressSession'
@@ -10,7 +10,8 @@ function Harness() {
 }
 
 function build(index: number) {
-  for (const line of problemLines(ifElseProblems[index], index >= 5)) fireEvent.click(screen.getByRole('button', { name: `Add ${line.trim()}` }))
+  const bank = within(document.querySelector('.ieb-bank') as HTMLElement)
+  for (const line of problemLines(ifElseProblems[index], index >= 5)) fireEvent.click(bank.getByRole('button', { name: `Add ${line.trim()}` }))
 }
 
 describe('IF/ELSE code builder', () => {
@@ -19,7 +20,8 @@ describe('IF/ELSE code builder', () => {
     expect(screen.getByRole('button', { name: 'CHECK CODE' })).toBeDisabled()
     const problem = ifElseProblems[0]
     const lines = problemLines(problem, false)
-    for (const line of [lines[0], `if ${problem.wrongCondition}:`, ...lines.slice(2)]) fireEvent.click(screen.getByRole('button', { name: `Add ${line.trim()}` }))
+    const bank = within(document.querySelector('.ieb-bank') as HTMLElement)
+    for (const line of [lines[0], `if ${problem.wrongCondition}:`, ...lines.slice(2)]) fireEvent.click(bank.getByRole('button', { name: `Add ${line.trim()}` }))
     fireEvent.click(screen.getByRole('button', { name: 'CHECK CODE' }))
     expect(screen.getByText('Try another order or condition.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /next problem/i })).not.toBeInTheDocument()
@@ -37,7 +39,8 @@ describe('IF/ELSE code builder', () => {
 
   it('rejects correct chunks in the wrong order', () => {
     render(<Harness />)
-    for (const line of problemLines(ifElseProblems[0], false).reverse()) fireEvent.click(screen.getByRole('button', { name: `Add ${line.trim()}` }))
+    const bank = within(document.querySelector('.ieb-bank') as HTMLElement)
+    for (const line of problemLines(ifElseProblems[0], false).reverse()) fireEvent.click(bank.getByRole('button', { name: `Add ${line.trim()}` }))
     fireEvent.click(screen.getByRole('button', { name: 'CHECK CODE' }))
     expect(screen.getByText('Try another order or condition.')).toBeInTheDocument()
   })
