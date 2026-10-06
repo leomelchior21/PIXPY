@@ -4,6 +4,20 @@ import type { IfElseLearningEvent, SessionProgress } from '../types'
 describe('session-only progress', () => {
   beforeEach(() => sessionStorage.clear())
 
+  it('retains completed IF/ELSE levels across reloads and cloud restoration', () => {
+    const progress = { ...createSession('Maya'), ifElseLevels: [1, 2, 3, 4] }
+    saveSession(progress)
+    expect(loadSession()?.ifElseLevels).toEqual([1, 2, 3, 4])
+    expect(restoreProgress('maya', 'Maya', JSON.parse(JSON.stringify(progress))).ifElseLevels).toEqual([1, 2, 3, 4])
+    expect(restoreProgress('maya', 'Maya', { ifElseLevels: [4, 2, 2, 1, 3, 0, 11, 1.5, '5'] }).ifElseLevels).toEqual([1, 2, 3, 4])
+  })
+
+  it('migrates legacy IF/ELSE checks and restores completion after the final assessed run', () => {
+    const legacy = { ifElseLearning: [{ level: 4, mode: 'prediction', kind: 'check', attempt: 1, value: 75, prediction: 'Level unlocked', actualOutput: 'Keep playing', conditionResult: false, errorKind: null, at: 1 }] }
+    expect(restoreProgress('maya', 'Maya', legacy).ifElseLevels).toEqual([1, 2, 3, 4])
+    expect(restoreProgress('maya', 'Maya', { ifElseLevels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }).completed).toContain('if-else')
+  })
+
   it('retains IF/ELSE learning history in session and restored cloud progress, safely handling legacy or malformed history', () => {
     const event: IfElseLearningEvent = { level: 4, mode: 'prediction', kind: 'prediction', attempt: 0, value: 75, prediction: 'Level unlocked', actualOutput: null, conditionResult: null, errorKind: null, at: 1234 }
     saveSession({ ...createSession('Maya'), ifElseLearning: [event] })

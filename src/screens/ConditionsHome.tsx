@@ -1,5 +1,6 @@
 import { ArrowLeft, ArrowRight, Check, Lock, Sparkles } from 'lucide-react'
 import { conditionExperiences } from '../data/conditions'
+import { completedIfElseLevels } from '../lib/ifElseProgress'
 import type { AppRoute, SessionProgress } from '../types'
 
 interface Props {
@@ -11,6 +12,7 @@ const previews = ['energy > 60 → TRUE', 'if score > 5:', 'if ready:\nelse:', '
 
 export function ConditionsHome({ progress, onNavigate }: Props) {
   const completed = conditionExperiences.filter((item) => progress.completed.includes(item.id)).length
+  const savedIfElse = completedIfElseLevels(progress).length
   return (
     <main className="variables-home conditions-home">
       <header className="variables-heading">
@@ -27,7 +29,7 @@ export function ConditionsHome({ progress, onNavigate }: Props) {
             <span className="experience-card__icon"><Icon /></span>
             <span className="experience-card__copy"><strong>{experience.title}</strong><p>{experience.description}</p></span>
             <code className="experience-card__preview" aria-hidden="true">{previews[index]}</code>
-            <span className="experience-card__state">{experience.disabled ? <><Lock size={16} /> COMING SOON</> : complete ? <><Check size={16} /> DONE · PLAY AGAIN</> : <>LET'S TRY IT <ArrowRight size={16} /></>}</span>
+            <span className="experience-card__state">{experience.disabled ? <><Lock size={16} /> COMING SOON</> : complete ? <><Check size={16} /> DONE · PLAY AGAIN</> : experience.id === 'if-else' && savedIfElse > 0 ? <>{savedIfElse} / 10 SAVED · CONTINUE <ArrowRight size={16} /></> : <>LET'S TRY IT <ArrowRight size={16} /></>}</span>
             {index === 0 && !complete && <i>START HERE</i>}
           </button>
         })}

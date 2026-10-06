@@ -52,6 +52,7 @@ export interface SessionProgress {
   choiceMachineQuizIndex: number
   choiceMachineXp: number
   ifElseLearning?: IfElseLearningEvent[]
+  ifElseLevels?: number[]
   blackBoxLevels: number[]
   blackBoxQuizAnswers: number[]
   blackBoxQuizStartedAt: number | null

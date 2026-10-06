@@ -49,6 +49,11 @@ async function main() {
       await capture('failed-state')
       throw new Error(`Timed out: ${expression}`)
     }
+    const reloadAndWait = async (expression) => {
+      await evaluate("document.documentElement.setAttribute('data-check-reloading', '')")
+      await send('Page.reload', { ignoreCache: true })
+      await waitFor(`!document.documentElement.hasAttribute('data-check-reloading') && (${expression})`)
+    }
     const clickLabel = async (label) => {
       const clicked = await evaluate(`(() => { const button = [...document.querySelectorAll('.ieb-screen button')].find(b => b.getAttribute('aria-label') === ${JSON.stringify(label)}); if (!button || button.disabled) return false; button.scrollIntoView({ block: 'nearest' }); button.click(); return true })()`)
       if (!clicked) throw new Error(`Unavailable button: ${label}`)
@@ -70,11 +75,14 @@ async function main() {
       if (!result.visible || result.overflow || !result.focused || !result.inert) throw new Error(`Dialog accessibility/layout: ${JSON.stringify(result)}`)
     }
     await send('Page.enable'); await send('Runtime.enable')
+    if (process.env.PIXPY_OFFLINE_PYTHON === '1') {
+      // Exercise the built-in runner without relying on a classroom CDN download.
+      await send('Page.addScriptToEvaluateOnNewDocument', { source: "Object.defineProperty(window, 'Worker', { value: undefined })" })
+    }
     await send('Page.navigate', { url: appUrl })
     await waitFor("Boolean(document.querySelector('.name-screen'))")
     await evaluate(`sessionStorage.setItem('pixpy.session.v3', JSON.stringify({ name: 'Pedagogy review', username: 'pedagogyreview', isTeacher: true, completed: [] }))`)
-    await send('Page.reload', { ignoreCache: true })
-    await waitFor("Boolean(document.querySelector('.playground-home'))")
+    await reloadAndWait("Boolean(document.querySelector('.playground-home'))")
     const levels = await evaluate(`(async () => {
       const { ifElseProblems, problemLines } = await import('/src/data/ifElseBuilder.ts')
       const { ifElsePedagogy } = await import('/src/data/ifElsePedagogy.ts')
@@ -83,8 +91,9 @@ async function main() {
     })()`)
     for (const size of [{ name: 'chromebook', width: 1366, height: 637 }, { name: 'ipad', width: 1024, height: 768 }, { name: 'compact', width: 852, height: 575 }, { name: 'mobile', width: 390, height: 844 }, { name: 'small-landscape', width: 740, height: 430 }]) {
       await send('Emulation.setDeviceMetricsOverride', { width: size.width, height: size.height, deviceScaleFactor: 1, mobile: false })
-      await send('Page.navigate', { url: `${appUrl}#/if-else` }); await send('Page.reload', { ignoreCache: true })
-      await waitFor("Boolean(document.querySelector('.ieb-screen'))")
+      await evaluate(`sessionStorage.setItem('pixpy.session.v3', JSON.stringify({ name: 'Pedagogy review', username: 'pedagogyreview', isTeacher: true, completed: [] }))`)
+      await send('Page.navigate', { url: `${appUrl}#/if-else` })
+      await reloadAndWait("Boolean(document.querySelector('.ieb-screen'))")
       if (size.height > size.width) {
         const rotationNotice = await evaluate("getComputedStyle(document.querySelector('.landscape-notice')).display !== 'none' && getComputedStyle(document.querySelector('.landscape-app')).visibility === 'hidden'")
         if (!rotationNotice) throw new Error('Portrait rotation notice missing')
@@ -95,11 +104,24 @@ async function main() {
       for (const [index, level] of levels.entries()) {
         const challenge = index + 1
         await waitFor(`document.querySelector('.ieb-counter')?.textContent.includes('Challenge ${String(challenge).padStart(2, '0')}')`)
+        if (challenge === 4) {
+          await reloadAndWait("Boolean(document.querySelector('.ieb-prediction-first'))")
+          const locked = await evaluate("!document.querySelector('.ieb-editor') && !document.querySelector('.ieb-bank') && [...document.querySelectorAll('.ieb-prediction button')].every(b => !b.disabled)")
+          if (!locked) throw new Error('Level 4 must begin with enabled prediction choices and reveal code afterward')
+          await clickText('MAKE A PREDICTION')
+          await waitFor("document.activeElement === document.querySelector('.ieb-prediction button')")
+        }
         await evaluate("document.querySelector('.ieb-screen').scrollTop = 0")
         await capture(`level-${challenge}-${size.name}`)
         const overflow = await evaluate("document.documentElement.scrollWidth > innerWidth + 1 || document.querySelector('.ieb-screen').scrollWidth > document.querySelector('.ieb-screen').clientWidth + 1")
         if (overflow) throw new Error(`Overflow at level ${challenge}, ${size.name}`)
-        if (level.pedagogy.requirePrediction === 'output') await clickLabel(`Predict ${level.trueOutput}`)
+        if (level.pedagogy.requirePrediction === 'output') {
+          await clickLabel(`Predict ${size.name === 'chromebook' ? level.trueOutput : level.falseOutput}`)
+          await waitFor("Boolean(document.querySelector('.ieb-bank')) && document.activeElement === document.querySelector('.ieb-bank button:not(:disabled)')")
+          const pieceVisible = await evaluate("(() => { const r = document.activeElement.getBoundingClientRect(), footer = document.querySelector('.ieb-feedback').getBoundingClientRect(); return r.top >= 0 && r.bottom <= footer.top })()")
+          if (!pieceVisible) throw new Error('Prediction must reveal a visible, focused code piece')
+          await capture(`prediction-selected-${size.name}`)
+        }
         if (level.pedagogy.useInput) await clickText(`Use starting value (${level.initial})`)
         if (level.pedagogy.requireDebugRun) {
           await clickText('CHECK CODE + RUN'); await waitFor("Boolean(document.querySelector('.ieb-outcome--wrong'))")
@@ -125,13 +147,24 @@ async function main() {
         if ([0, 3, 6, 9].includes(index)) await capture(`success-${challenge}-${size.name}`)
         const printed = await evaluate("document.querySelector('.ieb-outcome .ieb-trace').textContent")
         if (!printed.includes(level.truth ? level.trueOutput : level.falseOutput)) throw new Error(`Wrong output at ${challenge}`)
+        const checkpoint = await evaluate("JSON.parse(sessionStorage.getItem('pixpy.session.v3'))")
+        if (!checkpoint.ifElseLevels?.includes(challenge)) throw new Error(`Level ${challenge} was not saved before NEXT`)
+        if (challenge === 10 && !checkpoint.completed.includes('if-else')) throw new Error('Last correct run must save activity completion before FINISH')
+        if (challenge === 4) {
+          await reloadAndWait("document.querySelector('.ieb-counter')?.textContent.includes('Challenge 05')")
+          continue
+        }
         await clickText(index === 9 ? 'FINISH ACTIVITY' : 'NEXT PROBLEM')
       }
       await waitFor("Boolean(document.querySelector('.ieb-finish'))")
       const saved = await evaluate("JSON.parse(sessionStorage.getItem('pixpy.session.v3'))")
-      if (!saved.completed.includes('if-else') || !saved.ifElseLearning.some(e => e.kind === 'prediction')) throw new Error('Completion or learning records missing')
+      if (!saved.completed.includes('if-else') || saved.ifElseLevels.length !== 10 || !saved.ifElseLearning.some(e => e.kind === 'prediction')) throw new Error('Completion or learning records missing')
       await capture(`complete-${size.name}`)
-      console.log(JSON.stringify({ viewport: size.name, levels: 10, completion: true, predictionHistory: true, screenshotDir: outputDir }))
+      await reloadAndWait("Boolean(document.querySelector('.ieb-finish'))")
+      await clickText('PLAY AGAIN')
+      await waitFor("document.querySelector('.ieb-counter')?.textContent.includes('Challenge 01')")
+      if (!await evaluate("document.querySelector('.ieb-progress').getAttribute('aria-valuenow') === '10'")) throw new Error('Replay discarded saved levels')
+      console.log(JSON.stringify({ viewport: size.name, levels: 10, completion: true, resume: true, replay: true, predictionHistory: true, screenshotDir: outputDir }))
     }
   } finally { socket?.close(); browser.kill() }
 }

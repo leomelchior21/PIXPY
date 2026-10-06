@@ -1,5 +1,6 @@
 import { CHOICE_QUIZ_LENGTH, CHOICE_XP_PER_QUESTION } from '../data/choiceMachine'
 import { ifElsePedagogy } from '../data/ifElsePedagogy'
+import { completedIfElseLevels } from './ifElseProgress'
 import type { IfElseLearningEvent, SessionProgress } from '../types'
 
 export const learningErrorLabels: Record<NonNullable<IfElseLearningEvent['errorKind']>, string> = {
@@ -20,7 +21,7 @@ export function conditionsProgress(progress: SessionProgress | null) {
     event && Number.isInteger(event.level) && event.level >= 1 && event.level <= ifElsePedagogy.length
     && ['check', 'prediction', 'hint'].includes(event.kind))
   const checks = events.filter((event) => event.kind === 'check')
-  const solved = new Set(checks.filter((event) => event.errorKind === null && typeof event.actualOutput === 'string').map((event) => event.level))
+  const solved = new Set(completedIfElseLevels(progress))
   const lastCheck = checks.at(-1)
   const lastEvent = events.at(-1)
   const pendingPredictions = new Map<number, IfElseLearningEvent>()

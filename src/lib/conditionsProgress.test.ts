@@ -34,4 +34,8 @@ describe('conditionsProgress', () => {
     const result = conditionsProgress({ ...createSession('Ada'), ifElseLearning: [event({ kind: 'prediction', prediction: 'An output', actualOutput: null }), event({ value: 15 }), event({ actualOutput: null, errorKind: 'structure' })] })
     expect(result).toMatchObject({ testedPredictions: 0, matchedPredictions: 0, solvedLevels: 1 })
   })
+
+  it('reports durable solved levels even after their analytics checks are no longer stored', () => {
+    expect(conditionsProgress({ ...createSession('Ada'), ifElseLevels: [1, 2, 3, 4], ifElseLearning: [] }).solvedLevels).toBe(4)
+  })
 })

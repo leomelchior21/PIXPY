@@ -236,6 +236,13 @@
 .ieb-screen .ieb-prediction button { flex: 1; min-height: 41px; padding: 8px 10px; border-color: #d8c5e9; border-radius: 8px; color: #6c537e; background: #fff; font-size: 11px; }
 .ieb-screen .ieb-prediction button[aria-pressed=true] { border-color: #9b7fc2; background: #e9dcf5; }
 .ieb-prediction small { color: #9581a7; font-size: 10px; line-height: 1.45; }
+.ieb-prediction-first { display: grid; gap: 10px; }
+.ieb-prediction-first .ieb-prediction { padding: 20px; gap: 18px; border: 2px solid #b99ccd; }
+.ieb-prediction-first .ieb-prediction h2 { font-size: clamp(18px, 2vw, 24px); }
+.ieb-prediction-first .ieb-prediction-model { font-size: 14px; }
+.ieb-prediction-first .ieb-prediction button { min-height: 64px; font-size: 15px; border: 2px solid #b99ccd; }
+.ieb-prediction-first .ieb-prediction small { color: #6c537e; font-size: 12px; }
+.ieb-prediction-saved { display: grid; gap: 6px; }
 .ieb-trace { display: grid; gap: 8px; padding: 13px; border: 1px solid #d4d9d0; border-radius: 11px; color: #597260; background: #f4f8f0; }
 .ieb-trace > header { font-size: 9px; font-weight: 850; letter-spacing: .12em; }
 .ieb-trace ol { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }

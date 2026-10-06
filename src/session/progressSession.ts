@@ -1,3 +1,4 @@
+import { completedIfElseLevels } from '../lib/ifElseProgress'
 import {
   activityIds,
   printActivityIds,
@@ -23,6 +24,7 @@ export const emptyProgress: Omit<SessionProgress, 'name' | 'username' | 'isTeach
   choiceMachineQuizIndex: 0,
   choiceMachineXp: 0,
   ifElseLearning: [],
+  ifElseLevels: [],
   blackBoxLevels: [],
   blackBoxQuizAnswers: [],
   blackBoxQuizStartedAt: null,
@@ -73,6 +75,8 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
   const blackBoxQuizResults = cleanBlackBoxQuizResults(parsed.blackBoxQuizResults)
   const printPlaygroundCompleted = cleanPrintActivityIds(parsed.printPlaygroundCompleted)
   const completed = cleanActivityIds(parsed.completed)
+  const ifElseLearning = cleanIfElseLearning(parsed.ifElseLearning)
+  const ifElseLevels = completedIfElseLevels({ ...parsed, completed, ifElseLearning })
   const quizCompleted = completed.filter((activity) => {
     if (activity === 'memory-machine') return memoryQuizAnswers.length === 10 || parsed.memoryQuizCompleted === true
     if (activity === 'black-box') return blackBoxQuizAnswers.length === 10 || blackBoxQuizResults.length > 0
@@ -87,7 +91,7 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
     name: cleanName(parsed.name),
     username,
     isTeacher: parsed.isTeacher === true,
-    completed: quizCompleted,
+    completed: ifElseLevels.length === 10 ? cleanActivityIds([...quizCompleted, 'if-else']) : quizCompleted,
     backroomRunXp: cleanWholeNumber(parsed.backroomRunXp, 0, 100000),
     backroomRunBest: cleanWholeNumber(parsed.backroomRunBest, 0, 10000),
     backroomRunGates: cleanWholeNumber(parsed.backroomRunGates, 0, 100000),
@@ -97,7 +101,8 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
     choiceMachineStoriesComplete: parsed.choiceMachineStoriesComplete === true,
     choiceMachineQuizIndex: cleanChoiceQuizIndex(parsed.choiceMachineQuizIndex),
     choiceMachineXp: cleanChoiceXp(parsed.choiceMachineXp),
-    ifElseLearning: cleanIfElseLearning(parsed.ifElseLearning),
+    ifElseLearning,
+    ifElseLevels,
     blackBoxQuizAnswers,
     blackBoxQuizStartedAt: cleanTimestamp(parsed.blackBoxQuizStartedAt),
     blackBoxQuizElapsedMs: cleanElapsed(parsed.blackBoxQuizElapsedMs),

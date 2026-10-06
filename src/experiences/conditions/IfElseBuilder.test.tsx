@@ -4,12 +4,13 @@ import { ifElseProblems, parseProblemInput, problemLines } from '../../data/ifEl
 import { ifElsePedagogy } from '../../data/ifElsePedagogy'
 import { splitCondition } from '../../lib/ifElseLearning'
 import { PythonRunError, pythonRunner } from '../../lib/pythonRunner'
-import { createSession } from '../../session/progressSession'
+import { createSession, loadSession, restoreProgress, saveSession } from '../../session/progressSession'
+import type { SessionProgress } from '../../types'
 import { IfElseBuilder } from './IfElseBuilder'
 
-function Harness() {
-  const [progress, setProgress] = useState(createSession('Maya'))
-  return <><IfElseBuilder progress={progress} onProgress={setProgress} onBack={() => {}} /><output data-testid="completed">{progress.completed.join(',')}</output><output data-testid="learning">{JSON.stringify(progress.ifElseLearning)}</output></>
+function Harness({ initial = createSession('Maya'), onSave }: { initial?: SessionProgress; onSave?: (progress: SessionProgress) => void }) {
+  const [progress, setProgress] = useState(initial)
+  return <><IfElseBuilder progress={progress} onProgress={(next) => { setProgress(next); onSave?.(next) }} onBack={() => {}} /><output data-testid="completed">{progress.completed.join(',')}</output><output data-testid="learning">{JSON.stringify(progress.ifElseLearning)}</output><output data-testid="levels">{progress.ifElseLevels?.join(',')}</output></>
 }
 
 const bank = () => within(document.querySelector('.ieb-bank') as HTMLElement)
@@ -48,7 +49,8 @@ describe('IF/ELSE learning progression', () => {
     expect(bank().getAllByRole('button')).toHaveLength(7)
     build(2); check(); await advance()
     // 4: an incorrect prediction unlocks building, without being punished.
-    expect(bank().getAllByRole('button').every((button) => button.hasAttribute('disabled'))).toBe(true)
+    expect(document.querySelector('.ieb-bank')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Predict Level unlocked' })).toBeEnabled()
     fireEvent.click(screen.getByRole('button', { name: 'Predict Level unlocked' }))
     build(3); check()
     let dialog = await screen.findByRole('dialog', { name: 'Level cleared!' })
@@ -119,7 +121,8 @@ describe('IF/ELSE learning progression', () => {
     fireEvent.click(screen.getByRole('button', { name: `Use ${final.falseOutput} in ELSE` })); check()
     dialog = await screen.findByRole('dialog', { name: 'Final level cleared!' })
     expect(within(dialog).getByText(/predictions do not count as errors/)).toBeInTheDocument()
-    expect(screen.getByTestId('completed')).toBeEmptyDOMElement()
+    expect(screen.getByTestId('completed')).toHaveTextContent('if-else')
+    expect(screen.getByTestId('levels')).toHaveTextContent('1,2,3,4,5,6,7,8,9,10')
     fireEvent.click(within(dialog).getByRole('button', { name: 'FINISH ACTIVITY' }))
     expect(screen.getByRole('heading', { name: 'You built both paths.' })).toBeInTheDocument()
     expect(screen.getByTestId('completed')).toHaveTextContent('if-else')
@@ -165,7 +168,7 @@ describe('IF/ELSE learning progression', () => {
     await screen.findByRole('dialog', { name: 'Level cleared!' })
   })
 
-  it('highlights execution in order and cancels animation on unmount', async () => {
+  it('saves assessed runs before animation finishes and cancels animation on unmount', async () => {
     vi.stubGlobal('matchMedia', () => ({ matches: false }))
     vi.useFakeTimers()
     const record = vi.fn()
@@ -173,6 +176,7 @@ describe('IF/ELSE learning progression', () => {
     build(0); check()
     await act(async () => { await Promise.resolve() })
     expect(document.querySelector('.ieb-code .is-executing > span')).toHaveTextContent('1')
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({ ifElseLevels: [1] }))
     await act(async () => { vi.advanceTimersByTime(320) })
     expect(document.querySelector('.ieb-code .is-executing > span')).toHaveTextContent('2')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -187,7 +191,56 @@ describe('IF/ELSE learning progression', () => {
     await act(async () => { await Promise.resolve() })
     mounted.unmount()
     await act(async () => { vi.runAllTimers() })
-    expect(record).toHaveBeenCalledTimes(1)
+    expect(record).toHaveBeenCalledTimes(2)
+  })
+
+  it.each(['Level unlocked', 'Keep playing'])('saves level 4 and resumes level 5 with the prediction "%s"', async (prediction) => {
+    let saved = { ...createSession('Maya'), ifElseLevels: [1, 2, 3] }
+    const first = render(<Harness initial={saved} onSave={(next) => { saved = { ...next, ifElseLevels: next.ifElseLevels ?? [] }; saveSession(next) }} />)
+    expect(screen.getByRole('heading', { name: 'Level unlocked' })).toBeInTheDocument()
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '3')
+    expect(document.querySelector('.ieb-bank')).toBeNull()
+    expect(screen.getByRole('button', { name: `Predict ${prediction}` })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: `Predict ${prediction}` }))
+    expect(bank().getAllByRole('button').find((button) => !(button as HTMLButtonElement).disabled)).toHaveFocus()
+    expect(screen.getByText('Prediction saved. Place the five code pieces, then run your program.')).toBeInTheDocument()
+    const runner = vi.spyOn(pythonRunner, 'runScript')
+    build(3); check()
+    await screen.findByRole('dialog', { name: 'Level cleared!' })
+    expect(runner).toHaveBeenCalledWith(problemLines(ifElseProblems[3], false).join('\n'), [])
+    expect(saved.ifElseLevels).toEqual([1, 2, 3, 4])
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '4')
+    // Reload before pressing NEXT: the assessed level is already durable.
+    first.unmount()
+    render(<Harness initial={loadSession()!} />)
+    expect(screen.getByRole('heading', { name: 'Secret door' })).toBeInTheDocument()
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '4')
+  })
+
+  it('keeps saved levels through a wrong answer, a correction, and the level 4 next button', async () => {
+    render(<Harness initial={{ ...createSession('Maya'), ifElseLevels: [1, 2, 3] }} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Predict Level unlocked' }))
+    const problem = ifElseProblems[3]
+    for (const [position, line] of problemLines(problem, false).entries()) fireEvent.click(bank().getByRole('button', { name: `Add ${position === 1 ? `if ${problem.wrongCondition}:` : line.trim()}` }))
+    check(); await screen.findByRole('dialog', { name: 'Check the condition.' })
+    expect(screen.getByTestId('levels')).toHaveTextContent(/^1,2,3$/)
+    retry()
+    fireEvent.click(screen.getByRole('button', { name: 'Remove line 2' }))
+    fireEvent.click(bank().getByRole('button', { name: `Add if ${problem.condition}:` }))
+    check(); await screen.findByRole('dialog', { name: 'Level cleared!' })
+    fireEvent.click(screen.getByRole('button', { name: 'REVIEW MY CODE' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Clear program' }))
+    expect(screen.getByTestId('levels')).toHaveTextContent(/^1,2,3,4$/)
+    build(3); check(); await advance()
+    expect(screen.getByRole('heading', { name: 'Secret door' })).toBeInTheDocument()
+    expect(screen.getByTestId('levels')).toHaveTextContent(/^1,2,3,4$/)
+  }, 20_000)
+
+  it('restores old successful levels and opens the next unsolved challenge', () => {
+    const restored = restoreProgress('maya', 'Maya', { ifElseLearning: [{ level: 3, mode: 'select', kind: 'check', attempt: 1, value: 30, prediction: null, actualOutput: 'Fan stays off', conditionResult: false, errorKind: null, at: 1 }] })
+    render(<Harness initial={restored} />)
+    expect(screen.getByRole('heading', { name: 'Level unlocked' })).toBeInTheDocument()
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '3')
   })
 
   it('accepts valid decimal inputs and rejects fractional ages and invalid numbers', () => {

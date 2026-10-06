@@ -20,3 +20,8 @@ it('keeps the first three activities open and disables the last three', () => {
     }
   })
 })
+
+it('shows the saved IF/ELSE level count before the student continues', () => {
+  render(<ConditionsHome progress={{ ...createSession('Maya'), ifElseLevels: [1, 2, 3] }} onNavigate={() => undefined} />)
+  expect(screen.getByText('3 / 10 SAVED · CONTINUE')).toBeInTheDocument()
+})

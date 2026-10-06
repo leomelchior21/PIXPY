@@ -41,7 +41,7 @@ export function PredictionCard({ problem, value, kind, prediction, disabled, sho
   return <section className="ieb-prediction" aria-label="Predict before running"><h2>{kind === 'output' ? 'What will happen with this value?' : 'Will your condition be TRUE or FALSE?'}</h2>
     <div className="ieb-prediction-model"><code>{problem.variable} = {value ?? '?'}</code><ArrowRight size={15} />{showCondition && <><code>{problem.condition}</code><ArrowRight size={15} /></>}<b>?</b></div>
     <div>{(kind === 'output' ? [problem.trueOutput, problem.falseOutput] : ['TRUE', 'FALSE']).map((option) => <button key={option} aria-label={`Predict ${option}`} aria-pressed={prediction === option} disabled={disabled} onClick={() => onPredict(option)}>{option}{prediction === option && <Check size={15} />}</button>)}</div>
-    <small>{prediction ? 'Prediction saved. Now test it with Python.' : kind === 'output' ? 'Choose either outcome to unlock the build. You can learn from either prediction.' : 'Choose an input and finish your condition, then predict. This is an idea to test.'}</small>
+    <small>{prediction ? kind === 'output' ? 'Prediction saved. Build the program, then press CHECK CODE + RUN.' : 'Prediction saved. Now test it with Python.' : kind === 'output' ? 'Choose either outcome to unlock the build. You can learn from either prediction.' : 'Choose an input and finish your condition, then predict. This is an idea to test.'}</small>
   </section>
 }
 
