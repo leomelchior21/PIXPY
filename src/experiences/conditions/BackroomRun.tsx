@@ -1,9 +1,10 @@
 import { ArrowLeft, ChevronLeft, ChevronRight, Footprints, Infinity as InfinityIcon, Lightbulb, Pause, Play, RotateCcw, Siren, Volume2, VolumeX, Zap } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { baseRunSpeed, corridorCenterAt, energyRange, evaluateCondition, gateCrossing, gateXp, generateChallenge, hitsObstacle, planCorridor, planCourse, speedForGate, type BackroomChallenge, type ComparisonOperator } from '../../lib/backroomEngine'
+import { baseRunSpeed, championGates, corridorCenterAt, energyRange, evaluateCondition, gateCrossing, gateXp, generateChallenge, hitsObstacle, planCorridor, planCourse, speedForGate, type BackroomChallenge, type ComparisonOperator } from '../../lib/backroomEngine'
 import { completeActivity } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
 import { drawBackroom } from './backroomRenderer'
+import { BackroomChampionAward, BackroomChampionBadge } from './BackroomChampion'
 import './backroomRun.css'
 
 interface Props {
@@ -40,6 +41,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
   const [toast, setToast] = useState<string | null>(null)
   const [audioOn, setAudioOn] = useState(false)
   const [showMilestone, setShowMilestone] = useState(false)
+  const [showChampion, setShowChampion] = useState(false)
   const [turnHint, setTurnHint] = useState<0 | -1 | 1>(0)
   const [hazardHint, setHazardHint] = useState<0 | -1 | 1>(0)
   const [crashReason, setCrashReason] = useState<'gate' | 'wall' | 'obstacle'>('gate')
@@ -54,6 +56,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
   const hintTimerRef = useRef<number | null>(null)
   const revealTimerRef = useRef<number | null>(null)
   const toastTimerRef = useRef<number | null>(null)
+  const championTimerRef = useRef<number | null>(null)
   const seenOperatorsRef = useRef<Set<ComparisonOperator>>(new Set())
   const audioRef = useRef<AudioContext | null>(null)
   const steerRef = useRef({ left: false, right: false })
@@ -87,6 +90,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
 
   const isTrue = evaluateCondition(value, challenge.operator, challenge.threshold)
   const firstGate = sessionGates === 0 && runNumber === 1
+  const isChampion = Math.max(progress.backroomRunBest, sessionGates) >= championGates
   const pace = speedForGate(phase === 'turn' || status === 'passing' ? runNumber + 1 : runNumber) / baseRunSpeed
 
   useEffect(() => { challengeRef.current = challenge }, [challenge])
@@ -123,6 +127,8 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
     if (hintTimerRef.current) window.clearTimeout(hintTimerRef.current)
     if (revealTimerRef.current) window.clearTimeout(revealTimerRef.current)
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+    if (championTimerRef.current) window.clearTimeout(championTimerRef.current)
+    championTimerRef.current = null
     hintTimerRef.current = null
     revealTimerRef.current = null
     toastTimerRef.current = null
@@ -219,6 +225,11 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
     if (runNumberRef.current >= MILESTONE_GATES) next = completeActivity(next, 'backroom-run')
     progressRef.current = next
     onProgress(next)
+    if (runNumberRef.current === championGates) {
+      setShowChampion(true)
+      if (championTimerRef.current) window.clearTimeout(championTimerRef.current)
+      championTimerRef.current = window.setTimeout(() => setShowChampion(false), 10000)
+    }
     showToast(`+${xp} XP · PACE UP`)
     playTone(660, 180, 'square', 0.035)
   }
@@ -271,7 +282,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
 
       if (g.phase === 'gate') {
         if (g.true) {
-          g.openAmount = Math.min(1, g.openAmount + dt / OPEN_SECONDS)
+          g.openAmount = Math.min(1, g.openAmount + dt * Math.max(1, g.speed / baseRunSpeed) / OPEN_SECONDS)
           g.falseIntensity = Math.max(0, g.falseIntensity - dt * 2.4)
         } else {
           g.openAmount = Math.max(0, g.openAmount - dt / CLOSE_SECONDS)
@@ -484,6 +495,9 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
   const resume = () => { setShowMilestone(false); setStatus('running') }
   const tryAgain = () => {
     stopEnergyHold()
+    if (championTimerRef.current) window.clearTimeout(championTimerRef.current)
+    championTimerRef.current = null
+    setShowChampion(false)
     setSessionGates(0)
     setSessionXp(0)
     setSessionOperators([])
@@ -595,7 +609,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
     <div className="br-vignette" aria-hidden="true" />
 
     <header className="br-hud">
-      <span className="br-badge"><Footprints size={18} /> BACKROOMS RUN</span>
+      {isChampion ? <BackroomChampionBadge /> : <span className="br-badge"><Footprints size={18} /> BACKROOMS RUN</span>}
       <div className="br-stats">
         <span className="br-stat"><b>RUN</b> {String(runNumber).padStart(3, '0')}</span>
         <span className="br-stat"><Zap size={14} fill="currentColor" /> XP {progress.backroomRunXp}</span>
@@ -610,6 +624,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
     </header>
 
     {toast && <div className="br-toast">{toast}</div>}
+    {showChampion && (status === 'running' || status === 'passing') && <BackroomChampionAward celebrate />}
     {microReveal && <div className="br-reveal" role="status"><strong>{microReveal.title}</strong><span>{microReveal.caption}</span></div>}
     <section className="br-console">
       {turnHint !== 0 && hazardHint === 0 && sessionGates < 3 && status === 'running' && <div className={`br-turn ${turnHint < 0 ? 'is-left' : 'is-right'}`} role="status">
@@ -678,6 +693,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
     {status === 'crashed' && <div className="br-overlay br-overlay--crash">
       <RotateCcw size={36} />
       <small>GAME OVER</small>
+      {isChampion && <BackroomChampionAward />}
       <h2>{crashReason === 'wall' ? 'YOU HIT THE WALL' : crashReason === 'obstacle' ? 'YOU HIT AN OBSTACLE' : 'THE GATE STAYED CLOSED'}</h2>
       <p>{crashReason === 'wall'
         ? 'The corridor turned. Use the left and right arrow keys to follow it.'
@@ -711,6 +727,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
       <Footprints size={30} />
       <small>CHECKPOINT CONDITIONS</small>
       <h2>RUN SUMMARY</h2>
+      {isChampion && <BackroomChampionAward />}
       <div className="br-summary-grid">
         <article><strong>{sessionGates}</strong><span>GATES OPENED</span></article>
         <article><strong>{sessionXp}</strong><span>XP EARNED</span></article>

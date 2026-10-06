@@ -5,6 +5,7 @@ export const comparisonOperators: ComparisonOperator[] = ['>', '<', '>=', '<=', 
 export const energyRange = { min: 0, max: 100 } as const
 
 export const milestoneGates = 5
+export const championGates = 670
 
 export interface BackroomChallenge {
   id: string
@@ -64,10 +65,11 @@ export function gateXp(firstTry: boolean): number {
   return firstTry ? 15 : 10
 }
 
-export const baseRunSpeed = 0.95
+// Thirty percent faster than the current starting pace of 0.95 * 1.2.
+export const baseRunSpeed = 0.95 * 1.2 * 1.3
 
 export function speedForGate(gateNumber: number): number {
-  return Math.min(2.5, baseRunSpeed + Math.max(0, gateNumber - 1) * 0.11)
+  return baseRunSpeed + Math.max(0, gateNumber - 1) * 0.11 * 1.2
 }
 
 export interface CourseTile {

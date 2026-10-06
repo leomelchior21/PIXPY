@@ -1,4 +1,4 @@
-import { baseRunSpeed, comparisonOperators, corridorCenterAt, energyRange, evaluateCondition, gateCrossing, gateXp, generateChallenge, hasSolution, hitsObstacle, operatorHint, operatorWords, planCorridor, planCourse, speedForGate } from './backroomEngine'
+import { baseRunSpeed, championGates, comparisonOperators, corridorCenterAt, energyRange, evaluateCondition, gateCrossing, gateXp, generateChallenge, hasSolution, hitsObstacle, operatorHint, operatorWords, planCorridor, planCourse, speedForGate } from './backroomEngine'
 
 function lcg(seed: number): () => number {
   let state = seed
@@ -193,11 +193,22 @@ describe('xp', () => {
 })
 
 describe('runner pace', () => {
-  it('increases after each gate until its cap', () => {
+  it('starts thirty percent faster than the previous starting pace', () => {
+    expect(speedForGate(1)).toBeCloseTo((0.95 * 1.2) * 1.3)
     expect(speedForGate(1)).toBe(baseRunSpeed)
-    for (let gate = 2; gate <= 15; gate += 1) {
+  })
+
+  it('keeps increasing beyond the old cap, the champion milestone, and late runs', () => {
+    for (const gate of [2, 15, 100, 669, championGates, 671, 1000, 10000, 1000000]) {
       expect(speedForGate(gate)).toBeGreaterThan(speedForGate(gate - 1))
+      expect(speedForGate(gate) - speedForGate(gate - 1)).toBeCloseTo(.11 * 1.2)
     }
-    expect(speedForGate(100)).toBe(2.5)
+    expect(speedForGate(100)).toBeGreaterThan(2.5)
+    expect(speedForGate(10000)).toBeGreaterThan(speedForGate(championGates))
+  })
+
+  it('keeps the starting pace for a nonpositive gate number', () => {
+    expect(speedForGate(0)).toBe(baseRunSpeed)
+    expect(speedForGate(-1)).toBe(baseRunSpeed)
   })
 })
