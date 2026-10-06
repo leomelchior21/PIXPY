@@ -48,6 +48,13 @@ export function IfElseBuilder({ progress, onProgress, onBack }: Props) {
   const progressRef = useRef(progress)
   useEffect(() => { progressRef.current = progress }, [progress])
   const completedLevels = completedIfElseLevels(progress)
+  const nextLevel = nextIfElseLevel(progress)
+  const accessibleLevels = progress.isTeacher ? ifElseProblems.map((_, i) => i + 1) : [...completedLevels, ...(nextLevel >= 0 ? [nextLevel + 1] : [])]
+  const selectLevel = (levelIndex: number) => {
+    if (!accessibleLevels.includes(levelIndex + 1)) return
+    setIndex(levelIndex)
+    setFinished(false)
+  }
   const record = (event: IfElseLearningEvent) => {
     const previous = progressRef.current
     const levels = completedIfElseLevels(previous)
@@ -60,26 +67,33 @@ export function IfElseBuilder({ progress, onProgress, onBack }: Props) {
   const next = () => {
     if (!completedIfElseLevels(progressRef.current).includes(index + 1)) return
     if (index === ifElseProblems.length - 1) {
-      onProgress(completeActivity(progressRef.current, 'if-else'))
-      setFinished(true)
+      if (completedIfElseLevels(progressRef.current).length === ifElseProblems.length) setFinished(true)
+      else onBack()
     } else { setIndex(index + 1) }
   }
   if (finished) return <main className="ieb-screen">
     <header className="ieb-toolbar"><button className="ieb-back" onClick={onBack}><ArrowLeft size={18} /> Conditions</button><div className="ieb-brand"><Code2 size={20} /><b>IF / ELSE</b></div><div className="ieb-counter"><Trophy size={19} /> Complete!</div></header>
-    <ProgressBar index={10} completedLevels={completedLevels} />
+    <LevelNavigation index={10} completedLevels={completedLevels} accessibleLevels={accessibleLevels} onSelect={selectLevel} />
     <section className="ieb-finish"><div className="ieb-trophy"><Trophy size={64} /><Sparkles size={28} /></div><p className="ieb-kicker">ALL 10 PROGRAMS COMPLETE</p><h1>You built both paths.</h1><p>You predicted decisions, tested comparisons, repaired logic, and translated a rule into IF/ELSE.</p><div><button className="ieb-primary" onClick={() => { setIndex(0); setFinished(false) }}><RotateCcw size={18} /> PLAY AGAIN</button><button onClick={onBack}>BACK TO CONDITIONS <ArrowRight size={18} /></button></div></section>
   </main>
-  return <IfElseLevel key={index} index={index} completedLevels={completedLevels} problem={ifElseProblems[index]} pedagogy={ifElsePedagogy[index]} onBack={onBack} onNext={next} onRecord={record} />
+  return <IfElseLevel key={index} index={index} completedLevels={completedLevels} accessibleLevels={accessibleLevels} onSelect={selectLevel} problem={ifElseProblems[index]} pedagogy={ifElsePedagogy[index]} onBack={onBack} onNext={next} onRecord={record} />
 }
 
-function ProgressBar({ index, completedLevels }: { index: number; completedLevels: number[] }) {
-  return <div className="ieb-progress" role="progressbar" aria-label="Problems completed" aria-valuenow={completedLevels.length} aria-valuemin={0} aria-valuemax={10}>{ifElseProblems.map((_, i) => <span key={i} className={completedLevels.includes(i + 1) ? 'is-done' : i === index ? 'is-current' : ''}><i /></span>)}</div>
+function LevelNavigation({ index, completedLevels, accessibleLevels, onSelect, disabled = false, inert = false }: { index: number; completedLevels: number[]; accessibleLevels: number[]; onSelect: (index: number) => void; disabled?: boolean; inert?: boolean }) {
+  return <nav className="ieb-progress" aria-label="IF/ELSE levels" inert={inert}>
+    <div className="ieb-progress-count sr-only" role="progressbar" aria-label="Problems completed" aria-valuenow={completedLevels.length} aria-valuemin={0} aria-valuemax={10} />
+    {ifElseProblems.map((problem, i) => {
+      const done = completedLevels.includes(i + 1)
+      const available = accessibleLevels.includes(i + 1)
+      return <button key={i} type="button" className={`ieb-level-button ${done ? 'is-done' : ''} ${i === index ? 'is-current' : ''}`} disabled={disabled || !available} aria-label={`Level ${i + 1}: ${problem.title}${done ? ' - passed' : available ? '' : ' - locked'}`} aria-current={i === index ? 'step' : undefined} onClick={() => onSelect(i)}><span className="ieb-level-number">{i + 1}{done && <Check size={12} />}</span><span className="ieb-level-track"><i /></span></button>
+    })}
+  </nav>
 }
 
 const errorLabels: Record<LearningError, string> = { structure: 'STRUCTURE ERROR', condition: 'CONDITION ERROR', logic: 'LOGIC ERROR', output: 'OUTPUT ERROR', runtime: 'RUN INTERRUPTED' }
 const errorTitles: Record<LearningError, string> = { structure: 'Check the structure.', condition: 'Check the condition.', logic: 'The logic needs fixing.', output: 'Check the branch action.', runtime: 'Run paused.' }
 
-function IfElseLevel({ index, completedLevels, problem, pedagogy, onBack, onNext, onRecord }: { index: number; completedLevels: number[]; problem: IfElseProblem; pedagogy: IfElsePedagogy; onBack: () => void; onNext: () => void; onRecord: (event: IfElseLearningEvent) => void }) {
+function IfElseLevel({ index, completedLevels, accessibleLevels, onSelect, problem, pedagogy, onBack, onNext, onRecord }: { index: number; completedLevels: number[]; accessibleLevels: number[]; onSelect: (index: number) => void; problem: IfElseProblem; pedagogy: IfElsePedagogy; onBack: () => void; onNext: () => void; onRecord: (event: IfElseLearningEvent) => void }) {
   const [program, setProgram] = useState(() => initialProgram(problem, pedagogy))
   const [codeExpanded, setCodeExpanded] = useState(pedagogy.showProgramByDefault !== false)
   const [expression, setExpression] = useState(() => initialExpression(problem, pedagogy.construction === 'operator', pedagogy.requireDebugRun))
@@ -114,6 +128,7 @@ function IfElseLevel({ index, completedLevels, problem, pedagogy, onBack, onNext
   const full = lines.every((line) => line !== null)
   const busy = status === 'running'
   const passed = status === 'correct'
+  const nextLabel = index === ifElseProblems.length - 1 ? completedLevels.length === ifElseProblems.length ? 'FINISH ACTIVITY' : 'BACK TO CONDITIONS' : 'NEXT PROBLEM'
   const predictionLocksBuild = pedagogy.requirePrediction === 'output' && prediction === null
   const debugLocksEdit = pedagogy.requireDebugRun && !debugRan
   const value = pedagogy.useInput ? parseProblemInput(problem, draft) : problem.initial
@@ -225,7 +240,7 @@ function IfElseLevel({ index, completedLevels, problem, pedagogy, onBack, onNext
 
   return <main className={`ieb-screen ieb-mode--${pedagogy.mode} ${passed ? 'ieb-screen--success' : ''} ${pedagogy.useInput ? 'ieb-screen--interactive' : ''}`} style={{ '--ieb-scene': scene.color } as React.CSSProperties}>
     <header className="ieb-toolbar" inert={showOutcome}><button className="ieb-back" onClick={onBack}><ArrowLeft size={18} /><span>Conditions</span></button><div className="ieb-brand"><span><Code2 size={20} /></span><div><b>IF / ELSE</b><small>THE CODE BUILDER</small></div></div><div className="ieb-counter"><span><Sparkles size={18} /></span><b>Challenge {String(index + 1).padStart(2, '0')}<small> / 10</small></b></div></header>
-    <ProgressBar index={index} completedLevels={completedLevels} />
+    <LevelNavigation index={index} completedLevels={completedLevels} accessibleLevels={accessibleLevels} onSelect={onSelect} disabled={busy} inert={showOutcome} />
     <section className="ieb-layout" inert={showOutcome} aria-hidden={showOutcome ? true : undefined}>
       <div className="ieb-problem">
         <div className="ieb-mission-label"><span className="ieb-kicker">YOUR MISSION</span><span>{pedagogy.title.toUpperCase()}</span></div>
@@ -260,7 +275,7 @@ function IfElseLevel({ index, completedLevels, problem, pedagogy, onBack, onNext
         </>}
       </div>
     </section>
-    <footer className={`ieb-feedback ieb-feedback--${status}`} inert={showOutcome} aria-hidden={showOutcome ? true : undefined}><div role="status"><span className="ieb-feedback-icon">{passed ? <Check size={23} /> : diagnosis ? <Lightbulb size={23} /> : <Code2 size={23} />}</span><p><b>{passed ? 'Level cleared!' : busy ? 'Follow the decision...' : diagnosis ? errorLabels[diagnosis.kind] : 'What to do next'}</b>{passed ? 'Review the trace, try another value, or move on.' : diagnosis ? feedback : busy ? 'Python reads a value, tests a condition, and follows one path.' : nextInstruction}</p></div>{passed ? <button className="ieb-primary" onClick={onNext}>{index === 9 ? 'FINISH ACTIVITY' : 'NEXT PROBLEM'} <ArrowRight size={19} /></button> : predictionAction ? <button className="ieb-primary" onClick={goToPrediction}>MAKE A PREDICTION <ArrowRight size={19} /></button> : <button className="ieb-primary" disabled={!ready} onClick={() => void check()}><Play size={18} fill="currentColor" /> {busy ? 'RUNNING...' : 'CHECK CODE + RUN'}</button>}</footer>
+    <footer className={`ieb-feedback ieb-feedback--${status}`} inert={showOutcome} aria-hidden={showOutcome ? true : undefined}><div role="status"><span className="ieb-feedback-icon">{passed ? <Check size={23} /> : diagnosis ? <Lightbulb size={23} /> : <Code2 size={23} />}</span><p><b>{passed ? 'Level cleared!' : busy ? 'Follow the decision...' : diagnosis ? errorLabels[diagnosis.kind] : 'What to do next'}</b>{passed ? 'Review the trace, try another value, or move on.' : diagnosis ? feedback : busy ? 'Python reads a value, tests a condition, and follows one path.' : nextInstruction}</p></div>{passed ? <button className="ieb-primary" onClick={onNext}>{nextLabel} <ArrowRight size={19} /></button> : predictionAction ? <button className="ieb-primary" onClick={goToPrediction}>MAKE A PREDICTION <ArrowRight size={19} /></button> : <button className="ieb-primary" disabled={!ready} onClick={() => void check()}><Play size={18} fill="currentColor" /> {busy ? 'RUNNING...' : 'CHECK CODE + RUN'}</button>}</footer>
     {showOutcome && <div className={`ieb-outcome-backdrop ieb-outcome-backdrop--${passed ? 'success' : 'wrong'}`}>
       {passed && <div className="ieb-confetti" aria-hidden="true">{Array.from({ length: 28 }, (_, i) => <i key={i} style={{ '--confetti-x': `${(i * 37) % 100}%`, '--confetti-delay': `${(i % 7) * 70}ms`, '--confetti-rotation': `${i * 51}deg`, '--confetti-color': ['#b1e685', '#be9df2', '#ffd379', '#83d6cb'][i % 4] } as React.CSSProperties} />)}</div>}
       <div ref={outcomeRef} className={`ieb-outcome ${trace ? 'ieb-outcome--learning' : ''} ieb-outcome--${passed ? 'success' : 'wrong'}`} role="dialog" aria-modal="true" aria-labelledby="ieb-outcome-title" aria-describedby="ieb-outcome-copy">
@@ -276,7 +291,7 @@ function IfElseLevel({ index, completedLevels, problem, pedagogy, onBack, onNext
           </>}
           {showModel && diagnosis && <div className="ieb-outcome-clue"><span>MODEL FOR THIS PIECE</span><pre><PythonCode code={problemLines(problem, pedagogy.useInput)[diagnosis.line]} /></pre></div>}
         </div>
-        <div className="ieb-outcome-actions">{passed ? <><button className="ieb-primary" onClick={() => { setShowOutcome(false); onNext() }}>{index === 9 ? 'FINISH ACTIVITY' : 'NEXT PROBLEM'} <ArrowRight size={20} /></button><button className="ieb-outcome-review" onClick={() => setShowOutcome(false)}>{pedagogy.useInput ? 'TRY ANOTHER VALUE' : 'REVIEW MY CODE'}</button></> : <><button className="ieb-primary" onClick={() => setShowOutcome(false)}><RotateCcw size={19} /> {diagnosis?.kind === 'runtime' ? 'BACK TO MY CODE' : 'TRY AGAIN'}</button>{errorAttempt >= 4 && !showModel && <button className="ieb-outcome-review" onClick={() => { setShowModel(true); record('hint', { errorKind: diagnosis?.kind ?? null }) }}>SHOW A MODEL OF THIS PIECE</button>}</>}</div>
+        <div className="ieb-outcome-actions">{passed ? <><button className="ieb-primary" onClick={() => { setShowOutcome(false); onNext() }}>{nextLabel} <ArrowRight size={20} /></button><button className="ieb-outcome-review" onClick={() => setShowOutcome(false)}>{pedagogy.useInput ? 'TRY ANOTHER VALUE' : 'REVIEW MY CODE'}</button></> : <><button className="ieb-primary" onClick={() => setShowOutcome(false)}><RotateCcw size={19} /> {diagnosis?.kind === 'runtime' ? 'BACK TO MY CODE' : 'TRY AGAIN'}</button>{errorAttempt >= 4 && !showModel && <button className="ieb-outcome-review" onClick={() => { setShowModel(true); record('hint', { errorKind: diagnosis?.kind ?? null }) }}>SHOW A MODEL OF THIS PIECE</button>}</>}</div>
       </div>
     </div>}
   </main>

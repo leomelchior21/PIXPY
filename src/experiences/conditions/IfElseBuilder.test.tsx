@@ -8,9 +8,9 @@ import { createSession, loadSession, restoreProgress, saveSession } from '../../
 import type { SessionProgress } from '../../types'
 import { IfElseBuilder } from './IfElseBuilder'
 
-function Harness({ initial = createSession('Maya'), onSave }: { initial?: SessionProgress; onSave?: (progress: SessionProgress) => void }) {
+function Harness({ initial = createSession('Maya'), onSave, onBack = () => {} }: { initial?: SessionProgress; onSave?: (progress: SessionProgress) => void; onBack?: () => void }) {
   const [progress, setProgress] = useState(initial)
-  return <><IfElseBuilder progress={progress} onProgress={(next) => { setProgress(next); onSave?.(next) }} onBack={() => {}} /><output data-testid="completed">{progress.completed.join(',')}</output><output data-testid="learning">{JSON.stringify(progress.ifElseLearning)}</output><output data-testid="levels">{progress.ifElseLevels?.join(',')}</output></>
+  return <><IfElseBuilder progress={progress} onProgress={(next) => { setProgress(next); onSave?.(next) }} onBack={onBack} /><output data-testid="completed">{progress.completed.join(',')}</output><output data-testid="learning">{JSON.stringify(progress.ifElseLearning)}</output><output data-testid="levels">{progress.ifElseLevels?.join(',')}</output></>
 }
 
 const bank = () => within(document.querySelector('.ieb-bank') as HTMLElement)
@@ -31,6 +31,67 @@ function chooseExpression(index: number) {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers() })
 
 describe('IF/ELSE learning progression', () => {
+  it('lets students revisit passed levels and return to the next unlocked level', () => {
+    render(<Harness initial={{ ...createSession('Maya'), ifElseLevels: [1, 2, 3] }} />)
+    const navigation = () => within(screen.getByRole('navigation', { name: 'IF/ELSE levels' }))
+    const levels = navigation().getAllByRole('button')
+    expect(levels.slice(0, 4).every((button) => !(button as HTMLButtonElement).disabled)).toBe(true)
+    expect(levels.slice(4).every((button) => (button as HTMLButtonElement).disabled)).toBe(true)
+    expect(levels[3]).toHaveAttribute('aria-current', 'step')
+    fireEvent.click(levels[1])
+    expect(screen.getByRole('heading', { name: ifElseProblems[1].title })).toBeInTheDocument()
+    fireEvent.click(bank().getAllByRole('button')[0])
+    fireEvent.click(navigation().getAllByRole('button')[3])
+    expect(screen.getByRole('heading', { name: ifElseProblems[3].title })).toBeInTheDocument()
+    expect(document.querySelector('.ieb-prediction-first')).not.toBeNull()
+    fireEvent.click(navigation().getAllByRole('button')[9])
+    expect(screen.getByRole('heading', { name: ifElseProblems[3].title })).toBeInTheDocument()
+    expect(screen.getByTestId('levels')).toHaveTextContent(/^1,2,3$/)
+  })
+
+  it('lets a teacher open any of the ten levels without awarding completion', () => {
+    render(<Harness initial={createSession('Leo', 'leo', true)} />)
+    for (const index of [9, 6, 3, 0]) {
+      const buttons = within(screen.getByRole('navigation', { name: 'IF/ELSE levels' })).getAllByRole('button')
+      expect(buttons).toHaveLength(10)
+      expect(buttons.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true)
+      fireEvent.click(buttons[index])
+      expect(screen.getByRole('heading', { name: ifElseProblems[index].title })).toBeInTheDocument()
+    }
+    expect(screen.getByTestId('completed')).toBeEmptyDOMElement()
+    expect(screen.getByTestId('levels')).toBeEmptyDOMElement()
+    expect(screen.getByTestId('learning')).toHaveTextContent('[]')
+  })
+
+  it('opens any passed level directly from the completed activity', () => {
+    render(<Harness initial={{ ...createSession('Maya'), completed: ['if-else'] }} />)
+    expect(screen.getByRole('heading', { name: 'You built both paths.' })).toBeInTheDocument()
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'IF/ELSE levels' })).getAllByRole('button')[6])
+    expect(screen.getByRole('heading', { name: ifElseProblems[6].title })).toBeInTheDocument()
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '10')
+    expect(screen.getByTestId('completed')).toHaveTextContent('if-else')
+  })
+
+  it('does not mark all levels complete when a teacher solves only level ten', async () => {
+    const onBack = vi.fn()
+    render(<Harness initial={createSession('Leo', 'leo', true)} onBack={onBack} />)
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'IF/ELSE levels' })).getAllByRole('button')[9])
+    const final = ifElseProblems[9]
+    chooseExpression(9)
+    fireEvent.click(screen.getByRole('button', { name: `Use starting value (${final.initial})` }))
+    fireEvent.click(screen.getByRole('button', { name: `Use ${final.trueOutput} in IF` }))
+    fireEvent.click(screen.getByRole('button', { name: `Use ${final.falseOutput} in ELSE` }))
+    fireEvent.click(screen.getByRole('button', { name: 'Predict TRUE' }))
+    check()
+    const dialog = await screen.findByRole('dialog', { name: 'Final level cleared!' })
+    expect(document.querySelector('.ieb-progress')).toHaveAttribute('inert')
+    expect(screen.getByTestId('levels')).toHaveTextContent(/^10$/)
+    expect(screen.getByTestId('completed')).toBeEmptyDOMElement()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'BACK TO CONDITIONS' }))
+    expect(onBack).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('heading', { name: 'You built both paths.' })).not.toBeInTheDocument()
+  }, 20_000)
+
   it('fades support through all ten existing missions, records predictions, and completes only after independent construction', async () => {
     render(<Harness />)
     // 1: all correct pieces, visible structure and both paths, no distractors.

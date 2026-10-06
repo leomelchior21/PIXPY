@@ -79,7 +79,7 @@ async function main() {
     }
     const verifyDialog = async () => {
       await waitFor("document.activeElement === document.querySelector('.ieb-outcome .ieb-primary')")
-      const result = await evaluate(`(() => { const button = document.querySelector('.ieb-outcome .ieb-primary'), r = button.getBoundingClientRect(); return { visible: r.top >= 0 && r.bottom <= innerHeight + 1, overflow: document.documentElement.scrollWidth > innerWidth + 1, focused: document.activeElement === button, inert: document.querySelector('.ieb-layout').inert } })()`)
+      const result = await evaluate(`(() => { const button = document.querySelector('.ieb-outcome .ieb-primary'), r = button.getBoundingClientRect(); return { visible: r.top >= 0 && r.bottom <= innerHeight + 1, overflow: document.documentElement.scrollWidth > innerWidth + 1, focused: document.activeElement === button, inert: document.querySelector('.ieb-layout').inert && document.querySelector('.ieb-progress').inert } })()`)
       if (!result.visible || result.overflow || !result.focused || !result.inert) throw new Error(`Dialog accessibility/layout: ${JSON.stringify(result)}`)
     }
     const verifyFooter = async () => {
@@ -99,6 +99,7 @@ async function main() {
       if (result.some(bounds => bounds.bottomGap > 2 || bounds.overlaps || bounds.outsideViewport || bounds.headerMoved)) throw new Error(`Bottom banner moved or overlapped the activity: ${JSON.stringify(result)}`)
     }
     await send('Page.enable'); await send('Runtime.enable')
+    await send('Page.bringToFront')
     if (process.env.PIXPY_OFFLINE_PYTHON === '1') {
       // Exercise the built-in runner without relying on a classroom CDN download.
       await send('Page.addScriptToEvaluateOnNewDocument', { source: "Object.defineProperty(window, 'Worker', { value: undefined })" })
@@ -125,11 +126,27 @@ async function main() {
         console.log(JSON.stringify({ viewport: size.name, rotationNotice: true }))
         continue
       }
+      if (!await evaluate("document.querySelectorAll('.ieb-progress button:not(:disabled)').length === 10")) throw new Error('Teacher must be able to open every level')
+      await evaluate("document.querySelector('.ieb-progress button:last-child').focus({ preventScroll: true })")
+      await waitFor("document.activeElement === document.querySelector('.ieb-progress button:last-child')")
+      await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', text: '\r', windowsVirtualKeyCode: 13 })
+      await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
+      await waitFor("document.querySelector('.ieb-counter')?.textContent.includes('Challenge 10')")
+      await verifyFooter()
+      await capture(`teacher-level-access-${size.name}`)
+      const preview = await evaluate("JSON.parse(sessionStorage.getItem('pixpy.session.v3'))")
+      if (preview.ifElseLevels.length || preview.completed.includes('if-else')) throw new Error('Previewing a level awarded completion')
+      await clickLabel(`Level 1: ${levels[0].title}`)
       for (const [index, level] of levels.entries()) {
         const challenge = index + 1
         await waitFor(`document.querySelector('.ieb-counter')?.textContent.includes('Challenge ${String(challenge).padStart(2, '0')}')`)
         if (challenge === 4) {
           await reloadAndWait("Boolean(document.querySelector('.ieb-prediction-first'))")
+          await clickLabel(`Level 2: ${levels[1].title} - passed`)
+          await waitFor("document.querySelector('.ieb-counter')?.textContent.includes('Challenge 02')")
+          await verifyFooter()
+          await clickLabel(`Level 4: ${levels[3].title}`)
+          await waitFor("Boolean(document.querySelector('.ieb-prediction-first'))")
           const locked = await evaluate("!document.querySelector('.ieb-editor') && !document.querySelector('.ieb-bank') && [...document.querySelectorAll('.ieb-prediction button')].every(b => !b.disabled)")
           if (!locked) throw new Error('Level 4 must begin with enabled prediction choices and reveal code afterward')
           await clickText('MAKE A PREDICTION')
@@ -190,7 +207,10 @@ async function main() {
       await reloadAndWait("Boolean(document.querySelector('.ieb-finish'))")
       await clickText('PLAY AGAIN')
       await waitFor("document.querySelector('.ieb-counter')?.textContent.includes('Challenge 01')")
-      if (!await evaluate("document.querySelector('.ieb-progress').getAttribute('aria-valuenow') === '10'")) throw new Error('Replay discarded saved levels')
+      if (!await evaluate("document.querySelector('.ieb-progress-count').getAttribute('aria-valuenow') === '10'")) throw new Error('Replay discarded saved levels')
+      await clickLabel(`Level 7: ${levels[6].title} - passed`)
+      await waitFor("document.querySelector('.ieb-counter')?.textContent.includes('Challenge 07')")
+      await verifyFooter()
       console.log(JSON.stringify({ viewport: size.name, levels: 10, completion: true, resume: true, replay: true, predictionHistory: true, screenshotDir: outputDir }))
     }
   } finally { socket?.close(); browser.kill() }

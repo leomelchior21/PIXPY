@@ -16,9 +16,14 @@
 .ieb-counter > span { color: #9a71d4; }
 .ieb-counter small { color: #898594; font-size: 12px; }
 .ieb-progress { display: flex; flex-shrink: 0; gap: 7px; padding: 0 2px; }
-.ieb-progress > span { position: relative; flex: 1; height: 9px; border-radius: 12px; background: #e2e0e7; overflow: hidden; }
-.ieb-progress .is-done { background: #9fcf91; }
-.ieb-progress .is-current { background: #9576df; }
+.ieb-screen .ieb-level-button { display: flex; flex: 1; flex-direction: column; gap: 5px; min-width: 0; min-height: 44px; padding: 4px 3px; border: 1px solid #e3dde7; border-radius: 8px; color: #777581; background: #fffdf8; }
+.ieb-screen .ieb-level-button:hover:not(:disabled) { transform: none; border-color: #d4c6e6; background: #f1eafa; }
+.ieb-screen .ieb-level-button.is-current { border-color: #b5a0df; color: #7356cb; background: #eee7fc; }
+.ieb-screen .ieb-level-button.is-done { color: #53845c; }
+.ieb-level-number { display: flex; align-items: center; gap: 3px; font-size: 11px; }
+.ieb-level-track { position: relative; width: 100%; height: 7px; border-radius: 12px; background: #e2e0e7; overflow: hidden; }
+.ieb-progress .is-current .ieb-level-track { background: #9576df; }
+.ieb-progress .is-done .ieb-level-track { background: #9fcf91; }
 .ieb-progress .is-current i { position: absolute; inset: 2px 4px auto; height: 2px; border-radius: 8px; background: #c4aef3; }
 .ieb-layout { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.25fr); gap: 24px; flex: 1; min-height: 0; padding: 2px 2px 8px; overflow-y: auto; scrollbar-gutter: stable; }
 .ieb-problem { display: flex; flex-direction: column; gap: 15px; min-width: 0; padding: 25px; border: 1px solid #e3ddd2; border-radius: 20px; background: #fffdf8; box-shadow: 0 5px 18px #38312606; animation: ieb-enter .35s ease both; }
