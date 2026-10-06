@@ -1,5 +1,6 @@
 /* A small code studio: a warm mission, a dark editor, tactile pieces. */
-.ieb-screen { --ieb-navy: #222938; --ieb-purple: #7356cb; display: flex; flex-direction: column; gap: 14px; width: min(1340px, calc(100% - 56px)); height: 100%; margin: auto; padding: 18px 0; overflow-y: auto; color: #292d38; }
+.route-if-else .app-content { min-height: 0; overflow: hidden; }
+.ieb-screen { --ieb-navy: #222938; --ieb-purple: #7356cb; display: flex; flex-direction: column; gap: 14px; width: min(1340px, calc(100% - 56px)); height: 100%; min-height: 0; margin: auto; padding: 18px 0; overflow: hidden; color: #292d38; }
 .ieb-screen button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 44px; padding: 10px 16px; border: 1.5px solid #d3d3de; border-radius: 12px; color: #303442; background: #fff; cursor: pointer; font: 700 13px var(--ui-font); transition: transform .16s, box-shadow .16s, background-color .16s; }
 .ieb-screen button:hover:not(:disabled) { transform: translateY(-2px); }
 .ieb-screen button:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
@@ -19,7 +20,7 @@
 .ieb-progress .is-done { background: #9fcf91; }
 .ieb-progress .is-current { background: #9576df; }
 .ieb-progress .is-current i { position: absolute; inset: 2px 4px auto; height: 2px; border-radius: 8px; background: #c4aef3; }
-.ieb-layout { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.25fr); gap: 24px; flex: 1; }
+.ieb-layout { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.25fr); gap: 24px; flex: 1; min-height: 0; padding: 2px 2px 8px; overflow-y: auto; scrollbar-gutter: stable; }
 .ieb-problem { display: flex; flex-direction: column; gap: 15px; min-width: 0; padding: 25px; border: 1px solid #e3ddd2; border-radius: 20px; background: #fffdf8; box-shadow: 0 5px 18px #38312606; animation: ieb-enter .35s ease both; }
 .ieb-mission-label { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .ieb-kicker { font-size: 10px; font-weight: 800; letter-spacing: .13em; color: #90806c; }
@@ -121,7 +122,7 @@
 .ieb-output > span > span { width: 5px; height: 5px; border-radius: 50%; background: #a5dcb4; }
 .ieb-output pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 500 14px/1.5 'IBM Plex Mono', monospace; }
 .ieb-output.is-error { background: #482b32; color: #ffc8c8; border-color: #976165; }
-.ieb-feedback { position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0 0; border-top: 1px solid #dfd9e4; background: var(--paper); }
+.ieb-feedback { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0 0; border-top: 1px solid #dfd9e4; background: var(--paper); }
 .ieb-feedback > div { display: flex; align-items: center; gap: 12px; max-width: 800px; }
 .ieb-feedback-icon { display: grid; flex: 0 0 42px; place-items: center; height: 42px; border: 1px solid #e0d7eb; border-radius: 12px; color: #9278b5; background: #f1eaf8; }
 .ieb-feedback p { margin: 0; color: #81778b; font-size: 12px; line-height: 1.5; }
@@ -132,7 +133,7 @@
 .ieb-screen .ieb-primary:hover:not(:disabled) { background: #957bdc; }
 .ieb-screen .ieb-primary:disabled { opacity: 1; border-color: #d0c9dc; background: #e3ddeb; color: #afa2c3; box-shadow: 0 2px 0 #d0c9dc; }
 .ieb-feedback--correct .ieb-primary { border-color: #558452; background: #91bc78; box-shadow: 0 2px 0 #558452; }
-.ieb-finish { display: grid; flex: 1; place-content: center; justify-items: center; gap: 20px; min-width: 0; padding: 40px; border: 1px solid #e0d7eb; border-radius: 22px; background: #fffdf8; text-align: center; }
+.ieb-finish { display: grid; flex: 1; place-content: safe center; justify-items: center; gap: 20px; min-width: 0; min-height: 0; padding: 40px; overflow-y: auto; border: 1px solid #e0d7eb; border-radius: 22px; background: #fffdf8; text-align: center; }
 .ieb-trophy { position: relative; display: grid; place-items: center; width: 130px; height: 130px; border-radius: 50%; color: #967942; background: #faedc9; }
 .ieb-trophy > svg:last-child { position: absolute; top: 0; right: -6px; color: #9d83c9; }
 .ieb-finish h1 { margin: 0; font-size: 44px; letter-spacing: -.05em; }

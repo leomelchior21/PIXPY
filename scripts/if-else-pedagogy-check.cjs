@@ -9,6 +9,14 @@ const port = 9241
 const outputDir = path.join(os.tmpdir(), 'pixpy-pedagogy-check')
 fs.mkdirSync(outputDir, { recursive: true })
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const revealButton = (button) => {
+  const panel = button.closest('.ieb-layout, .ieb-finish')
+  if (!panel) return
+  const viewport = panel.getBoundingClientRect(), target = button.getBoundingClientRect()
+  if (target.top >= viewport.top && target.bottom <= viewport.bottom) return
+  const scale = viewport.height / panel.offsetHeight || 1
+  panel.scrollTop += (target.top - viewport.top - (viewport.height - target.height) / 2) / scale
+}
 
 async function main() {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'pixpy-pedagogy-browser-'))
@@ -36,7 +44,7 @@ async function main() {
     })
     const evaluate = async (expression) => {
       const result = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })
-      if (result.exceptionDetails) throw new Error(result.exceptionDetails.text)
+      if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description ?? result.exceptionDetails.text)
       return result.result.value
     }
     const waitFor = async (expression) => {
@@ -52,15 +60,15 @@ async function main() {
     const reloadAndWait = async (expression) => {
       await evaluate("document.documentElement.setAttribute('data-check-reloading', '')")
       await send('Page.reload', { ignoreCache: true })
-      await waitFor(`!document.documentElement.hasAttribute('data-check-reloading') && (${expression})`)
+      await waitFor(`Boolean(document.documentElement) && !document.documentElement.hasAttribute('data-check-reloading') && (${expression})`)
     }
     const clickLabel = async (label) => {
-      const clicked = await evaluate(`(() => { const button = [...document.querySelectorAll('.ieb-screen button')].find(b => b.getAttribute('aria-label') === ${JSON.stringify(label)}); if (!button || button.disabled) return false; button.scrollIntoView({ block: 'nearest' }); button.click(); return true })()`)
+      const clicked = await evaluate(`(() => { const button = [...document.querySelectorAll('.ieb-screen button')].find(b => b.getAttribute('aria-label') === ${JSON.stringify(label)}); if (!button || button.disabled) return false; (${revealButton.toString()})(button); button.click(); return true })()`)
       if (!clicked) throw new Error(`Unavailable button: ${label}`)
       await sleep(30)
     }
     const clickText = async (text) => {
-      const clicked = await evaluate(`(() => { const root = document.querySelector('.ieb-outcome') ?? document.querySelector('.ieb-screen'); const button = [...root.querySelectorAll('button')].find(b => b.textContent.trim() === ${JSON.stringify(text)}); if (!button || button.disabled) return false; button.scrollIntoView({ block: 'nearest' }); button.click(); return true })()`)
+      const clicked = await evaluate(`(() => { const root = document.querySelector('.ieb-outcome') ?? document.querySelector('.ieb-screen'); const button = [...root.querySelectorAll('button')].find(b => b.textContent.trim() === ${JSON.stringify(text)}); if (!button || button.disabled) return false; (${revealButton.toString()})(button); button.click(); return true })()`)
       if (!clicked) throw new Error(`Unavailable button: ${text}`)
       await sleep(30)
     }
@@ -73,6 +81,22 @@ async function main() {
       await waitFor("document.activeElement === document.querySelector('.ieb-outcome .ieb-primary')")
       const result = await evaluate(`(() => { const button = document.querySelector('.ieb-outcome .ieb-primary'), r = button.getBoundingClientRect(); return { visible: r.top >= 0 && r.bottom <= innerHeight + 1, overflow: document.documentElement.scrollWidth > innerWidth + 1, focused: document.activeElement === button, inert: document.querySelector('.ieb-layout').inert } })()`)
       if (!result.visible || result.overflow || !result.focused || !result.inert) throw new Error(`Dialog accessibility/layout: ${JSON.stringify(result)}`)
+    }
+    const verifyFooter = async () => {
+      const result = await evaluate(`(() => {
+        const screen = document.querySelector('.ieb-screen'), layout = document.querySelector('.ieb-layout'), footer = document.querySelector('.ieb-feedback');
+        const original = layout.scrollTop, positions = [0, (layout.scrollHeight - layout.clientHeight) / 2, layout.scrollHeight];
+        const bounds = positions.map(scroll => {
+          layout.scrollTop = scroll;
+          const s = screen.getBoundingClientRect(), l = layout.getBoundingClientRect(), f = footer.getBoundingClientRect();
+          const padding = parseFloat(getComputedStyle(screen).paddingBottom) * s.height / screen.offsetHeight;
+          const header = document.querySelector('.app-header').getBoundingClientRect();
+          return { bottomGap: Math.abs(f.bottom + padding - innerHeight), overlaps: l.bottom > f.top + 1, outsideViewport: f.bottom > innerHeight + 1 || f.top < 0, headerMoved: Math.abs(header.top) > 1 };
+        });
+        layout.scrollTop = original;
+        return bounds;
+      })()`)
+      if (result.some(bounds => bounds.bottomGap > 2 || bounds.overlaps || bounds.outsideViewport || bounds.headerMoved)) throw new Error(`Bottom banner moved or overlapped the activity: ${JSON.stringify(result)}`)
     }
     await send('Page.enable'); await send('Runtime.enable')
     if (process.env.PIXPY_OFFLINE_PYTHON === '1') {
@@ -89,7 +113,7 @@ async function main() {
       const { splitCondition, evaluateCondition } = await import('/src/lib/ifElseLearning.ts')
       return ifElseProblems.map((problem, index) => ({ ...problem, pedagogy: ifElsePedagogy[index], lines: problemLines(problem, ifElsePedagogy[index].useInput), parts: splitCondition(problem.condition), truth: evaluateCondition(problem.condition, problem.variable, problem.initial) }))
     })()`)
-    for (const size of [{ name: 'chromebook', width: 1366, height: 637 }, { name: 'ipad', width: 1024, height: 768 }, { name: 'compact', width: 852, height: 575 }, { name: 'mobile', width: 390, height: 844 }, { name: 'small-landscape', width: 740, height: 430 }]) {
+    for (const size of [{ name: 'desktop', width: 1440, height: 900 }, { name: 'chromebook', width: 1366, height: 637 }, { name: 'ipad', width: 1024, height: 768 }, { name: 'compact', width: 852, height: 575 }, { name: 'mobile', width: 390, height: 844 }, { name: 'small-landscape', width: 740, height: 430 }, { name: 'phone-landscape', width: 568, height: 320 }]) {
       await send('Emulation.setDeviceMetricsOverride', { width: size.width, height: size.height, deviceScaleFactor: 1, mobile: false })
       await evaluate(`sessionStorage.setItem('pixpy.session.v3', JSON.stringify({ name: 'Pedagogy review', username: 'pedagogyreview', isTeacher: true, completed: [] }))`)
       await send('Page.navigate', { url: `${appUrl}#/if-else` })
@@ -111,15 +135,17 @@ async function main() {
           await clickText('MAKE A PREDICTION')
           await waitFor("document.activeElement === document.querySelector('.ieb-prediction button')")
         }
-        await evaluate("document.querySelector('.ieb-screen').scrollTop = 0")
+        await evaluate("document.querySelector('.ieb-screen').scrollTop = 0; document.querySelector('.ieb-layout').scrollTop = 0")
         await capture(`level-${challenge}-${size.name}`)
-        const overflow = await evaluate("document.documentElement.scrollWidth > innerWidth + 1 || document.querySelector('.ieb-screen').scrollWidth > document.querySelector('.ieb-screen').clientWidth + 1")
+        await verifyFooter()
+        const overflow = await evaluate("[document.documentElement, document.querySelector('.ieb-screen'), document.querySelector('.ieb-layout')].some(e => e.scrollWidth > e.clientWidth + 1)")
         if (overflow) throw new Error(`Overflow at level ${challenge}, ${size.name}`)
         if (level.pedagogy.requirePrediction === 'output') {
           await clickLabel(`Predict ${size.name === 'chromebook' ? level.trueOutput : level.falseOutput}`)
           await waitFor("Boolean(document.querySelector('.ieb-bank')) && document.activeElement === document.querySelector('.ieb-bank button:not(:disabled)')")
           const pieceVisible = await evaluate("(() => { const r = document.activeElement.getBoundingClientRect(), footer = document.querySelector('.ieb-feedback').getBoundingClientRect(); return r.top >= 0 && r.bottom <= footer.top })()")
           if (!pieceVisible) throw new Error('Prediction must reveal a visible, focused code piece')
+          await verifyFooter()
           await capture(`prediction-selected-${size.name}`)
         }
         if (level.pedagogy.useInput) await clickText(`Use starting value (${level.initial})`)
@@ -142,6 +168,7 @@ async function main() {
           await clickLabel(`Use ${level.trueOutput} in IF`); await clickLabel(`Use ${level.falseOutput} in ELSE`)
         }
         if (level.pedagogy.requirePrediction === 'truth') await clickLabel(`Predict ${level.truth ? 'TRUE' : 'FALSE'}`)
+        await verifyFooter()
         await clickText('CHECK CODE + RUN'); await waitFor("Boolean(document.querySelector('.ieb-outcome--success'))")
         await verifyDialog()
         if ([0, 3, 6, 9].includes(index)) await capture(`success-${challenge}-${size.name}`)

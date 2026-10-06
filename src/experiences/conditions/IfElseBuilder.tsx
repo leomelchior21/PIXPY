@@ -30,6 +30,18 @@ const sceneDetails = [
   { icon: Truck, label: 'SPECIAL DELIVERY', caption: 'ORDER TOTAL', color: '#ffe4a3' },
 ]
 
+function revealLearningControl(control: HTMLElement | null | undefined) {
+  const panel = control?.closest<HTMLElement>('.ieb-layout')
+  if (!panel || !control) return
+  const viewport = panel.getBoundingClientRect()
+  const target = control.getBoundingClientRect()
+  if (target.top >= viewport.top && target.bottom <= viewport.bottom) return
+  // Scroll only the learning panel. scrollIntoView also centers every outer
+  // container, moving the app header and bottom banner on scaled screens.
+  const scale = viewport.height / panel.offsetHeight || 1
+  panel.scrollTop += (target.top - viewport.top - (viewport.height - target.height) / 2) / scale
+}
+
 export function IfElseBuilder({ progress, onProgress, onBack }: Props) {
   const [index, setIndex] = useState(() => Math.max(0, nextIfElseLevel(progress)))
   const [finished, setFinished] = useState(() => nextIfElseLevel(progress) === -1)
@@ -115,7 +127,7 @@ function IfElseLevel({ index, completedLevels, problem, pedagogy, onBack, onNext
   useEffect(() => {
     if (pedagogy.requirePrediction !== 'output' || predictionLocksBuild) return
     const firstPiece = workspaceRef.current?.querySelector<HTMLButtonElement>('.ieb-bank button:not(:disabled)')
-    firstPiece?.scrollIntoView?.({ block: 'center' })
+    revealLearningControl(firstPiece)
     firstPiece?.focus({ preventScroll: true })
   }, [pedagogy.requirePrediction, predictionLocksBuild])
 
@@ -162,8 +174,9 @@ function IfElseLevel({ index, completedLevels, problem, pedagogy, onBack, onNext
   }
   const revealPaths = () => { setPathsExpanded(true); record('hint') }
   const goToPrediction = () => {
-    predictionRef.current?.scrollIntoView?.({ block: 'center' })
-    predictionRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({ preventScroll: true })
+    const choice = predictionRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')
+    revealLearningControl(choice)
+    choice?.focus({ preventScroll: true })
   }
   const displayResult = (issue: Diagnosis | null, stdout: string, nextTrace: ExecutionTrace | null, attempt: number, recorded = false) => {
     setOutput(stdout); setDiagnosis(issue); setDebugRan(true)
