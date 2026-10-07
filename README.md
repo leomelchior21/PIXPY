@@ -33,7 +33,7 @@ Students use their first and last names together, without spaces. The accepted r
 
 Progress is cached in `sessionStorage` for fast refresh recovery and synchronized to Supabase after each change. The browser uses only the project publishable key. Roster tables are private and protected by RLS; public database functions expose only login, progress-save, and teacher-summary operations.
 
-The teacher login `leleomaker` opens the full PixPy website with a teacher-only **Dashboard** tab. The dashboard shows activity completion, Final Boss mission progress, last update, search, and summary totals, with filters for classes A/B/C and the White/Yellow teams. Students without a team in the source roster remain visible as **No team**.
+The teacher login `leleomaker` opens the full PixPy website with a teacher-only **Dashboard** tab. The dashboard shows activity completion, Final Boss mission progress, last update, search, and summary totals, with filters for classes A/B/C, the White/Yellow teams, and **External users**. External users have no seventh-grade class assigned. Students without a team in the source roster remain visible as **No team**.
 
 The app header has a **QUICK LIST** for jumping directly to any activity in the current group. It stays focused on navigation and contains no screenshot, print, or session-reset actions.
 

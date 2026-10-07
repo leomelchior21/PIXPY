@@ -28,3 +28,4 @@
   .teacher-roster--conditions > header { flex-wrap: wrap; gap: 8px; }
   .teacher-roster--conditions .teacher-roster-tools { justify-content: space-between; width: 100%; }
 }
+.teacher-filter-group.teacher-filter-group--teams > div { grid-template-columns: repeat(5, minmax(0, 1fr)); }

@@ -36,6 +36,7 @@ const teamOptions: Array<{ value: TeamFilter; label: string }> = [
   { value: 'all', label: 'All teams' },
   { value: 'white', label: 'White' },
   { value: 'yellow', label: 'Yellow' },
+  { value: 'external', label: 'External users' },
   { value: 'unassigned', label: 'No team' },
 ]
 
@@ -117,7 +118,7 @@ export function TeacherDashboard({ username }: TeacherDashboardProps) {
                   return (
                     <tr key={student.username}>
                       <td><strong>{student.displayName}</strong><small>{student.username}</small></td>
-                      <td><div className="teacher-group-badges"><span>CLASS {student.className ?? '—'}</span><span className={`team-${student.team ?? 'unassigned'}`}>{student.team ?? 'No team'}</span></div></td>
+                      <td><div className="teacher-group-badges"><span>{student.team === 'external' ? 'EXTERNAL' : `CLASS ${student.className ?? '—'}`}</span><span className={`team-${student.team ?? 'unassigned'}`}>{student.team === 'external' ? 'External users' : student.team ?? 'No team'}</span></div></td>
                       <td><div className="teacher-activity-dots" aria-label={`${completed.length} of ${activeWorld.experiences.length} activities complete`}>{activeWorld.experiences.map((activity) => <span key={activity.id} className={completed.includes(activity.id) ? 'is-done' : ''} title={activity.title}>{completed.includes(activity.id) ? <Check /> : <Circle />}</span>)}</div><small>{completed.length} / {activeWorld.experiences.length} complete</small></td>
                       <td>
                         {world === 'variables'

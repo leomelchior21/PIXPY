@@ -3,9 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { TeacherDashboard } from './TeacherDashboard'
 import { createSession } from '../session/progressSession'
 import type { SessionProgress } from '../types'
+import type { ClassProgressRow } from '../lib/classroomCloud'
 
 const cloud = vi.hoisted(() => ({
-  loadClassProgress: vi.fn(async () => [
+  loadClassProgress: vi.fn(async (): Promise<ClassProgressRow[]> => [
     { username: 'adaa', displayName: 'Ada A.', className: 'A', team: 'white', progress: { completed: ['if-else', 'backroom-run'], backroomRunGates: 3, choiceMachineXp: 40 } as SessionProgress, updatedAt: null, lastLoginAt: null },
     { username: 'abeb', displayName: 'Abe B.', className: 'A', team: 'yellow', progress: null, updatedAt: null, lastLoginAt: null },
     { username: 'beab', displayName: 'Bea B.', className: 'B', team: 'white', progress: null, updatedAt: null, lastLoginAt: null },
@@ -19,6 +20,34 @@ vi.mock('../lib/classroomCloud', async (importOriginal) => ({
 }))
 
 describe('TeacherDashboard', () => {
+  it('keeps external users out of seventh-grade classes and classroom teams', async () => {
+    cloud.loadClassProgress.mockResolvedValueOnce([
+      { username: 'gueststudent', displayName: 'Guest Student', className: null, team: 'external', progress: null, updatedAt: null, lastLoginAt: null },
+      { username: 'adaa', displayName: 'Ada A.', className: 'A', team: 'white', progress: null, updatedAt: null, lastLoginAt: null },
+    ])
+    const user = userEvent.setup()
+    render(<TeacherDashboard username="leleomaker" />)
+
+    await screen.findByRole('heading', { name: '2 students in view' })
+    await user.click(screen.getByRole('button', { name: /External users.*1/ }))
+    expect(screen.getByRole('heading', { name: '1 student in view' })).toBeInTheDocument()
+    expect(screen.getByText('Guest Student')).toBeInTheDocument()
+    expect(screen.getByText('EXTERNAL')).toBeInTheDocument()
+    expect(screen.queryByText('Ada A.')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Class A.*1/ }))
+    expect(screen.getByRole('heading', { name: '0 students in view' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /All teams/ }))
+    expect(screen.getByText('Ada A.')).toBeInTheDocument()
+    expect(screen.queryByText('Guest Student')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /All classes/ }))
+    for (const label of [/White.*1/, /Yellow.*0/, /No team.*0/]) {
+      await user.click(screen.getByRole('button', { name: label }))
+      expect(screen.queryByText('Guest Student')).not.toBeInTheDocument()
+    }
+  })
+
   it('filters the roster by class and team without hiding unassigned students', async () => {
     const user = userEvent.setup()
     render(<TeacherDashboard username="leleomaker" />)

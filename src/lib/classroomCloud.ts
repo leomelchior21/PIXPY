@@ -18,7 +18,7 @@ export interface ClassroomLogin {
 }
 
 export type RosterClass = 'A' | 'B' | 'C'
-export type RosterTeam = 'white' | 'yellow'
+export type RosterTeam = 'white' | 'yellow' | 'external'
 
 export interface ClassProgressRow {
   username: string
@@ -84,7 +84,7 @@ export async function loadClassProgress(teacherUsername: string): Promise<ClassP
     username: cleanUsername(row.username),
     displayName: row.display_name,
     className: row.class_name === 'A' || row.class_name === 'B' || row.class_name === 'C' ? row.class_name : null,
-    team: row.group_name === 'white' || row.group_name === 'yellow' ? row.group_name : null,
+    team: row.group_name === 'white' || row.group_name === 'yellow' || row.group_name === 'external' ? row.group_name : null,
     progress: row.progress && typeof row.progress === 'object' ? row.progress : null,
     updatedAt: typeof row.updated_at === 'string' ? row.updated_at : null,
     lastLoginAt: typeof row.last_login_at === 'string' ? row.last_login_at : null,
