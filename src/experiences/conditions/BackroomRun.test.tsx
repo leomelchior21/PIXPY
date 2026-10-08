@@ -54,6 +54,36 @@ describe('Backroom running pace', () => {
     act(() => { for (let count = 0; count < 31; count += 1) fireEvent.click(increase) })
   }
 
+  it.each(['ArrowLeft', 'ArrowRight'])('crashes when holding %s toward a wall', (key) => {
+    start()
+    fireEvent.keyDown(document.body, { key })
+    for (let count = 0; count < 30; count += 1) tick()
+    expect(screen.getByRole('heading', { name: 'YOU HIT THE WALL' })).toBeInTheDocument()
+    expect(Math.abs(renderer.view!.playerX)).toBeGreaterThanOrEqual(0.78)
+    const depth = renderer.view!.depth
+    tick()
+    expect(renderer.view!.depth).toBe(depth)
+  })
+
+  it.each(['Move left', 'Move right'])('crashes when repeatedly tapping %s toward a wall', (name) => {
+    start()
+    const button = screen.getByRole('button', { name: new RegExp(name, 'i') })
+    for (let count = 0; count < 8; count += 1) {
+      fireEvent.pointerDown(button)
+      fireEvent.pointerUp(button)
+      tick()
+    }
+    expect(screen.getByRole('heading', { name: 'YOU HIT THE WALL' })).toBeInTheDocument()
+  })
+
+  it('still crashes when a bend reaches a player who does not steer', () => {
+    start()
+    raiseEnergy()
+    for (let count = 0; count < 300 && !screen.queryByRole('heading', { name: 'YOU HIT THE WALL' }); count += 1) tick()
+    expect(renderer.view!.phase).toBe('turn')
+    expect(screen.getByRole('heading', { name: 'YOU HIT THE WALL' })).toBeInTheDocument()
+  })
+
   it('keeps the corridor pace all the way to a closed gate', () => {
     start()
     const before = approach(3.4)

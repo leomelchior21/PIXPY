@@ -4,6 +4,7 @@ import { baseRunSpeed, championGates, corridorCenterAt, energyRange, evaluateCon
 import { completeActivity } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
 import { drawBackroom } from './backroomRenderer'
+import { advanceBackroomLighting, createBackroomLighting } from '../../lib/backroomLighting'
 import { BackroomChampionAward, BackroomChampionBadge } from './BackroomChampion'
 import './backroomRun.css'
 
@@ -83,6 +84,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
     true: evaluateCondition(challenge.startValue, challenge.operator, challenge.threshold),
     falseIntensity: 0,
     time: 0,
+    lighting: createBackroomLighting(),
     shake: 0,
     passLatched: false,
     reduced: false,
@@ -276,6 +278,12 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
 
     const update = (dt: number) => {
       g.time += dt
+      const blackoutClearance = g.speed * 1.6 * 1.8 + 2
+      const canBlackout = g.phase === 'gate'
+        ? g.gateZ - g.depth > blackoutClearance
+        : g.bends.every((bend) => bend.endZ < g.depth || bend.startZ - g.depth > blackoutClearance)
+          && g.obstacles.every((obstacle) => obstacle.z + 0.35 < g.depth || obstacle.z - g.depth > blackoutClearance)
+      advanceBackroomLighting(g.lighting, dt, canBlackout, g.reduced)
       g.true = evaluateCondition(g.value, g.operator, g.threshold)
       const distance = g.gateZ - g.depth
       const progress = Math.max(0, Math.min(1, 1 - Math.max(distance, 0) / START_DISTANCE))
@@ -318,17 +326,13 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
       }
 
       const center = corridorCenterAt(g.gateCenter, g.bends, g.depth)
-      let offset = g.playerX - center
-      if (steer !== 0 && Math.sign(offset) === steer) {
-        offset = Math.sign(offset) * Math.min(Math.abs(offset), WALL_LIMIT * 0.92)
-        g.playerX = center + offset
-      }
+      const offset = g.playerX - center
       const screen = screenRef.current
       if (screen) {
         screen.style.setProperty('--wall-right', Math.max(0, Math.min(1, offset / WALL_LIMIT)).toFixed(2))
         screen.style.setProperty('--wall-left', Math.max(0, Math.min(1, -offset / WALL_LIMIT)).toFixed(2))
       }
-      if (g.status === 'running' && Math.abs(offset) > WALL_LIMIT) {
+      if (g.status === 'running' && Math.abs(offset) >= WALL_LIMIT) {
         g.status = 'crashed'
         g.shake = 1
         eventsRef.current.handleCrash('wall')
@@ -384,6 +388,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
         conditionTrue: g.true,
         falseIntensity: g.falseIntensity,
         time: g.time,
+        roomLight: g.lighting.strength,
         gateNumber: runNumberRef.current,
         seed: SEED_BASE,
         reduced: g.reduced,
@@ -509,6 +514,8 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
     steerRef.current.right = false
     const g = game.current
     g.depth = 0
+    g.time = 0
+    g.lighting = createBackroomLighting()
     g.playerX = 0
     g.nextGateZ = START_DISTANCE
     g.nextGateCenter = 0
@@ -531,8 +538,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
     steerStartRef.current[side] = 0
     if (heldFor < 170 && game.current.status === 'running') {
       const g = game.current
-      const center = corridorCenterAt(g.gateCenter, g.bends, g.depth)
-      g.playerX = Math.max(center - WALL_LIMIT * 0.88, Math.min(center + WALL_LIMIT * 0.88, g.playerX + direction * 0.23))
+      g.playerX += direction * 0.23
     }
   }
 
@@ -696,7 +702,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
       {isChampion && <BackroomChampionAward />}
       <h2>{crashReason === 'wall' ? 'YOU HIT THE WALL' : crashReason === 'obstacle' ? 'YOU HIT AN OBSTACLE' : 'THE GATE STAYED CLOSED'}</h2>
       <p>{crashReason === 'wall'
-        ? 'The corridor turned. Use the left and right arrow keys to follow it.'
+        ? 'Keep away from the walls. Use the left and right arrow keys to follow the corridor.'
         : crashReason === 'obstacle'
           ? 'Watch the floor ahead. Use the left and right arrow keys to move around chairs and trash.'
           : game.current.true

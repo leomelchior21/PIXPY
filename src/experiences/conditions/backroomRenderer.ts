@@ -14,6 +14,7 @@ export interface BackroomView {
   conditionTrue: boolean
   falseIntensity: number
   time: number
+  roomLight: number
   gateNumber: number
   seed: number
   reduced: boolean
@@ -85,11 +86,11 @@ function hashTile(index: number, seed: number): number {
 function fixtureStrength(view: BackroomView, index: number): number {
   if (view.reduced) return 1
   const character = hashTile(index, view.seed)
-  if (character % 4 !== 0) return 1
+  if (character % 4 !== 0) return view.roomLight
   const cycle = 7 + character % 6
   const phase = (view.time + character * 0.017) % cycle
-  if (phase > 0.34) return 1
-  return phase < 0.07 || (phase > 0.15 && phase < 0.25) ? 0.14 : 0.72
+  if (phase > 0.34) return view.roomLight
+  return view.roomLight * (phase < 0.07 || (phase > 0.15 && phase < 0.25) ? 0.14 : 0.72)
 }
 
 type Point = { x: number; y: number }
@@ -293,6 +294,14 @@ function drawCorridor(ctx: CanvasRenderingContext2D, width: number, height: numb
 
     const nearestLight = Math.round((index - 2) / 5) * 5 + 2
     const lightDistance = Math.abs(index - nearestLight)
+    // A failing fixture also removes its light from the nearby room surfaces.
+    const localStrength = view.roomLight > 0 ? fixtureStrength(view, nearestLight) / view.roomLight : 1
+    ctx.globalAlpha = (1 - localStrength) * 0.62
+    quad(ctx, { x: pf.left, y: pf.floor }, { x: pf.right, y: pf.floor }, { x: pn.right, y: pn.floor }, { x: pn.left, y: pn.floor }, '#080b0d')
+    quad(ctx, { x: pf.left, y: pf.ceiling }, { x: pf.right, y: pf.ceiling }, { x: pn.right, y: pn.ceiling }, { x: pn.left, y: pn.ceiling }, '#080b0d')
+    quad(ctx, { x: pf.left, y: pf.ceiling }, { x: pf.left, y: pf.floor }, { x: pn.left, y: pn.floor }, { x: pn.left, y: pn.ceiling }, '#080b0d')
+    quad(ctx, { x: pf.right, y: pf.ceiling }, { x: pf.right, y: pf.floor }, { x: pn.right, y: pn.floor }, { x: pn.right, y: pn.ceiling }, '#080b0d')
+    ctx.globalAlpha = 1
     if (lightDistance <= 2 && nearDistance > 0.3) {
       const strength = fixtureStrength(view, nearestLight)
       ctx.globalAlpha = (0.11 - lightDistance * 0.035) * strength
@@ -617,5 +626,9 @@ export function drawBackroom(ctx: CanvasRenderingContext2D, width: number, heigh
     ctx.fillStyle = gradient
     ctx.fillRect(0, 0, width, height)
   }
+  // Retain a little ambient visibility even with every fluorescent switched off.
+  // This shades the corridor, obstacles and gate together; the HUD stays readable.
+  ctx.fillStyle = `rgba(0,0,0,${(1 - (view.reduced ? 1 : view.roomLight)) * 0.94})`
+  ctx.fillRect(0, 0, width, height)
   ctx.restore()
 }
