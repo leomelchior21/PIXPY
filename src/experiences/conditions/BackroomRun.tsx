@@ -4,7 +4,7 @@ import { baseRunSpeed, championGates, corridorCenterAt, energyRange, evaluateCon
 import { completeActivity } from '../../session/progressSession'
 import type { SessionProgress } from '../../types'
 import { drawBackroom } from './backroomRenderer'
-import { advanceBackroomLighting, createBackroomLighting } from '../../lib/backroomLighting'
+import { advanceBackroomLighting, createBackroomLighting, lightingStartGate } from '../../lib/backroomLighting'
 import { BackroomChampionAward, BackroomChampionBadge } from './BackroomChampion'
 import './backroomRun.css'
 
@@ -51,6 +51,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
   const screenRef = useRef<HTMLElement>(null)
   const challengeRef = useRef(challenge)
   const valueRef = useRef(value)
+  const runXpRef = useRef(0)
   const runNumberRef = useRef(runNumber)
   const progressRef = useRef(progress)
   const farSolveRef = useRef(true)
@@ -201,8 +202,10 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
     if (hintTimerRef.current) window.clearTimeout(hintTimerRef.current)
 
     const xp = gateXp(farSolveRef.current)
+    const runXp = runXpRef.current + xp
+    runXpRef.current = runXp
     setSessionGates((gates) => gates + 1)
-    setSessionXp((total) => total + xp)
+    setSessionXp(runXp)
 
     const seen = seenOperatorsRef.current
     const newOperator = !seen.has(current.operator)
@@ -219,7 +222,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
     const operators = [...new Set([...base.backroomRunOperators, current.operator])]
     let next: SessionProgress = {
       ...base,
-      backroomRunXp: base.backroomRunXp + xp,
+      backroomRunXp: Math.max(base.backroomRunXp, runXp),
       backroomRunGates: base.backroomRunGates + 1,
       backroomRunBest: Math.max(base.backroomRunBest, runNumberRef.current),
       backroomRunOperators: operators,
@@ -283,7 +286,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
         ? g.gateZ - g.depth > blackoutClearance
         : g.bends.every((bend) => bend.endZ < g.depth || bend.startZ - g.depth > blackoutClearance)
           && g.obstacles.every((obstacle) => obstacle.z + 0.35 < g.depth || obstacle.z - g.depth > blackoutClearance)
-      advanceBackroomLighting(g.lighting, dt, canBlackout, g.reduced)
+      advanceBackroomLighting(g.lighting, dt, canBlackout, g.reduced || runNumberRef.current < lightingStartGate)
       g.true = evaluateCondition(g.value, g.operator, g.threshold)
       const distance = g.gateZ - g.depth
       const progress = Math.max(0, Math.min(1, 1 - Math.max(distance, 0) / START_DISTANCE))
@@ -504,6 +507,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
     championTimerRef.current = null
     setShowChampion(false)
     setSessionGates(0)
+    runXpRef.current = 0
     setSessionXp(0)
     setSessionOperators([])
     seenOperatorsRef.current.clear()
@@ -618,7 +622,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
       {isChampion ? <BackroomChampionBadge /> : <span className="br-badge"><Footprints size={18} /> BACKROOMS RUN</span>}
       <div className="br-stats">
         <span className="br-stat"><b>RUN</b> {String(runNumber).padStart(3, '0')}</span>
-        <span className="br-stat"><Zap size={14} fill="currentColor" /> XP {progress.backroomRunXp}</span>
+        <span className="br-stat" aria-label="Run score"><Zap size={14} fill="currentColor" /> XP {sessionXp} <b aria-label="Best score">BEST {progress.backroomRunXp}</b></span>
         <span className="br-stat br-stat--pace">PACE {pace.toFixed(1)}×</span>
         <span className="br-stat br-stat--endless"><InfinityIcon size={16} /> ENDLESS</span>
       </div>
@@ -711,7 +715,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
       <div className="br-summary-grid">
         <article><strong>{sessionGates}</strong><span>GATES OPENED</span></article>
         <article><strong>{sessionXp}</strong><span>XP THIS RUN</span></article>
-        <article><strong>{progress.backroomRunXp}</strong><span>TOTAL XP</span></article>
+        <article><strong>{progress.backroomRunXp}</strong><span>BEST XP</span></article>
       </div>
       <div className="br-overlay-actions">
         <button className="br-primary" onClick={tryAgain}><RotateCcw size={16} /> TRY AGAIN</button>
@@ -739,7 +743,7 @@ export function BackroomRun({ progress, onProgress, onBack }: Props) {
         <article><strong>{sessionXp}</strong><span>XP EARNED</span></article>
         <article><strong>{sessionOperators.join(' ') || '—'}</strong><span>OPERATORS SEEN</span></article>
       </div>
-      <p>Total XP saved: <b>{progress.backroomRunXp}</b> · Best run: <b>{progress.backroomRunBest}</b></p>
+      <p>Best XP: <b>{progress.backroomRunXp}</b> · Best run: <b>{progress.backroomRunBest}</b></p>
       <div className="br-overlay-actions">
         <button className="br-primary" onClick={onBack}><ArrowLeft size={16} /> BACK TO CONDITIONS</button>
         <button className="br-secondary" onClick={resume}>KEEP RUNNING</button>

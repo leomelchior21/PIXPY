@@ -1,3 +1,5 @@
+export const lightingStartGate = 6
+
 export interface BackroomLighting {
   strength: number
   mode: 'steady' | 'flicker' | 'blackout'

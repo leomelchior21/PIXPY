@@ -3,6 +3,7 @@ import { BackroomRun } from './BackroomRun'
 import type { BackroomView } from './backroomRenderer'
 import { speedForGate } from '../../lib/backroomEngine'
 import * as engine from '../../lib/backroomEngine'
+import * as lighting from '../../lib/backroomLighting'
 import { createSession } from '../../session/progressSession'
 
 const renderer = vi.hoisted(() => ({ view: null as BackroomView | null }))
@@ -164,6 +165,94 @@ describe('Backroom running pace', () => {
     expect(renderer.view!.playerX).toBe(before)
     input.remove()
   })
+
+  it('resets each attempt to zero and keeps the highest score after death and returning', () => {
+    vi.spyOn(engine, 'planCorridor').mockImplementation((gateZ, gateCenter) => ({
+      bends: [], obstacles: [], nextGateZ: gateZ + 20,
+      nextGateCenter: gateCenter, activationZ: gateZ + 8,
+    }))
+    let saved = createSession('Review', 'review', true)
+    const onProgress = vi.fn((next: typeof saved) => { saved = next })
+    const game = render(<BackroomRun progress={saved} onProgress={onProgress} onBack={() => undefined} />)
+    const refresh = () => game.rerender(<BackroomRun progress={saved} onProgress={onProgress} onBack={() => undefined} />)
+    const play = screen.queryByRole('button', { name: 'PLAY GAME' })
+    if (play) fireEvent.click(play)
+    tick()
+
+    const pass = () => {
+      const operator = document.querySelector('.br-operator')!.textContent!
+      const threshold = Number(document.querySelector('.br-condition strong')!.textContent)
+      const current = Number(document.querySelector('.br-variable strong')!.textContent)
+      const target = operator === '>' || operator === '!=' ? threshold + 1 : operator === '<' ? threshold - 1 : threshold
+      const button = screen.getByRole('button', { name: target > current ? 'Increase energy' : 'Decrease energy' })
+      act(() => { for (let count = 0; count < Math.abs(target - current); count += 1) fireEvent.click(button) })
+      approach(0)
+      refresh()
+    }
+    const die = () => {
+      const saves = onProgress.mock.calls.length
+      fireEvent.keyDown(document.body, { key: 'ArrowRight' })
+      for (let count = 0; count < 30; count += 1) tick()
+      fireEvent.keyUp(document.body, { key: 'ArrowRight' })
+      expect(screen.getByRole('heading', { name: 'YOU HIT THE WALL' })).toBeInTheDocument()
+      expect(onProgress).toHaveBeenCalledTimes(saves)
+      fireEvent.click(screen.getByRole('button', { name: 'TRY AGAIN' }))
+      tick()
+      expect(screen.getByLabelText('Run score')).toHaveTextContent(/^XP 0 BEST/)
+    }
+
+    pass()
+    expect(saved.backroomRunXp).toBe(15)
+    die()
+    expect(screen.getByLabelText('Best score')).toHaveTextContent('BEST 15')
+    pass()
+    // A second 15-point attempt must not become a 30-point high score.
+    expect(saved.backroomRunXp).toBe(15)
+    expect(screen.getByLabelText('Run score')).toHaveTextContent('XP 15 BEST 15')
+    for (let count = 0; renderer.view!.gateNumber < 2 && count < 200; count += 1) tick()
+    pass()
+    expect(saved.backroomRunXp).toBe(30)
+    expect(saved.backroomRunBest).toBe(2)
+    die()
+    pass()
+    expect(saved.backroomRunXp).toBe(30)
+    expect(screen.getByLabelText('Run score')).toHaveTextContent('XP 15 BEST 30')
+    die()
+
+    game.unmount()
+    render(<BackroomRun progress={saved} onProgress={onProgress} onBack={() => undefined} />)
+    expect(screen.getByLabelText('Run score')).toHaveTextContent('XP 0 BEST 30')
+  }, 30_000)
+
+  it('keeps lighting steady for five gates and enables flickering at gate six', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    vi.spyOn(lighting, 'createBackroomLighting').mockImplementation(() => ({
+      strength: 1, mode: 'steady', wait: 0, elapsed: 0, duration: 0, pulseWait: 0, events: 0,
+    }))
+    vi.spyOn(engine, 'speedForGate').mockReturnValue(100)
+    vi.spyOn(engine, 'planCorridor').mockImplementation((gateZ, gateCenter) => ({
+      bends: [], obstacles: [], nextGateZ: gateZ + 60,
+      nextGateCenter: gateCenter, activationZ: gateZ + 30,
+    }))
+    start()
+    for (let gate = 1; gate <= 5; gate += 1) {
+      expect(renderer.view!.gateNumber).toBe(gate)
+      const operator = document.querySelector('.br-operator')!.textContent!
+      const threshold = Number(document.querySelector('.br-condition strong')!.textContent)
+      const current = Number(document.querySelector('.br-variable strong')!.textContent)
+      const target = operator === '>' || operator === '!=' ? threshold + 1 : operator === '<' ? threshold - 1 : threshold
+      const button = screen.getByRole('button', { name: target > current ? 'Increase energy' : 'Decrease energy' })
+      act(() => { for (let count = 0; count < Math.abs(target - current); count += 1) fireEvent.click(button) })
+      for (let count = 0; renderer.view!.gateNumber === gate && count < 20; count += 1) {
+        expect(renderer.view!.roomLight).toBe(1)
+        tick()
+        if (document.querySelector('.br-overlay--milestone')) fireEvent.click(screen.getByRole('button', { name: 'KEEP RUNNING' }))
+      }
+    }
+    expect(renderer.view!.gateNumber).toBe(6)
+    tick()
+    expect(renderer.view!.roomLight).toBeLessThan(0.2)
+  }, 30_000)
 
   it('awards champion only after 670 gates in one run, keeps running, and saves the title for a return visit', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })

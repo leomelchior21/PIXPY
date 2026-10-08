@@ -1,4 +1,5 @@
 import { corridorCenterAt, type CorridorBend, type CorridorObstacle } from '../../lib/backroomEngine'
+import { lightingStartGate } from '../../lib/backroomLighting'
 
 export interface BackroomView {
   depth: number
@@ -84,7 +85,7 @@ function hashTile(index: number, seed: number): number {
 }
 
 function fixtureStrength(view: BackroomView, index: number): number {
-  if (view.reduced) return 1
+  if (view.reduced || view.gateNumber < lightingStartGate) return 1
   const character = hashTile(index, view.seed)
   if (character % 4 !== 0) return view.roomLight
   const cycle = 7 + character % 6
@@ -628,7 +629,7 @@ export function drawBackroom(ctx: CanvasRenderingContext2D, width: number, heigh
   }
   // Retain a little ambient visibility even with every fluorescent switched off.
   // This shades the corridor, obstacles and gate together; the HUD stays readable.
-  ctx.fillStyle = `rgba(0,0,0,${(1 - (view.reduced ? 1 : view.roomLight)) * 0.94})`
+  ctx.fillStyle = `rgba(0,0,0,${(1 - (view.reduced || view.gateNumber < lightingStartGate ? 1 : view.roomLight)) * 0.94})`
   ctx.fillRect(0, 0, width, height)
   ctx.restore()
 }
