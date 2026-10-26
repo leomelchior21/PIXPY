@@ -12,7 +12,6 @@ import { ConditionsHome } from './screens/ConditionsHome'
 import { ExtrasHome } from './screens/ExtrasHome'
 import { IfElseBuilder } from './experiences/conditions/IfElseBuilder'
 import { ChoiceMachine } from './experiences/conditions/ChoiceMachine'
-import { BackroomRun } from './experiences/conditions/BackroomRun'
 import { conditionExperiences, isConditionActivity } from './data/conditions'
 
 const DinoVariables = lazy(() => import('./experiences/variables/DinoVariables').then((module) => ({ default: module.DinoVariables })))
@@ -21,6 +20,7 @@ const BlackBox = lazy(() => import('./experiences/variables/BlackBox').then((mod
 const InputMachine = lazy(() => import('./experiences/variables/InputMachine').then((module) => ({ default: module.InputMachine })))
 const MemoryMachine = lazy(() => import('./experiences/variables/MemoryMachine').then((module) => ({ default: module.MemoryMachine })))
 const FinalBosses = lazy(() => import('./experiences/variables/FinalBosses').then((module) => ({ default: module.FinalBosses })))
+const BackroomRun = lazy(() => import('./experiences/conditions/BackroomRun').then((module) => ({ default: module.BackroomRun })))
 const RepairShop = lazy(() => import('./experiences/conditions/RepairShop').then((module) => ({ default: module.RepairShop })))
 const MoreChoices = lazy(() => import('./experiences/conditions/MoreChoices').then((module) => ({ default: module.MoreChoices })))
 const BossArena = lazy(() => import('./experiences/conditions/BossArena').then((module) => ({ default: module.BossArena })))

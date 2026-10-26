@@ -3,6 +3,7 @@ import { conditionBosses } from '../data/conditionBosses'
 import { ifElsePedagogy } from '../data/ifElsePedagogy'
 import { moreChoiceLevels } from '../data/moreChoices'
 import { repairTickets } from '../data/repairShop'
+import { levelCount } from '../experiences/conditions/backroom/backroomLevels'
 import { completedIfElseLevels } from './ifElseProgress'
 import type { BossAttackEvent, IfElseLearningEvent, MoreChoiceEvent, RepairLogEntry, SessionProgress } from '../types'
 
@@ -107,6 +108,7 @@ export function conditionsProgress(progress: SessionProgress | null) {
 
   return {
     gates: count(progress?.backroomRunGates), bestRun: count(progress?.backroomRunBest), runXp: count(progress?.backroomRunXp),
+    tapes: Array.isArray(progress?.backroomLevelStars) ? progress.backroomLevelStars.slice(0, levelCount).filter((stars) => count(stars) > 0).length : 0, tapeCount: levelCount,
     introComplete, liveComplete, quizIndex, quizComplete,
     choiceXp: count(progress?.choiceMachineXp, CHOICE_QUIZ_LENGTH * CHOICE_XP_PER_QUESTION),
     ifElseComplete: complete.includes('if-else'),

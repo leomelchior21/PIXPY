@@ -2,6 +2,8 @@ import { completedIfElseLevels } from '../lib/ifElseProgress'
 import { conditionBosses } from '../data/conditionBosses'
 import { moreChoiceLevels } from '../data/moreChoices'
 import { repairTickets } from '../data/repairShop'
+import { skillKeys } from '../experiences/conditions/backroom/backroomEngine'
+import { coachMoments, normalizeStars } from '../experiences/conditions/backroom/backroomLevels'
 import {
   activityIds,
   printActivityIds,
@@ -24,6 +26,9 @@ export const emptyProgress: Omit<SessionProgress, 'name' | 'username' | 'isTeach
   backroomRunBest: 0,
   backroomRunGates: 0,
   backroomRunOperators: [],
+  backroomLevelStars: normalizeStars([]),
+  backroomSkills: {},
+  backroomCoachSeen: [],
   choiceMachineVisited: false,
   choiceMachineIntroComplete: false,
   choiceMachineStoriesComplete: false,
@@ -120,6 +125,9 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
     backroomRunBest: cleanWholeNumber(parsed.backroomRunBest, 0, 10000),
     backroomRunGates: cleanWholeNumber(parsed.backroomRunGates, 0, 100000),
     backroomRunOperators: cleanOperatorList(parsed.backroomRunOperators),
+    backroomLevelStars: normalizeStars(Array.isArray(parsed.backroomLevelStars) ? parsed.backroomLevelStars : []),
+    backroomSkills: cleanBackroomSkills(parsed.backroomSkills),
+    backroomCoachSeen: Array.isArray(parsed.backroomCoachSeen) ? coachMoments.filter((moment) => parsed.backroomCoachSeen?.includes(moment)) : [],
     choiceMachineVisited: parsed.choiceMachineVisited === true || parsed.choiceMachineStoriesComplete === true || (parsed.choiceMachineQuizIndex ?? 0) > 0,
     choiceMachineIntroComplete: parsed.choiceMachineIntroComplete === true || parsed.choiceMachineStoriesComplete === true,
     choiceMachineStoriesComplete: parsed.choiceMachineStoriesComplete === true,
@@ -278,6 +286,19 @@ const comparisonOperators = ['>', '<', '>=', '<=', '==', '!='] as const
 function cleanOperatorList(value: unknown): string[] {
   if (!Array.isArray(value)) return []
   return [...new Set(value.filter((item): item is string => typeof item === 'string' && comparisonOperators.includes(item as typeof comparisonOperators[number])))]
+}
+
+function cleanBackroomSkills(value: unknown): SessionProgress['backroomSkills'] {
+  if (!value || typeof value !== 'object') return {}
+  const skills: SessionProgress['backroomSkills'] = {}
+  for (const key of skillKeys) {
+    const record = (value as Record<string, unknown>)[key]
+    if (record && typeof record === 'object') {
+      const { right, wrong } = record as { right?: unknown; wrong?: unknown }
+      skills[key] = { right: cleanWholeNumber(right, 0, 1000000), wrong: cleanWholeNumber(wrong, 0, 1000000) }
+    }
+  }
+  return skills
 }
 
 function cleanWholeNumber(value: unknown, min: number, max: number): number {

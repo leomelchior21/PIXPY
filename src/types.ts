@@ -72,6 +72,10 @@ export interface SessionProgress {
   backroomRunBest: number
   backroomRunGates: number
   backroomRunOperators: string[]
+  // Backroom Run tapes: stars per tape (0 = not cleared), right/wrong per operator, field guides already shown.
+  backroomLevelStars: number[]
+  backroomSkills: Record<string, { right: number; wrong: number }>
+  backroomCoachSeen: string[]
   choiceMachineVisited: boolean
   choiceMachineIntroComplete: boolean
   choiceMachineStoriesComplete: boolean

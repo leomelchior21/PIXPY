@@ -769,7 +769,8 @@ button:focus-visible, input:focus-visible, .cm-editor.cm-focused { outline-color
 }
 
 body, button, input, textarea { font-family: var(--ui-font); }
-body *:not(.pixpy-editor):not(.pixpy-editor *):not(code):not(pre) { font-family: var(--ui-font) !important; }
+/* Backroom Run keeps its own pixel and code fonts. */
+body *:not(.pixpy-editor):not(.pixpy-editor *):not(.br-screen):not(.br-screen *):not(code):not(pre) { font-family: var(--ui-font) !important; }
 .pixpy-editor, .pixpy-editor * { font-family: 'IBM Plex Mono', ui-monospace, monospace !important; }
 
 /* Simplified activity layouts */

@@ -5,6 +5,7 @@ import { moreChoiceLevels } from '../data/moreChoices'
 import { repairTickets } from '../data/repairShop'
 import { completedIfElseLevels } from '../lib/ifElseProgress'
 import type { ActivityId, AppRoute, SessionProgress } from '../types'
+import { levelCount } from '../experiences/conditions/backroom/backroomLevels'
 
 interface Props {
   progress: SessionProgress
@@ -15,6 +16,7 @@ const previews = ['energy > 60 → TRUE', 'if score > 5:', 'if ready:\nelse:', '
 
 /** Saved steps for activities that can be continued later. */
 function savedSteps(progress: SessionProgress, id: ActivityId): { count: number; total: number; label: string } | null {
+  if (id === 'backroom-run') return { count: progress.backroomLevelStars.filter((stars) => stars > 0).length, total: levelCount, label: 'TAPES' }
   if (id === 'if-else') return { count: completedIfElseLevels(progress).length, total: 10, label: 'SAVED' }
   if (id === 'make-it-work') return { count: progress.repairTickets.length, total: repairTickets.length, label: 'FIXED' }
   if (id === 'more-than-one-choice') return { count: progress.moreChoiceLevels.length, total: moreChoiceLevels.length, label: 'SOLVED' }

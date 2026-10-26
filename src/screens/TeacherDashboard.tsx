@@ -4,7 +4,6 @@ import { variableExperiences } from '../data/variables'
 import { conditionExperiences } from '../data/conditions'
 import { CHOICE_QUIZ_LENGTH, CHOICE_XP_PER_QUESTION } from '../data/choiceMachine'
 import { ifElsePedagogy } from '../data/ifElsePedagogy'
-import { milestoneGates } from '../lib/backroomEngine'
 import { bossProgress, conditionsProgress, moreChoiceProgress, repairProgress } from '../lib/conditionsProgress'
 import { loadClassProgress, type ClassProgressRow, type RosterClass, type RosterTeam } from '../lib/classroomCloud'
 import type { ActivityId } from '../types'
@@ -126,7 +125,7 @@ export function TeacherDashboard({ username }: TeacherDashboardProps) {
                       <td>
                         {world === 'variables'
                           ? <><div className="teacher-boss-progress"><i style={{ width: `${(bossCount / 15) * 100}%` }} /></div><strong>{bossCount} / 15</strong></>
-                          : <div className="teacher-learning-cell"><strong>{learning.gates} gates</strong><small>Best run: {learning.bestRun} · {learning.runXp} XP</small><span className={learning.gates >= milestoneGates ? 'teacher-milestone is-done' : 'teacher-milestone'}>{learning.gates >= milestoneGates ? <><Check size={11} /> {milestoneGates}-gate milestone reached</> : `${learning.gates} / ${milestoneGates} to the first milestone`}</span></div>}
+                          : <div className="teacher-learning-cell"><strong>{learning.gates} gates</strong><small>Best run: {learning.bestRun} · {learning.runXp} XP</small><span className={learning.tapes >= learning.tapeCount ? 'teacher-milestone is-done' : 'teacher-milestone'}>{learning.tapes >= learning.tapeCount ? <><Check size={11} /> All {learning.tapeCount} tapes cleared</> : `${learning.tapes} / ${learning.tapeCount} tapes cleared`}</span></div>}
                       </td>
                       {world === 'conditions' && <>
                         <td><div className="teacher-learning-cell"><div className="teacher-choice-steps" aria-label="Choice lab steps">{[{ title: 'Intro', done: learning.introComplete }, { title: 'Live flow', done: learning.liveComplete }, { title: 'Quiz', done: learning.quizComplete }].map((step) => <span key={step.title} className={step.done ? 'is-done' : ''} title={`${step.title}: ${step.done ? 'complete' : 'not complete'}`}>{step.done ? <Check size={10} /> : <Circle size={10} />}{step.title}</span>)}</div><strong>{learning.quizIndex} / {CHOICE_QUIZ_LENGTH} quiz questions</strong><small className="teacher-choice-xp">Choice XP {learning.choiceXp} / {CHOICE_QUIZ_LENGTH * CHOICE_XP_PER_QUESTION}</small></div></td>

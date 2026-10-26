@@ -107,6 +107,16 @@ describe('session-only progress', () => {
     expect(loadSession()).toMatchObject({ backroomRunXp: 145, backroomRunBest: 12, backroomRunGates: 12, backroomRunOperators: ['>', '<', '>='] })
   })
 
+  it('keeps backroom tape stars, operator records and seen guides, and cleans bad data', () => {
+    const restored = restoreProgress('leo', 'Leo', {
+      backroomLevelStars: [3, 9, 1.5, 2, 1],
+      backroomSkills: { '>': { right: 4, wrong: 1 }, '??': { right: 1, wrong: 0 }, '<': 'bad' },
+      backroomCoachSeen: ['energy', 'jump', 'nope'],
+    })
+    expect(restored).toMatchObject({ backroomLevelStars: [3, 3, 0, 2], backroomSkills: { '>': { right: 4, wrong: 1 } }, backroomCoachSeen: ['energy', 'jump'] })
+    expect(createSession('Leo')).toMatchObject({ backroomLevelStars: [0, 0, 0, 0], backroomSkills: {}, backroomCoachSeen: [] })
+  })
+
   it('resets only the selected activity and removes its completion mark', () => {
     const progress: SessionProgress = {
       ...createSession('Leo'),

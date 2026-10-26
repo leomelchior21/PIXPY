@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { advanceBackroomLighting, createBackroomLighting } from './backroomLighting'
 
 describe('Backroom lighting', () => {

@@ -10,6 +10,14 @@ const supabase = createClient(supabaseUrl, supabasePublishableKey, {
 })
 let progressSaveQueue: Promise<void> = Promise.resolve()
 
+// The Backroom Run class board: each student's best Deep run, read from saved progress.
+export async function fetchBackroomScores(): Promise<unknown[]> {
+  await progressSaveQueue.catch(() => undefined)
+  const { data, error } = await supabase.rpc('pixpy_backroom_scores')
+  if (error || !Array.isArray(data)) throw new Error('Classroom scores could not be loaded.')
+  return data
+}
+
 export interface ClassroomLogin {
   username: string
   displayName: string

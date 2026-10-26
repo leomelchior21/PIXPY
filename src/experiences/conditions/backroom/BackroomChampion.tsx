@@ -1,5 +1,5 @@
 import { Trophy } from 'lucide-react'
-import { championGates } from '../../lib/backroomEngine'
+import { championGates } from './backroomEngine'
 import './backroomChampion.css'
 
 export function BackroomChampionBadge() {
