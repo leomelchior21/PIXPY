@@ -87,7 +87,7 @@ describe('TeacherDashboard', () => {
     expect(screen.getByRole('button', { name: 'Conditions' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('columnheader', { name: 'Backroom gates' })).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Class summary' })).not.toBeInTheDocument()
-    expect(screen.getByLabelText('2 of 3 activities complete')).toBeInTheDocument()
+    expect(screen.getByLabelText('2 of 6 activities complete')).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Choice lab' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'IF/ELSE reasoning' })).toBeInTheDocument()
     expect(screen.getByText('3 gates')).toBeInTheDocument()
@@ -106,15 +106,45 @@ describe('TeacherDashboard', () => {
     render(<TeacherDashboard username="leleomaker" />)
     await screen.findByRole('heading', { name: '1 student in view' })
     await user.click(screen.getByRole('button', { name: 'Conditions' }))
-    expect(screen.getByLabelText('3 of 3 activities complete')).toBeInTheDocument()
+    expect(screen.getByLabelText('4 of 6 activities complete')).toBeInTheDocument()
     expect(screen.getByText('18 gates')).toBeInTheDocument()
     expect(screen.getByText('Best run: 12 · 450 XP')).toBeInTheDocument()
     expect(screen.getByText('20 / 20 quiz questions')).toBeInTheDocument()
-    expect(screen.getByText('COMPLETE')).toBeInTheDocument()
+    expect(screen.getByText('IN PROGRESS')).toBeInTheDocument()
     expect(screen.getByText('1 / 1 matched Python', { exact: false })).toBeInTheDocument()
     expect(screen.getByTitle('Intro: complete')).toBeInTheDocument()
     expect(screen.getByTitle('Live flow: complete')).toBeInTheDocument()
-    expect(screen.queryByTitle('MAKE IT WORK')).not.toBeInTheDocument()
+    expect(screen.getByTitle('MAKE IT WORK')).toBeInTheDocument()
     expect(screen.queryByText('Last check: Logic error')).not.toBeInTheDocument()
+  })
+
+  it('reports the repair shop, the sorting tower, and the boss arena for each student', async () => {
+    const progress = {
+      ...createSession('Ada'),
+      repairTickets: [1, 2, 3],
+      repairLog: [
+        { ticket: 2, runs: 4, stampMisses: 0, locateMisses: 3, fixMisses: 1, verifyFails: 0, hints: 1, at: 1 },
+        { ticket: 3, runs: 2, stampMisses: 1, locateMisses: 0, fixMisses: 0, verifyFails: 0, hints: 0, at: 2 },
+      ],
+      moreChoiceLevels: [1, 2, 3, 4, 5],
+      moreChoiceLog: [{ level: 4, kind: 'prediction' as const, ok: true, at: 1 }, { level: 4, kind: 'prediction' as const, ok: false, at: 2 }, { level: 6, kind: 'check' as const, ok: false, at: 3 }],
+      conditionBosses: [1, 2],
+      conditionBossLog: [{ boss: 2, hits: 3, total: 6, hints: 1, at: 1 }, { boss: 2, hits: 6, total: 6, hints: 1, at: 2 }, { boss: 3, hits: 0, total: 5, hints: 0, at: 3 }],
+    }
+    cloud.loadClassProgress.mockResolvedValueOnce([{ username: 'adaa', displayName: 'Ada A.', className: 'A', team: 'white', progress, updatedAt: null, lastLoginAt: null }])
+    const user = userEvent.setup()
+    render(<TeacherDashboard username="leleomaker" />)
+    await screen.findByRole('heading', { name: '1 student in view' })
+    await user.click(screen.getByRole('button', { name: 'Conditions' }))
+    for (const name of ['Repair shop', 'Many choices', 'Boss arena']) expect(screen.getByRole('columnheader', { name })).toBeInTheDocument()
+    expect(screen.getByText('3 / 8 tickets fixed')).toBeInTheDocument()
+    expect(screen.getByText(/Bug type named first try: 1 \/ 2/)).toBeInTheDocument()
+    expect(screen.getByText('Most retries: Finding the line')).toBeInTheDocument()
+    expect(screen.getByText('5 / 8 levels solved')).toBeInTheDocument()
+    expect(screen.getByText('Predictions: 1 / 2 right')).toBeInTheDocument()
+    expect(screen.getByText('1 failed build check')).toBeInTheDocument()
+    expect(screen.getByText('2 / 10 bosses defeated')).toBeInTheDocument()
+    expect(screen.getByText('Toughest: Fan Golem (2 attacks)')).toBeInTheDocument()
+    expect(screen.getByText(/Last: Glitch Lock · 0 \/ 5 hits/)).toBeInTheDocument()
   })
 })

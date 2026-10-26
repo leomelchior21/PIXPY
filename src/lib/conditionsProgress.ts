@@ -1,7 +1,10 @@
 import { CHOICE_QUIZ_LENGTH, CHOICE_XP_PER_QUESTION } from '../data/choiceMachine'
+import { conditionBosses } from '../data/conditionBosses'
 import { ifElsePedagogy } from '../data/ifElsePedagogy'
+import { moreChoiceLevels } from '../data/moreChoices'
+import { repairTickets } from '../data/repairShop'
 import { completedIfElseLevels } from './ifElseProgress'
-import type { IfElseLearningEvent, SessionProgress } from '../types'
+import type { BossAttackEvent, IfElseLearningEvent, MoreChoiceEvent, RepairLogEntry, SessionProgress } from '../types'
 
 export const learningErrorLabels: Record<NonNullable<IfElseLearningEvent['errorKind']>, string> = {
   structure: 'Structure error', condition: 'Condition error', logic: 'Logic error', output: 'Output error', runtime: 'Run error',
@@ -9,6 +12,67 @@ export const learningErrorLabels: Record<NonNullable<IfElseLearningEvent['errorK
 
 function count(value: unknown, maximum = Infinity): number {
   return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(maximum, Math.floor(value))) : 0
+}
+
+function ids(value: unknown, maximum: number): number[] {
+  return Array.isArray(value) ? [...new Set(value.filter((item): item is number => Number.isInteger(item) && item >= 1 && item <= maximum))] : []
+}
+
+function records<T>(value: unknown, valid: (item: Partial<T>) => boolean): T[] {
+  return Array.isArray(value) ? value.filter((item): item is T => Boolean(item) && typeof item === 'object' && valid(item as Partial<T>)) : []
+}
+
+const repairSteps = [['stampMisses', 'Naming the bug'], ['locateMisses', 'Finding the line'], ['fixMisses', 'Choosing the fix'], ['verifyFails', 'Passing every test']] as const
+
+/** Make it work: tickets fixed and the step that caused the most retries. */
+export function repairProgress(progress: SessionProgress | null) {
+  const fixed = ids(progress?.repairTickets, repairTickets.length)
+  const log = records<RepairLogEntry>(progress?.repairLog, (entry) => Number.isInteger(entry.ticket) && typeof entry.at === 'number')
+  const misses = repairSteps.map(([key, label]) => ({ label, total: log.reduce((sum, entry) => sum + count(entry[key]), 0) }))
+  const hardest = misses.reduce((best, item) => item.total > best.total ? item : best, { label: '', total: 0 })
+  const last = log.at(-1)
+  return {
+    fixed: fixed.length, total: repairTickets.length,
+    bugNamesFirstTry: log.filter((entry) => count(entry.stampMisses) === 0).length, bugNamesLogged: log.length,
+    hardestStep: hardest.total > 0 ? hardest.label : null,
+    runs: log.reduce((sum, entry) => sum + count(entry.runs), 0),
+    hints: log.reduce((sum, entry) => sum + count(entry.hints), 0),
+    lastTicket: last ? repairTickets.find((ticket) => ticket.id === last.ticket)?.title ?? null : null,
+  }
+}
+
+/** More than one choice: levels solved, prediction accuracy, and failed builds. */
+export function moreChoiceProgress(progress: SessionProgress | null) {
+  const solved = ids(progress?.moreChoiceLevels, moreChoiceLevels.length)
+  const log = records<MoreChoiceEvent>(progress?.moreChoiceLog, (event) => Number.isInteger(event.level) && typeof event.ok === 'boolean')
+  const predictions = log.filter((event) => event.kind === 'prediction')
+  const checks = log.filter((event) => event.kind === 'check')
+  const last = log.at(-1)
+  return {
+    solved: solved.length, total: moreChoiceLevels.length,
+    predictions: predictions.length, predictionsRight: predictions.filter((event) => event.ok).length,
+    checks: checks.length, failedChecks: checks.filter((event) => !event.ok).length,
+    drops: log.filter((event) => event.kind === 'drop').length,
+    hints: log.filter((event) => event.kind === 'hint').length,
+    lastLevel: last ? moreChoiceLevels.find((level) => level.id === last.level) ?? null : null,
+  }
+}
+
+/** Final bosses: defeated bosses, attacks, and the boss that needed the most attacks. */
+export function bossProgress(progress: SessionProgress | null) {
+  const defeated = ids(progress?.conditionBosses, conditionBosses.length)
+  const log = records<BossAttackEvent>(progress?.conditionBossLog, (event) => Number.isInteger(event.boss) && Number.isInteger(event.total))
+  const attacks = new Map<number, number>()
+  for (const event of log) attacks.set(event.boss, (attacks.get(event.boss) ?? 0) + 1)
+  const [toughestId, toughestAttacks] = [...attacks.entries()].reduce((best, entry) => entry[1] > best[1] ? entry : best, [0, 0])
+  const last = log.at(-1)
+  return {
+    defeated: defeated.length, total: conditionBosses.length, attacks: log.length,
+    hints: log.reduce((sum, event) => sum + count(event.hints, 3), 0),
+    toughest: toughestAttacks > 1 ? { name: conditionBosses.find((boss) => boss.id === toughestId)?.name ?? '', attacks: toughestAttacks } : null,
+    lastBoss: last ? conditionBosses.find((boss) => boss.id === last.boss)?.name ?? null : null,
+    lastHits: last ? `${count(last.hits)} / ${count(last.total)}` : null,
+  }
 }
 
 export function conditionsProgress(progress: SessionProgress | null) {

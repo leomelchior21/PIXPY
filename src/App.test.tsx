@@ -69,14 +69,13 @@ describe('PixPy classroom session', () => {
     for (const [index, title] of ['BACKROOM RUN', 'HOW THE COMPUTER MAKES A CHOICE', 'IF/ELSE', 'MAKE IT WORK', 'MORE THAN ONE CHOICE?', 'Final Bosses'].entries()) {
       const number = String(index + 1).padStart(2, '0')
       const button = screen.getByRole('button', { name: new RegExp(`^${number} ${title.replace('?', '\\?')}:`, 'i') })
-      if (index < 3) expect(button).toBeEnabled()
-      else expect(button).toBeDisabled()
+      expect(button).toBeEnabled()
     }
     await user.click(screen.getByRole('button', { name: 'Open Conditions activity list' }))
     const list = screen.getByRole('complementary', { name: 'Conditions activities' })
     expect(list).toHaveTextContent('IF/ELSE')
     expect(list).not.toHaveTextContent('Dino Variables')
-    expect(within(list).getAllByRole('button').filter((button) => button.hasAttribute('disabled'))).toHaveLength(3)
+    expect(within(list).getAllByRole('button').filter((button) => button.hasAttribute('disabled'))).toHaveLength(0)
     await user.click(screen.getByRole('button', { name: /^02 HOW THE COMPUTER MAKES A CHOICE:/i }))
     expect(screen.getByText('YOUR THREE STEPS', { selector: '.cm-phase-label' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Open Conditions activity list' })).toBeInTheDocument()
@@ -93,12 +92,12 @@ describe('PixPy classroom session', () => {
     expect(screen.queryByRole('button', { name: /open .* activity list/i })).not.toBeInTheDocument()
   }, 15_000)
 
-  it('returns disabled activity URLs to the Conditions menu', () => {
+  it('opens the repair shop, the sorting tower, and the boss arena from their URLs', async () => {
     saveSession(createSession('Maya'))
-    for (const route of ['make-it-work', 'more-than-one-choice', 'conditions-final-bosses']) {
+    for (const [route, heading] of [['make-it-work', 'The arcade cabinet'], ['more-than-one-choice', 'Two at once?'], ['conditions-final-bosses', 'The club door']]) {
       window.history.replaceState(null, '', `#/${route}`)
       const view = render(<App />)
-      expect(screen.getByRole('heading', { name: 'Conditions' })).toBeInTheDocument()
+      expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument()
       view.unmount()
     }
   })

@@ -21,6 +21,9 @@ const BlackBox = lazy(() => import('./experiences/variables/BlackBox').then((mod
 const InputMachine = lazy(() => import('./experiences/variables/InputMachine').then((module) => ({ default: module.InputMachine })))
 const MemoryMachine = lazy(() => import('./experiences/variables/MemoryMachine').then((module) => ({ default: module.MemoryMachine })))
 const FinalBosses = lazy(() => import('./experiences/variables/FinalBosses').then((module) => ({ default: module.FinalBosses })))
+const RepairShop = lazy(() => import('./experiences/conditions/RepairShop').then((module) => ({ default: module.RepairShop })))
+const MoreChoices = lazy(() => import('./experiences/conditions/MoreChoices').then((module) => ({ default: module.MoreChoices })))
+const BossArena = lazy(() => import('./experiences/conditions/BossArena').then((module) => ({ default: module.BossArena })))
 const StopStringSheet = lazy(() => import('./experiences/extras/StopStringSheet').then((module) => ({ default: module.StopStringSheet })))
 
 const validRoutes: AppRoute[] = ['home', 'teacher', 'variables', 'conditionals', 'extras', ...activityIds]
@@ -98,6 +101,9 @@ export default function App() {
           {visibleRoute === 'backroom-run' && <BackroomRun progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} />}
           {visibleRoute === 'choice-machine' && <ChoiceMachine progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} onNext={navigate} />}
           {visibleRoute === 'if-else' && <IfElseBuilder progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} />}
+          {visibleRoute === 'make-it-work' && <RepairShop progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} />}
+          {visibleRoute === 'more-than-one-choice' && <MoreChoices progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} />}
+          {visibleRoute === 'conditions-final-bosses' && <BossArena progress={progress} onProgress={setProgress} onBack={() => navigate('conditionals')} />}
         </Suspense>
       </div>
       <PrintProgress progress={progress} />

@@ -37,6 +37,32 @@ export interface IfElseLearningEvent {
   at: number
 }
 
+export interface RepairLogEntry {
+  ticket: number
+  runs: number
+  stampMisses: number
+  locateMisses: number
+  fixMisses: number
+  verifyFails: number
+  hints: number
+  at: number
+}
+
+export interface MoreChoiceEvent {
+  level: number
+  kind: 'drop' | 'prediction' | 'check' | 'hint'
+  ok: boolean
+  at: number
+}
+
+export interface BossAttackEvent {
+  boss: number
+  hits: number
+  total: number
+  hints: number
+  at: number
+}
+
 export interface SessionProgress {
   name: string
   username: string
@@ -53,6 +79,12 @@ export interface SessionProgress {
   choiceMachineXp: number
   ifElseLearning?: IfElseLearningEvent[]
   ifElseLevels?: number[]
+  repairTickets: number[]
+  repairLog: RepairLogEntry[]
+  moreChoiceLevels: number[]
+  moreChoiceLog: MoreChoiceEvent[]
+  conditionBosses: number[]
+  conditionBossLog: BossAttackEvent[]
   blackBoxLevels: number[]
   blackBoxQuizAnswers: number[]
   blackBoxQuizStartedAt: number | null

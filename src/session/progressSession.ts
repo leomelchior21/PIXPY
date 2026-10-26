@@ -1,4 +1,7 @@
 import { completedIfElseLevels } from '../lib/ifElseProgress'
+import { conditionBosses } from '../data/conditionBosses'
+import { moreChoiceLevels } from '../data/moreChoices'
+import { repairTickets } from '../data/repairShop'
 import {
   activityIds,
   printActivityIds,
@@ -8,6 +11,9 @@ import {
   type PrintActivityOutputState,
   type SessionProgress,
   type IfElseLearningEvent,
+  type BossAttackEvent,
+  type MoreChoiceEvent,
+  type RepairLogEntry,
 } from '../types'
 
 const SESSION_KEY = 'pixpy.session.v3'
@@ -25,6 +31,12 @@ export const emptyProgress: Omit<SessionProgress, 'name' | 'username' | 'isTeach
   choiceMachineXp: 0,
   ifElseLearning: [],
   ifElseLevels: [],
+  repairTickets: [],
+  repairLog: [],
+  moreChoiceLevels: [],
+  moreChoiceLog: [],
+  conditionBosses: [],
+  conditionBossLog: [],
   blackBoxLevels: [],
   blackBoxQuizAnswers: [],
   blackBoxQuizStartedAt: null,
@@ -77,12 +89,18 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
   const completed = cleanActivityIds(parsed.completed)
   const ifElseLearning = cleanIfElseLearning(parsed.ifElseLearning)
   const ifElseLevels = completedIfElseLevels({ ...parsed, completed, ifElseLearning })
+  const repaired = cleanIdList(parsed.repairTickets, repairTickets.length)
+  const choiceLevels = cleanIdList(parsed.moreChoiceLevels, moreChoiceLevels.length)
+  const bosses = cleanIdList(parsed.conditionBosses, conditionBosses.length)
   const quizCompleted = completed.filter((activity) => {
     if (activity === 'memory-machine') return memoryQuizAnswers.length === 10 || parsed.memoryQuizCompleted === true
     if (activity === 'black-box') return blackBoxQuizAnswers.length === 10 || blackBoxQuizResults.length > 0
     if (activity === 'print-playground') return printCoreActivityIds.every((id) => printPlaygroundCompleted.includes(id))
     if (activity === 'choice-machine') return parsed.choiceMachineQuizIndex === 20
     if (activity === 'stop') return parsed.stopSheetComplete === true
+    if (activity === 'make-it-work') return repaired.length === repairTickets.length
+    if (activity === 'more-than-one-choice') return choiceLevels.length === moreChoiceLevels.length
+    if (activity === 'conditions-final-bosses') return bosses.length === conditionBosses.length
     return true
   })
   return {
@@ -91,7 +109,13 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
     name: cleanName(parsed.name),
     username,
     isTeacher: parsed.isTeacher === true,
-    completed: ifElseLevels.length === 10 ? cleanActivityIds([...quizCompleted, 'if-else']) : quizCompleted,
+    completed: [...new Set(cleanActivityIds([
+      ...quizCompleted,
+      ...(ifElseLevels.length === 10 ? ['if-else'] : []),
+      ...(repaired.length === repairTickets.length ? ['make-it-work'] : []),
+      ...(choiceLevels.length === moreChoiceLevels.length ? ['more-than-one-choice'] : []),
+      ...(bosses.length === conditionBosses.length ? ['conditions-final-bosses'] : []),
+    ]))],
     backroomRunXp: cleanWholeNumber(parsed.backroomRunXp, 0, 100000),
     backroomRunBest: cleanWholeNumber(parsed.backroomRunBest, 0, 10000),
     backroomRunGates: cleanWholeNumber(parsed.backroomRunGates, 0, 100000),
@@ -103,6 +127,12 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
     choiceMachineXp: cleanChoiceXp(parsed.choiceMachineXp),
     ifElseLearning,
     ifElseLevels,
+    repairTickets: repaired,
+    repairLog: cleanRepairLog(parsed.repairLog),
+    moreChoiceLevels: choiceLevels,
+    moreChoiceLog: cleanMoreChoiceLog(parsed.moreChoiceLog),
+    conditionBosses: bosses,
+    conditionBossLog: cleanBossLog(parsed.conditionBossLog),
     blackBoxQuizAnswers,
     blackBoxQuizStartedAt: cleanTimestamp(parsed.blackBoxQuizStartedAt),
     blackBoxQuizElapsedMs: cleanElapsed(parsed.blackBoxQuizElapsedMs),
@@ -198,6 +228,47 @@ function cleanIfElseLearning(value: unknown): IfElseLearningEvent[] {
       && (event.actualOutput === null || typeof event.actualOutput === 'string' && event.actualOutput.length <= 500)
       && (event.conditionResult === null || typeof event.conditionResult === 'boolean')
       && (event.errorKind === null || ['structure', 'condition', 'logic', 'output', 'runtime'].includes(event.errorKind ?? ''))
+      && typeof event.at === 'number' && Number.isFinite(event.at)
+  }).slice(-200)
+}
+
+function cleanIdList(value: unknown, maximum: number): number[] {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.filter((item): item is number => Number.isInteger(item) && item >= 1 && item <= maximum))].sort((a, b) => a - b)
+}
+
+function isCount(value: unknown, maximum = 100000): value is number {
+  return Number.isInteger(value) && (value as number) >= 0 && (value as number) <= maximum
+}
+
+function cleanRepairLog(value: unknown): RepairLogEntry[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is RepairLogEntry => {
+    if (!item || typeof item !== 'object') return false
+    const entry = item as Partial<RepairLogEntry>
+    return isCount(entry.ticket, repairTickets.length) && entry.ticket! >= 1
+      && isCount(entry.runs) && isCount(entry.stampMisses) && isCount(entry.locateMisses) && isCount(entry.fixMisses) && isCount(entry.verifyFails) && isCount(entry.hints)
+      && typeof entry.at === 'number' && Number.isFinite(entry.at)
+  }).slice(-50)
+}
+
+function cleanMoreChoiceLog(value: unknown): MoreChoiceEvent[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is MoreChoiceEvent => {
+    if (!item || typeof item !== 'object') return false
+    const event = item as Partial<MoreChoiceEvent>
+    return isCount(event.level, moreChoiceLevels.length) && event.level! >= 1
+      && ['drop', 'prediction', 'check', 'hint'].includes(event.kind ?? '') && typeof event.ok === 'boolean'
+      && typeof event.at === 'number' && Number.isFinite(event.at)
+  }).slice(-200)
+}
+
+function cleanBossLog(value: unknown): BossAttackEvent[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is BossAttackEvent => {
+    if (!item || typeof item !== 'object') return false
+    const event = item as Partial<BossAttackEvent>
+    return isCount(event.boss, conditionBosses.length) && event.boss! >= 1 && isCount(event.total, 20) && isCount(event.hits, event.total) && isCount(event.hints, 3)
       && typeof event.at === 'number' && Number.isFinite(event.at)
   }).slice(-200)
 }

@@ -1,6 +1,6 @@
-import { conditionsProgress } from './conditionsProgress'
+import { bossProgress, conditionsProgress, moreChoiceProgress, repairProgress } from './conditionsProgress'
 import { createSession } from '../session/progressSession'
-import type { IfElseLearningEvent } from '../types'
+import type { IfElseLearningEvent, SessionProgress } from '../types'
 
 function event(extra: Partial<IfElseLearningEvent>): IfElseLearningEvent {
   return { level: 4, mode: 'prediction', kind: 'check', attempt: 1, value: 12, prediction: null, actualOutput: 'An output', conditionResult: true, errorKind: null, at: 1, ...extra }
@@ -37,5 +37,35 @@ describe('conditionsProgress', () => {
 
   it('reports durable solved levels even after their analytics checks are no longer stored', () => {
     expect(conditionsProgress({ ...createSession('Ada'), ifElseLevels: [1, 2, 3, 4], ifElseLearning: [] }).solvedLevels).toBe(4)
+  })
+})
+
+describe('new conditions activity analytics', () => {
+  it('summarises repair tickets, choice levels, and boss attacks from raw cloud data', () => {
+    const progress = {
+      ...createSession('Ada'),
+      repairTickets: [1, 2, 2, 99],
+      repairLog: [
+        { ticket: 1, runs: 3, stampMisses: 0, locateMisses: 2, fixMisses: 0, verifyFails: 1, hints: 1, at: 1 },
+        { ticket: 2, runs: 1, stampMisses: 1, locateMisses: 0, fixMisses: 0, verifyFails: 0, hints: 0, at: 2 },
+        { ticket: 'x' },
+      ],
+      moreChoiceLevels: [1, 2, 3],
+      moreChoiceLog: [
+        { level: 4, kind: 'prediction', ok: true, at: 1 }, { level: 4, kind: 'prediction', ok: false, at: 2 },
+        { level: 6, kind: 'check', ok: false, at: 3 }, { level: 6, kind: 'drop', ok: true, at: 4 },
+      ],
+      conditionBosses: [1],
+      conditionBossLog: [{ boss: 1, hits: 6, total: 6, hints: 0, at: 1 }, { boss: 2, hits: 2, total: 6, hints: 1, at: 2 }, { boss: 2, hits: 5, total: 6, hints: 2, at: 3 }],
+    } as unknown as SessionProgress
+    expect(repairProgress(progress)).toMatchObject({ fixed: 2, bugNamesFirstTry: 1, bugNamesLogged: 2, hardestStep: 'Finding the line', runs: 4, hints: 1, lastTicket: 'The safe door' })
+    expect(moreChoiceProgress(progress)).toMatchObject({ solved: 3, predictions: 2, predictionsRight: 1, checks: 1, failedChecks: 1, drops: 1, lastLevel: { title: 'Ticket booth' } })
+    expect(bossProgress(progress)).toMatchObject({ defeated: 1, attacks: 3, hints: 3, toughest: { name: 'Fan Golem', attacks: 2 }, lastBoss: 'Fan Golem', lastHits: '5 / 6' })
+  })
+
+  it('reports empty states for students who have not started', () => {
+    expect(repairProgress(null)).toMatchObject({ fixed: 0, hardestStep: null, lastTicket: null })
+    expect(moreChoiceProgress(null)).toMatchObject({ solved: 0, lastLevel: null })
+    expect(bossProgress(null)).toMatchObject({ defeated: 0, toughest: null, lastBoss: null })
   })
 })
