@@ -760,7 +760,7 @@ function nightLamp(): MachineRig {
     sparkAt: new THREE.Vector3(lampX, 1.0, 0.05),
     beaconAt: new THREE.Vector3(0.24, 0.6, -0.15),
     acts: (outputs) => outputs.includes('Lamp ON'),
-    ambient: ({ input, mood }) => mood === 'idle' && input === null ? 1 : Math.max(0.28, Math.min(1, (input ?? 100) / 80)),
+    ambient: ({ input, mood }) => mood === 'idle' && input === null ? 1 : Math.max(0.45, Math.min(1, (input ?? 100) / 80)),
     tick: ({ t, dt, power, act, outputs }) => {
       const both = outputs.includes('Lamp ON') && outputs.includes('Lamp OFF')
       const target = both ? (Math.sin(t * 22) > 0 ? 1 : 0.05) : act

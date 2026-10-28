@@ -5,7 +5,8 @@ import { behavesCorrectly, bugKindLabels, bugKindMeaning, expectedOutputs, repai
 import { flattenProgram, formatPythonError, type DecisionRun } from '../../lib/decisionTracer'
 import { completeActivity } from '../../session/progressSession'
 import type { RepairLogEntry, SessionProgress } from '../../types'
-import { RepairStage, type StageView } from './repair/RepairStage'
+import { AsciiTitle } from './repair/AsciiTitle'
+import { RepairStage, type StageStyle, type StageView } from './repair/RepairStage'
 import { RepairTutorial } from './repair/RepairTutorial'
 import './repairShop.css'
 
@@ -43,6 +44,21 @@ const stepOrder: Array<{ id: Exclude<Step, 'done'>; label: string; hint: string;
 ]
 
 const stampOrder: BugKind[] = ['syntax', 'runtime', 'logic']
+const stampIcons: Record<BugKind, typeof Bug> = { syntax: Power, runtime: Zap, logic: CircleHelp }
+
+const missions: Record<Step, { title: string; text: (variable: string) => string }> = {
+  reproduce: { title: 'Make the bug happen', text: (variable) => `Pick a value for ${variable} and run the machine until it does what the customer saw.` },
+  diagnose: { title: 'What kind of bug is it?', text: () => 'Look at the machine and at what Python said, then stamp the bug.' },
+  locate: { title: 'Tap the broken line', text: () => 'Read the program. Which line causes the problem?' },
+  fix: { title: 'Swap in a new part', text: () => 'Choose a replacement line, then install it and run again.' },
+  verify: { title: 'The test bench is checking', text: () => 'One value is not enough. Five values must all pass.' },
+  done: { title: 'Ticket closed', text: () => 'Every test passed. The customer is happy.' },
+}
+
+const styleKey = 'pixpy.repair-view.v1'
+function savedStyle(): StageStyle {
+  try { return localStorage.getItem(styleKey) === 'real' ? 'real' : 'ascii' } catch { return 'ascii' }
+}
 const stampHints: Record<BugKind, string> = {
   syntax: 'No line ran at all.',
   runtime: 'It started, then crashed.',
@@ -176,6 +192,7 @@ function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onHel
   const [stats, setStats] = useState<Stats>(emptyStats)
   const [showDone, setShowDone] = useState(false)
   const [freshLines, setFreshLines] = useState<number[]>([])
+  const [stageStyle, setStageStyle] = useState<StageStyle>(savedStyle)
   const timers = useRef<number[]>([])
   const version = useRef(0)
   const statsRef = useRef<Stats>(emptyStats)
@@ -187,7 +204,6 @@ function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onHel
   const bugLines = segmentLines(segments, bug.line)
   const busy = machine === 'running'
   const meta = machines[ticket.machine]
-  const MachineIcon = meta.icon
   const errorLine = lastRun?.result.error?.line ?? null
   const bump = (key: keyof Stats) => {
     statsRef.current = { ...statsRef.current, [key]: statsRef.current[key] + 1 }
@@ -368,90 +384,108 @@ function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onHel
     : machine === 'running' ? { tone: 'running', text: step === 'verify' ? 'TESTING' : 'RUNNING', icon: Play }
     : { tone: 'idle', text: broken ? 'OUT OF ORDER' : 'READY', icon: broken ? Bug : Power }
   const StatusIcon = status.icon
+  const screenText = machine === 'running' ? 'RUNNING…'
+    : machine === 'crash' ? fault === 'syntax' ? `NO BOOT · ${lastRun?.result.error?.type}` : `CRASH · ${lastRun?.result.error?.type}`
+    : machine === 'fixed' ? 'WORKING!'
+    : lastRun ? lastRun.result.outputs.join('  /  ') || '(nothing)' : '_'
   const stampBadge = stamped && step !== 'done' && <span key={stamped} className={`rs-machine__stamp rs-kind--${stamped}`}>{bugKindLabels[stamped]}</span>
+  const [who, role] = ticket.customer.split(/,\s*/)
+  const mission = missions[step]
+  const partsOpen = step === 'fix' || step === 'verify' && bench.length === 0
+  const drawerAfter = partsOpen ? bugLines[bugLines.length - 1] : -1
+  const chooseStyle = (next: StageStyle) => { setStageStyle(next); try { localStorage.setItem(styleKey, next) } catch { /* private mode */ } }
 
   return <main className={`rs-screen rs-step--${step}`} style={{ '--machine': meta.color } as CSSProperties}>
     <Toolbar onBack={onBack} onHelp={onHelp} counter={<><span>TICKET</span><b>{String(ticket.id).padStart(2, '0')}</b><small>/ {String(repairTickets.length).padStart(2, '0')}</small></>}>
       <TicketRail index={index} fixed={fixed} accessible={accessible} onSelect={onSelect} disabled={busy} />
     </Toolbar>
     <section className="rs-layout" inert={showDone}>
-      <div className="rs-bench">
-        <article className="rs-complaint">
-          <header><span className="rs-kicker">REPAIR TICKET #{String(ticket.id).padStart(2, '0')} · {meta.label}</span>{ticket.bugs.length > 1 && <span className="rs-bug-count"><Bug size={12} /> BUG {bugIndex + 1} OF {ticket.bugs.length}</span>}</header>
+      {/* Left: the story and the machine, one screen. */}
+      <article className={`rs-story is-${status.tone}`}>
+        <header className="rs-story__head">
+          <p className="rs-story__meta"><span>TICKET {String(ticket.id).padStart(2, '0')}/{String(repairTickets.length).padStart(2, '0')}</span><span>{meta.model}</span>{ticket.bugs.length > 1 && <span className="rs-bug-count"><Bug size={11} /> BUG {bugIndex + 1} OF {ticket.bugs.length}</span>}</p>
+          <AsciiTitle text={meta.label} />
           <h1>{ticket.title}</h1>
-          <blockquote><p>“{ticket.complaint}”</p><cite>— {ticket.customer}</cite></blockquote>
-          <div className="rs-rule"><span>SHOULD DO</span><p>{ticket.rule}</p></div>
-        </article>
-        <RepairStage machine={ticket.machine} view={stageView} label={`${meta.label}: ${status.text.toLowerCase()}`}
+          <figure className="rs-story__quote">
+            <blockquote><p>“{ticket.complaint}”</p></blockquote>
+            <figcaption><b>{who}</b>{role && <> · {role}</>}</figcaption>
+          </figure>
+          <p className="rs-story__spec"><b>MUST DO</b><span>{ticket.rule}</span></p>
+        </header>
+        <RepairStage machine={ticket.machine} view={stageView} style={stageStyle} label={`${meta.label}: ${status.text.toLowerCase()}`}
           fallback={<FlatMachine meta={meta} machine={machine} broken={broken} lastRun={lastRun} reproInput={reproInput} draft={draft} benchInput={benchInput} step={step} variable={ticket.variable} stamp={stampBadge} />}
           overlay={<>
-            <div className="rs-stage__plate"><span style={{ background: meta.color }}><MachineIcon size={16} /></span><div><b>{meta.label}</b><small>{meta.model}</small></div></div>
-            <div className={`rs-stage__status is-${status.tone}`}><StatusIcon size={14} />{status.text}</div>
-            <div className="rs-stage__input"><small>INPUT</small><b>{ticket.variable} = {shownInput || '?'}</b></div>
-            <div className="rs-stage__hint" aria-hidden="true"><Rotate3d size={14} /> drag to turn</div>
+            <div className="rs-stage__style" role="group" aria-label="Machine view">{(['ascii', 'real'] as const).map((option) => <button key={option} aria-pressed={stageStyle === option} onClick={() => chooseStyle(option)}>{option === 'ascii' ? 'ASCII' : '3D'}</button>)}</div>
+            <div className="rs-stage__hint" aria-hidden="true"><Rotate3d size={13} /> drag</div>
             {stampBadge}
           </>} />
-      </div>
+        <footer className="rs-story__readout">
+          <span className={`rs-stage__status is-${status.tone}`}><StatusIcon size={13} />{status.text}</span>
+          <span className="rs-readout__input"><small>IN</small>{ticket.variable} = {shownInput || '?'}</span>
+          <span className="rs-readout__screen"><small>OUT</small><b>{screenText}</b></span>
+        </footer>
+      </article>
 
-      <div className="rs-desk">
-        <ol className="rs-steps" aria-label="Repair steps" style={{ '--progress': `${(step === 'done' ? 4 : stepIndex) / 4}` } as CSSProperties}>{stepOrder.map((item, i) => {
-          const Icon = item.icon
-          const state = step === 'done' || i < stepIndex ? 'is-done' : i === stepIndex ? 'is-current' : ''
-          return <li key={item.id} className={state} aria-current={i === stepIndex ? 'step' : undefined}><span>{state === 'is-done' ? <Check size={15} strokeWidth={3} /> : <Icon size={15} />}</span><b>{item.label}</b><small>{item.hint}</small></li>
-        })}</ol>
-        <div className={`rs-code ${step === 'locate' ? 'is-locating' : ''}`}>
-          <header><div className="rs-dots" aria-hidden="true"><i /><i /><i /></div><span>machine.py</span>{step === 'locate' && <em className="rs-code__tap"><MousePointer size={13} /> tap a line</em>}{(reproInput || lastRun) && <button onClick={restart} disabled={busy} aria-label="Restart this ticket"><RotateCcw size={14} /> Restart</button>}</header>
-          <div className="rs-code__lines" aria-label="Machine program">{lines.map((line, i) => {
-            const classes = [traceLine === i ? 'is-executing' : '', errorLine === i && machine === 'crash' ? 'is-error' : '', located.includes(i) ? repaired ? 'is-installed' : 'is-located' : '', wrongLine === i ? 'is-wrong' : '', freshLines.includes(i) ? 'is-fresh' : ''].join(' ')
-            const content = <><span className="rs-code__number">{i + 1}</span><PythonCode code={line || ' '} />{located.includes(i) && (repaired ? <Check className="rs-code__ok" size={15} /> : <Bug className="rs-code__bug" size={15} />)}{errorLine === i && machine === 'crash' && <TriangleAlert className="rs-code__alert" size={15} />}</>
-            return step === 'locate'
-              ? <button key={i} className={`rs-code__line ${classes}`} onClick={() => locate(i)} aria-label={`Line ${i + 1}: ${line.trim()}`}>{content}</button>
-              : <div key={i} className={`rs-code__line ${classes}`}>{content}</div>
-          })}</div>
-          {lastRun && machine !== 'running' && <Console run={lastRun} variable={ticket.variable} />}
-        </div>
+      {/* Right: the workbench for the current step. */}
+      <section className="rs-work" aria-label="Workbench">
+        <header className="rs-work__head">
+          <ol className="rs-steps" aria-label="Repair steps" style={{ '--progress': `${(step === 'done' ? 4 : stepIndex) / 4}` } as CSSProperties}>{stepOrder.map((item, i) => {
+            const Icon = item.icon
+            const state = step === 'done' || i < stepIndex ? 'is-done' : i === stepIndex ? 'is-current' : ''
+            return <li key={item.id} className={state} aria-current={i === stepIndex ? 'step' : undefined}><span>{state === 'is-done' ? <Check size={14} strokeWidth={3} /> : <Icon size={14} />}</span><b>{item.label}</b></li>
+          })}</ol>
+          <div className="rs-mission">
+            <span className="rs-mission__number">{step === 'done' ? <Check size={26} strokeWidth={3} /> : String(stepIndex + 1).padStart(2, '0')}</span>
+            <div><small>{step === 'done' ? 'ALL FIVE STEPS DONE' : `STEP ${stepIndex + 1} OF 5 · ${stepOrder[stepIndex].label.toUpperCase()}`}</small><h2>{mission.title}</h2><p>{mission.text(ticket.variable)}</p></div>
+          </div>
+        </header>
 
-        <div className="rs-tray" aria-live="polite">
-          {step === 'reproduce' && <section className="rs-tool">
-            <h2><FlaskConical size={18} /> Run the machine</h2>
-            <p>Choose a value for <code>{ticket.variable}</code> and run the current program.</p>
+        <div className="rs-work__body" aria-live="polite">
+          <div className={`rs-code ${step === 'locate' ? 'is-locating' : ''}`}>
+            <header><div className="rs-dots" aria-hidden="true"><i /><i /><i /></div><span>machine.py</span>{step === 'locate' && <em className="rs-code__tap"><MousePointer size={13} /> tap a line</em>}{(reproInput || lastRun) && <button onClick={restart} disabled={busy} aria-label="Restart this ticket"><RotateCcw size={14} /> Restart</button>}</header>
+            <div className="rs-code__lines" aria-label="Machine program">{lines.map((line, i) => {
+              const classes = [traceLine === i ? 'is-executing' : '', errorLine === i && machine === 'crash' ? 'is-error' : '', located.includes(i) ? repaired ? 'is-installed' : 'is-located' : '', wrongLine === i ? 'is-wrong' : '', freshLines.includes(i) ? 'is-fresh' : ''].join(' ')
+              const content = <><span className="rs-code__number">{i + 1}</span><PythonCode code={line || ' '} />{located.includes(i) && (repaired ? <Check className="rs-code__ok" size={15} /> : <Bug className="rs-code__bug" size={15} />)}{errorLine === i && machine === 'crash' && <TriangleAlert className="rs-code__alert" size={15} />}</>
+              const row = step === 'locate'
+                ? <button key={i} className={`rs-code__line ${classes}`} onClick={() => locate(i)} aria-label={`Line ${i + 1}: ${line.trim()}`}>{content}</button>
+                : <div key={i} className={`rs-code__line ${classes}`}>{content}</div>
+              if (i !== drawerAfter) return row
+              // The parts drawer opens right under the broken line.
+              return <div key={i} className="rs-code__slot">{row}
+                <div className="rs-drawer">
+                  <p><Wrench size={13} /> Replacement parts for line {bugLines[0] + 1}</p>
+                  <div className="rs-parts" role="radiogroup" aria-label="Replacement parts">{bug.parts.map((part, index) => <button key={index} role="radio" aria-checked={selectedPart === index} className={`rs-part ${selectedPart === index ? 'is-selected' : ''} ${installed[bugIndex] === index && machine !== 'running' ? 'is-installed' : ''}`} disabled={busy} onClick={() => setSelectedPart(index)}><span className="rs-part__bolt" aria-hidden="true" /><pre><PythonCode code={part} /></pre>{selectedPart === index && <Check size={15} />}</button>)}</div>
+                </div>
+              </div>
+            })}</div>
+            {lastRun && machine !== 'running' && <Console run={lastRun} variable={ticket.variable} />}
+          </div>
+
+          {step === 'reproduce' && <div className="rs-tool rs-prompt">
+            <span className="rs-prompt__label"><code>{ticket.variable} =</code></span>
             <div className="rs-chips">{ticket.tryValues.map((value) => <button key={value} className={`${draft === value ? 'is-selected' : ''} ${clueOpen && ticket.suggested === value ? 'is-suggested' : ''}`} aria-pressed={draft === value} disabled={busy} onClick={() => setDraft(value)}>{value}</button>)}
               <label className="rs-custom"><span className="sr-only">Custom {ticket.variable}</span><input value={draft} disabled={busy} inputMode="numeric" onChange={(event) => setDraft(event.target.value.slice(0, 12))} onKeyDown={(event) => { if (event.key === 'Enter') reproduce(draft) }} aria-label={`${ticket.variable} value`} /></label>
             </div>
-          </section>}
-          {step === 'diagnose' && <section className="rs-tool">
-            <h2><Stamp size={18} /> What kind of bug is it?</h2>
-            <p>Look at what the machine did with <code>{ticket.variable} = {reproInput}</code>.</p>
-            <div className="rs-stamps">{stampOrder.map((kind) => <button key={kind} className={`rs-stamp rs-kind--${kind} ${wrongStamp === kind ? 'is-wrong' : ''}`} disabled={busy} onClick={() => chooseStamp(kind)}><b>{bugKindLabels[kind]}</b><small>{stampHints[kind]}</small></button>)}</div>
-          </section>}
-          {step === 'locate' && <section className="rs-tool">
-            <h2><ScanSearch size={18} /> Find the broken line</h2>
-            <p>{lastRun?.result.error ? `Python points at line ${lastRun.result.error.line + 1}. Is the real problem there?` : 'No error message this time. Read each line and tap the one that makes the wrong decision.'}</p>
-            <div className="rs-scanner" aria-hidden="true"><i /></div>
-          </section>}
-          {(step === 'fix' || step === 'verify' && bench.length === 0) && <section className="rs-tool">
-            <h2><Wrench size={18} /> Choose a replacement part for line {bugLines[0] + 1}</h2>
-            <div className="rs-parts" role="radiogroup" aria-label="Replacement parts">{bug.parts.map((part, i) => <button key={i} role="radio" aria-checked={selectedPart === i} className={`rs-part ${selectedPart === i ? 'is-selected' : ''} ${installed[bugIndex] === i && machine !== 'running' ? 'is-installed' : ''}`} disabled={busy} onClick={() => setSelectedPart(i)}><span className="rs-part__bolt" aria-hidden="true" /><pre><PythonCode code={part} /></pre>{selectedPart === i && <Check size={15} />}</button>)}</div>
-          </section>}
-          {step === 'verify' && bench.length > 0 && <section className="rs-tool">
-            <h2><ClipboardCheck size={18} /> Test bench</h2>
-            <Bench tests={bench} ticket={ticket} />
-          </section>}
-          {step === 'done' && <section className="rs-tool">
-            <h2><Check size={18} /> Ticket closed</h2>
-            <Bench tests={bench} ticket={ticket} />
-          </section>}
+          </div>}
+          {step === 'diagnose' && <div className="rs-tool">
+            <div className="rs-stamps">{stampOrder.map((kind) => {
+              const Icon = stampIcons[kind]
+              return <button key={kind} className={`rs-stamp rs-kind--${kind} ${wrongStamp === kind ? 'is-wrong' : ''}`} disabled={busy} onClick={() => chooseStamp(kind)}><Icon size={20} /><b>{bugKindLabels[kind]}</b><small>{stampHints[kind]}</small></button>
+            })}</div>
+          </div>}
+          {step === 'verify' && bench.length > 0 && <div className="rs-tool"><Bench tests={bench} ticket={ticket} /></div>}
+          {step === 'done' && <div className="rs-tool"><Bench tests={bench} ticket={ticket} /></div>}
           {step !== 'done' && step !== 'verify' && <div className="rs-clue">{clueOpen ? <p><Lightbulb size={16} /> {clue}</p> : <button onClick={showClue}><Lightbulb size={15} /> Need a clue?</button>}</div>}
         </div>
-      </div>
-    </section>
 
-    <footer className={`rs-footer rs-footer--${message.tone}`} inert={showDone}>
-      <div role="status"><span className="rs-footer__icon">{message.tone === 'good' ? <Check size={22} /> : message.tone === 'bad' ? <Bug size={22} /> : <Sparkles size={22} />}</span><p><b>{message.title}</b>{message.text}</p></div>
-      {step === 'reproduce' && <button className="rs-primary" disabled={busy || !draft.trim()} onClick={() => reproduce(draft)}><Play size={17} fill="currentColor" /> {busy ? 'RUNNING…' : `RUN WITH ${draft.trim() || '?'}`}</button>}
-      {step === 'fix' && <button className="rs-primary" disabled={busy || selectedPart === null} onClick={install}><Wrench size={17} /> {busy ? 'RUNNING…' : 'INSTALL + RUN'}</button>}
-      {step === 'done' && <button className="rs-primary" onClick={onNext}>{index === repairTickets.length - 1 ? 'FINISH' : 'NEXT TICKET'} <ArrowRight size={17} /></button>}
-    </footer>
+        <footer className={`rs-footer rs-footer--${message.tone}`}>
+          <div role="status"><span className="rs-footer__icon">{message.tone === 'good' ? <Check size={20} /> : message.tone === 'bad' ? <Bug size={20} /> : <Sparkles size={20} />}</span><p><b>{message.title}</b>{message.text}</p></div>
+          {step === 'reproduce' && <button className="rs-primary" disabled={busy || !draft.trim()} onClick={() => reproduce(draft)}><Play size={17} fill="currentColor" /> {busy ? 'RUNNING…' : `RUN WITH ${draft.trim() || '?'}`}</button>}
+          {step === 'fix' && <button className="rs-primary" disabled={busy || selectedPart === null} onClick={install}><Wrench size={17} /> {busy ? 'RUNNING…' : 'INSTALL + RUN'}</button>}
+          {step === 'done' && <button className="rs-primary" onClick={onNext}>{index === repairTickets.length - 1 ? 'FINISH' : 'NEXT TICKET'} <ArrowRight size={17} /></button>}
+        </footer>
+      </section>
+    </section>
 
     {showDone && <div className="rs-done-backdrop">
       <div className="rs-done" role="dialog" aria-modal="true" aria-labelledby="rs-done-title">

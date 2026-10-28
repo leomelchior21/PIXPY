@@ -92,12 +92,13 @@ describe('PixPy classroom session', () => {
     expect(screen.queryByRole('button', { name: /open .* activity list/i })).not.toBeInTheDocument()
   }, 15_000)
 
-  it('opens the repair shop, the sorting tower, and the boss arena from their URLs', async () => {
+  it('opens the repair shop, the sorting tower, and the boss arena from their URLs', { timeout: 40_000 }, async () => {
     saveSession(createSession('Maya'))
     for (const [route, heading] of [['make-it-work', 'The arcade cabinet'], ['more-than-one-choice', 'Two at once?'], ['conditions-final-bosses', 'The club door']]) {
       window.history.replaceState(null, '', `#/${route}`)
       const view = render(<App />)
-      expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument()
+      // The first load of each activity chunk compiles in the test runner, which can take a few seconds.
+      expect(await screen.findByRole('heading', { name: heading }, { timeout: 10_000 })).toBeInTheDocument()
       view.unmount()
     }
   })

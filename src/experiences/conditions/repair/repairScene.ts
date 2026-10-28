@@ -5,6 +5,7 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import type { RepairMachineId } from '../../../data/repairShop'
+import { createAsciiPass } from './asciiPass'
 import { buildMachine, type MachineRig, type RigFrame, type StageMood } from './repairModels'
 
 // The repair bay: one machine on a workshop floor, under a work lamp, in front of a pegboard.
@@ -23,8 +24,11 @@ export interface StageView {
   caption: string
 }
 
+export type StageStyle = 'ascii' | 'real'
+
 export interface RepairSceneHandle {
   update(view: StageView): void
+  setStyle(style: StageStyle): void
   resize(): void
   dispose(): void
 }
@@ -263,7 +267,7 @@ function particlePool(count: number) {
   return Array.from({ length: count }, (): Particle => ({ position: new THREE.Vector3(), velocity: new THREE.Vector3(), life: 0, age: 1, spin: 0 }))
 }
 
-export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMachineId): RepairSceneHandle | null {
+export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMachineId, initialStyle: StageStyle = 'ascii'): RepairSceneHandle | null {
   let renderer: THREE.WebGLRenderer
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
@@ -293,14 +297,16 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
   const center = bounds.getCenter(new THREE.Vector3())
 
   // Room.
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.MeshStandardMaterial({ map: concrete(), roughness: 0.88, metalness: 0 }))
+  const floorMaterial = new THREE.MeshStandardMaterial({ map: concrete(), roughness: 0.88, metalness: 0 })
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), floorMaterial)
   floor.rotation.x = -Math.PI / 2
   floor.receiveShadow = true
   const bay = bayLines(size.x + 0.7, size.z + 0.8)
   bay.rotation.x = -Math.PI / 2
   bay.position.set(center.x, 0.002, center.z)
   const wallZ = bounds.min.z - 0.9
-  const wall = new THREE.Mesh(new THREE.PlaneGeometry(8, 4), new THREE.MeshStandardMaterial({ map: pegboard(), roughness: 0.85 }))
+  const wallMaterial = new THREE.MeshStandardMaterial({ map: pegboard(), roughness: 0.85 })
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(8, 4), wallMaterial)
   wall.position.set(center.x, 2, wallZ)
   wall.receiveShadow = true
   const neon = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.35), new THREE.MeshBasicMaterial({ map: neonSign(), transparent: true, toneMapped: false, depthWrite: false }))
@@ -418,7 +424,8 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
   const clock = new THREE.Clock()
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.05, 40)
   const target = center.clone()
-  target.y = center.y * 0.96
+  // Aim a little above the middle: the top of the panel sits under the story text.
+  target.y = center.y + size.y * 0.07
   let yaw = 0.32, pitch = 0.12, yawGoal = yaw, pitchGoal = pitch, distance = 4
   let lastTouch = -10
   let dragging: { x: number; y: number; yaw: number; pitch: number } | null = null
@@ -443,16 +450,26 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.55, 0.4, 1.1)
   composer.addPass(bloom)
   composer.addPass(new OutputPass())
+  const ascii = createAsciiPass()
+  composer.addPass(ascii)
+  let style = initialStyle
+  let asciiMix = style === 'ascii' ? 1 : 0
 
   const resize = () => {
     const rect = canvas.getBoundingClientRect()
     const width = Math.max(1, Math.round(rect.width)), height = Math.max(1, Math.round(rect.height))
     renderer.setSize(width, height, false)
     composer.setSize(width, height)
+    // Cells about 1/64 of the width, in device pixels, with the tall shape of a text character.
+    const ratio = renderer.getPixelRatio()
+    const cell = THREE.MathUtils.clamp(width / 64, 6, 11) * ratio
+    ascii.uniforms.uResolution.value.set(width * ratio, height * ratio)
+    ascii.uniforms.uCell.value.set(cell, cell * 1.6)
     camera.aspect = width / height
     const vertical = THREE.MathUtils.degToRad(FOV) / 2
     const horizontal = Math.atan(Math.tan(vertical) * camera.aspect)
-    distance = Math.max((size.y * 0.5 + 0.12) / Math.tan(vertical), (size.x * 0.5 + 0.16) / Math.tan(horizontal)) * 1.08 + size.z * 0.5
+    // Framed close: the machine fills the panel.
+    distance = Math.max((size.y * 0.5 + 0.12) / Math.tan(vertical), (size.x * 0.5 + 0.06) / Math.tan(horizontal)) * 0.98 + size.z * 0.5
     camera.updateProjectionMatrix()
   }
   resize()
@@ -500,7 +517,7 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
     rig.tick(rigFrame)
     const ambient = rig.ambient?.(rigFrame) ?? 1
     hemisphere.intensity = 0.55 * ambient
-    key.intensity = 60 * (0.3 + 0.7 * ambient)
+    key.intensity = 60 * (0.3 + 0.7 * ambient) * (1 + asciiMix * 0.4)
     scene.environmentIntensity = 0.5 * (0.35 + 0.65 * ambient)
 
     // Screen: redrawn about 20 times a second.
@@ -580,6 +597,12 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
     camera.position.set(target.x + Math.sin(yaw) * Math.cos(pitch) * distance, target.y + Math.sin(pitch) * distance, target.z + Math.cos(yaw) * Math.cos(pitch) * distance)
     camera.lookAt(target)
 
+    asciiMix += ((style === 'ascii' ? 1 : 0) - asciiMix) * Math.min(1, dt * 6)
+    ascii.uniforms.uMix.value = asciiMix
+    ascii.enabled = asciiMix > 0.002
+    // In ASCII the room steps back so the machine reads clearly.
+    wallMaterial.color.setScalar(1 - asciiMix * 0.72)
+    floorMaterial.color.setScalar(1 - asciiMix * 0.45)
     composer.render()
   }
   frame = requestAnimationFrame(loop)
@@ -593,6 +616,7 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
       }
       view = next
     },
+    setStyle(next) { style = next },
     resize,
     dispose() {
       disposed = true

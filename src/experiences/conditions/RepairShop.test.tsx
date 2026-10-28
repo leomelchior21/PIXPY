@@ -17,7 +17,8 @@ const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('butto
 const line = (number: number) => fireEvent.click(screen.getByRole('button', { name: new RegExp(`^Line ${number}:`) }))
 const part = (code: string) => fireEvent.click(screen.getByRole('radio', { name: code }))
 
-describe('Make it work: the repair shop', () => {
+// Each test plays whole tickets through the full page, which takes several seconds on slower machines.
+describe('Make it work: the repair shop', { timeout: 30000 }, () => {
   it('opens the guide on the first visit, remembers it was read, and reopens it from the help button', () => {
     render(<Harness initial={createSession('Maya')} />)
     const guide = screen.getByRole('dialog', { name: 'Customers bring you broken machines' })
