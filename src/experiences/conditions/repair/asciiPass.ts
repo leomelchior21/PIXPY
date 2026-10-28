@@ -39,6 +39,7 @@ export function createAsciiPass() {
     uniforms: {
       tDiffuse: { value: null },
       tGlyphs: { value: null },
+      tNormal: { value: null },
       uResolution: { value: new THREE.Vector2(1, 1) },
       uCell: { value: new THREE.Vector2(8, 13) },
       uMix: { value: 1 },
@@ -51,6 +52,7 @@ export function createAsciiPass() {
     fragmentShader: /* glsl */ `
       uniform sampler2D tDiffuse;
       uniform sampler2D tGlyphs;
+      uniform sampler2D tNormal;
       uniform vec2 uResolution;
       uniform vec2 uCell;
       uniform float uMix;
@@ -69,6 +71,17 @@ export function createAsciiPass() {
         return c / 6.0;
       }
 
+      // The steepest of the three normal channels gives a signed direction across a crease or outline.
+      vec2 normalEdge(vec2 center, vec2 texel) {
+        vec3 r = texture2D(tNormal, center + vec2(texel.x * 0.5, 0.0)).rgb, l = texture2D(tNormal, center - vec2(texel.x * 0.5, 0.0)).rgb;
+        vec3 u = texture2D(tNormal, center + vec2(0.0, texel.y * 0.5)).rgb, d = texture2D(tNormal, center - vec2(0.0, texel.y * 0.5)).rgb;
+        vec2 gx = vec2(r.x - l.x, u.x - d.x), gy = vec2(r.y - l.y, u.y - d.y), gz = vec2(r.z - l.z, u.z - d.z);
+        vec2 best = gx;
+        if (length(gy) > length(best)) best = gy;
+        if (length(gz) > length(best)) best = gz;
+        return best;
+      }
+
       void main() {
         vec2 px = vUv * uResolution;
         vec2 cell = floor(px / uCell);
@@ -76,23 +89,29 @@ export function createAsciiPass() {
         vec2 center = (cell + 0.5) * texel;
         vec3 color = cellColor(center, texel);
         float light = luma(color);
-        vec2 gradient = vec2(
-          luma(texture2D(tDiffuse, center + vec2(texel.x, 0.0)).rgb) - luma(texture2D(tDiffuse, center - vec2(texel.x, 0.0)).rgb),
-          luma(texture2D(tDiffuse, center + vec2(0.0, texel.y)).rgb) - luma(texture2D(tDiffuse, center - vec2(0.0, texel.y)).rgb)
-        );
+        // Edges: brightness changes, plus colour changes (a pink side panel against a black front).
+        vec3 right = texture2D(tDiffuse, center + vec2(texel.x, 0.0)).rgb, left = texture2D(tDiffuse, center - vec2(texel.x, 0.0)).rgb;
+        vec3 up = texture2D(tDiffuse, center + vec2(0.0, texel.y)).rgb, down = texture2D(tDiffuse, center - vec2(0.0, texel.y)).rgb;
+        vec2 gradient = vec2(luma(right) - luma(left), luma(up) - luma(down));
+        float hueEdge = max(length(right - left), length(up - down));
+        if (length(gradient) < 0.18 && hueEdge > 0.42) gradient = normalize(vec2(length(right - left), length(up - down)) + 1e-4) * 0.3;
+        vec2 crease = normalEdge(center, texel);
+        bool outline = length(crease) > 0.3;
+        if (outline) gradient = crease;
         float glyph;
-        if (length(gradient) > 0.3 && light > 0.1) {
+        if (outline || length(gradient) > 0.22 && light > 0.05) {
           float angle = mod(atan(gradient.y, gradient.x) + 3.14159265 / 8.0, 3.14159265);
           glyph = RAMP + floor(angle / (3.14159265 / 4.0));
         } else {
-          float level = clamp((light - 0.1) * 1.55, 0.0, 0.999);
-          glyph = floor(pow(level, 0.8) * RAMP);
+          float level = clamp((light - 0.035) * 1.35, 0.0, 0.999);
+          // Flat surfaces get light fill characters, so the outlines carry the shape.
+          glyph = floor(pow(level, 1.05) * RAMP * 0.82);
         }
         vec2 inside = fract(px / uCell);
         float ink = texture2D(tGlyphs, vec2((glyph + inside.x) / COUNT, inside.y)).r;
         float peak = max(max(color.r, color.g), max(color.b, 0.08));
         vec3 hue = mix(color / peak, vec3(1.0), 0.18);
-        vec3 fore = hue * (0.45 + 0.9 * pow(light, 0.55));
+        vec3 fore = hue * (outline ? max(0.85, 0.5 + 0.9 * pow(light, 0.55)) : 0.45 + 0.9 * pow(light, 0.55));
         vec3 back = vec3(0.027, 0.035, 0.031) + color * 0.08;
         float scan = 0.94 + 0.06 * sin(px.y * 1.2);
         vec3 ascii = mix(back, fore, ink) * scan;

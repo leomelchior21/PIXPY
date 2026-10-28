@@ -283,8 +283,10 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
 
   const scene = new THREE.Scene()
   const background = new THREE.Color(0x1a1714)
+  const black = new THREE.Color(0x000000)
+  const fog = new THREE.Fog(background, 7, 16)
   scene.background = background
-  scene.fog = new THREE.Fog(background, 7, 16)
+  scene.fog = fog
   const pmrem = new THREE.PMREMGenerator(renderer)
   const environment = pmrem.fromScene(new RoomEnvironment(), 0.04)
   scene.environment = environment.texture
@@ -313,7 +315,8 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
   neon.position.set(center.x + size.x / 2 + 0.75, Math.max(1.2, bounds.max.y * 0.82), wallZ + 0.02)
   const skirting = new THREE.Mesh(new THREE.BoxGeometry(8, 0.12, 0.04), new THREE.MeshStandardMaterial({ color: 0x2a2622, roughness: 0.7 }))
   skirting.position.set(center.x, 0.06, wallZ + 0.02)
-  scene.add(floor, bay, wall, neon, skirting)
+  const room = [floor, bay, wall, neon, skirting]
+  scene.add(...room)
 
   // Lights: a warm work lamp, a cool rim, and coloured lights the machine can flash.
   const hemisphere = new THREE.HemisphereLight(0xfff1dc, 0x2a2420, 0.55)
@@ -370,7 +373,7 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
   const tapeWidth = Math.max(0.9, size.x * 1.15)
   const tapes = [0.2, -0.17].map((angle, index) => {
     const tape = new THREE.Mesh(new THREE.PlaneGeometry(tapeWidth, 0.085), tapeMaterial)
-    tape.position.set(center.x, bounds.min.y + size.y * 0.38 + index * 0.02, bounds.max.z + 0.03 + index * 0.004)
+    tape.position.set(center.x, bounds.min.y + size.y * 0.24 + index * 0.02, bounds.max.z + 0.03 + index * 0.004)
     tape.rotation.z = angle
     tape.castShadow = true
     tape.visible = false
@@ -425,7 +428,7 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.05, 40)
   const target = center.clone()
   // Aim a little above the middle: the top of the panel sits under the story text.
-  target.y = center.y + size.y * 0.07
+  target.y = center.y + size.y * 0.05
   let yaw = 0.32, pitch = 0.12, yawGoal = yaw, pitchGoal = pitch, distance = 4
   let lastTouch = -10
   let dragging: { x: number; y: number; yaw: number; pitch: number } | null = null
@@ -452,6 +455,11 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
   composer.addPass(new OutputPass())
   const ascii = createAsciiPass()
   composer.addPass(ascii)
+  // Surface directions of the scene, for the ASCII outlines.
+  const normals = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType })
+  const normalMaterial = new THREE.MeshNormalMaterial()
+  ascii.uniforms.tNormal.value = normals.texture
+  const effects: THREE.Object3D[] = [sparkPoints, confettiMesh, ...smoke.map((puff) => puff.sprite)]
   let style = initialStyle
   let asciiMix = style === 'ascii' ? 1 : 0
 
@@ -460,16 +468,17 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
     const width = Math.max(1, Math.round(rect.width)), height = Math.max(1, Math.round(rect.height))
     renderer.setSize(width, height, false)
     composer.setSize(width, height)
-    // Cells about 1/64 of the width, in device pixels, with the tall shape of a text character.
+    // Cells about 1/92 of the width, in device pixels, with the tall shape of a text character.
     const ratio = renderer.getPixelRatio()
-    const cell = THREE.MathUtils.clamp(width / 64, 6, 11) * ratio
+    const cell = THREE.MathUtils.clamp(width / 92, 4.2, 8) * ratio
     ascii.uniforms.uResolution.value.set(width * ratio, height * ratio)
+    normals.setSize(Math.round(width * ratio), Math.round(height * ratio))
     ascii.uniforms.uCell.value.set(cell, cell * 1.6)
     camera.aspect = width / height
     const vertical = THREE.MathUtils.degToRad(FOV) / 2
     const horizontal = Math.atan(Math.tan(vertical) * camera.aspect)
     // Framed close: the machine fills the panel.
-    distance = Math.max((size.y * 0.5 + 0.12) / Math.tan(vertical), (size.x * 0.5 + 0.06) / Math.tan(horizontal)) * 0.98 + size.z * 0.5
+    distance = Math.max((size.y * 0.5 + 0.07) / Math.tan(vertical), (size.x * 0.5 + 0.06) / Math.tan(horizontal)) * 0.98 + size.z * 0.5
     camera.updateProjectionMatrix()
   }
   resize()
@@ -516,9 +525,11 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
     const rigFrame: RigFrame = { t, dt, mood: view.mood, moodTime, power, act, outputs: view.outputs, input: Number.isFinite(input) ? input : null, status, statusLevel }
     rig.tick(rigFrame)
     const ambient = rig.ambient?.(rigFrame) ?? 1
-    hemisphere.intensity = 0.55 * ambient
-    key.intensity = 60 * (0.3 + 0.7 * ambient) * (1 + asciiMix * 0.4)
-    scene.environmentIntensity = 0.5 * (0.35 + 0.65 * ambient)
+    // ASCII needs even, bright light so every part of the machine gets its own shade.
+    hemisphere.intensity = 0.55 * ambient * (1 + asciiMix * 1.6)
+    key.intensity = 60 * (0.3 + 0.7 * ambient) * (1 + asciiMix * 0.5)
+    fill.intensity = 0.35 + asciiMix * 1.4
+    scene.environmentIntensity = 0.5 * (0.35 + 0.65 * ambient) * (1 + asciiMix * 0.8)
 
     // Screen: redrawn about 20 times a second.
     if (t - lastScreen > 0.05) {
@@ -590,9 +601,11 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
     const shake = calm ? 0 : runtime ? Math.max(0, 1 - moodTime / 0.7) * 0.012 : view.mood === 'running' ? 0.0012 : 0
     rig.root.position.set((Math.random() - 0.5) * shake, 0, (Math.random() - 0.5) * shake)
     const idle = !dragging && t - lastTouch > 3
-    const sway = idle && !calm ? Math.sin(t * 0.25) * 0.12 : 0
-    yaw += ((idle ? 0.3 + sway : yawGoal) - yaw) * Math.min(1, dt * (idle ? 0.8 : 8))
-    pitch += ((idle ? 0.12 : pitchGoal) - pitch) * Math.min(1, dt * (idle ? 0.8 : 8))
+    // ASCII looks at the machine almost head-on, where its shape is clearest.
+    const restYaw = THREE.MathUtils.lerp(0.3, 0.16, asciiMix), restPitch = THREE.MathUtils.lerp(0.12, 0.06, asciiMix)
+    const sway = idle && !calm ? Math.sin(t * 0.25) * THREE.MathUtils.lerp(0.12, 0.05, asciiMix) : 0
+    yaw += ((idle ? restYaw + sway : yawGoal) - yaw) * Math.min(1, dt * (idle ? 0.8 : 8))
+    pitch += ((idle ? restPitch : pitchGoal) - pitch) * Math.min(1, dt * (idle ? 0.8 : 8))
     if (idle) { yawGoal = yaw; pitchGoal = pitch }
     camera.position.set(target.x + Math.sin(yaw) * Math.cos(pitch) * distance, target.y + Math.sin(pitch) * distance, target.z + Math.cos(yaw) * Math.cos(pitch) * distance)
     camera.lookAt(target)
@@ -600,9 +613,23 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
     asciiMix += ((style === 'ascii' ? 1 : 0) - asciiMix) * Math.min(1, dt * 6)
     ascii.uniforms.uMix.value = asciiMix
     ascii.enabled = asciiMix > 0.002
-    // In ASCII the room steps back so the machine reads clearly.
-    wallMaterial.color.setScalar(1 - asciiMix * 0.72)
-    floorMaterial.color.setScalar(1 - asciiMix * 0.45)
+    // In ASCII the room disappears: the machine stands alone on black.
+    room.forEach((object) => { object.visible = asciiMix < 0.5 })
+    // Bloom haze would turn the black background into dots, so the ASCII view goes without it.
+    bloom.enabled = asciiMix < 0.5
+    if (ascii.enabled) {
+      effects.forEach((object) => { object.userData.shown = object.visible; object.visible = false })
+      scene.overrideMaterial = normalMaterial
+      renderer.setRenderTarget(normals)
+      renderer.setClearColor(0x000000, 1)
+      renderer.clear()
+      renderer.render(scene, camera)
+      renderer.setRenderTarget(null)
+      scene.overrideMaterial = null
+      effects.forEach((object) => { object.visible = object.userData.shown })
+    }
+    scene.background = asciiMix < 0.5 ? background : black
+    scene.fog = asciiMix < 0.5 ? fog : null
     composer.render()
   }
   frame = requestAnimationFrame(loop)
@@ -634,6 +661,7 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
           material.dispose()
         })
       })
+      normals.dispose()
       environment.dispose()
       pmrem.dispose()
       composer.dispose()
