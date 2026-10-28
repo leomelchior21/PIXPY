@@ -117,6 +117,12 @@ describe('session-only progress', () => {
     expect(createSession('Leo')).toMatchObject({ backroomLevelStars: [0, 0, 0, 0], backroomSkills: {}, backroomCoachSeen: [] })
   })
 
+  it('remembers that the repair shop guide was read, and counts it as read once a ticket is fixed', () => {
+    expect(createSession('Leo').repairTutorialSeen).toBe(false)
+    expect(restoreProgress('leo', 'Leo', { repairTutorialSeen: true }).repairTutorialSeen).toBe(true)
+    expect(restoreProgress('leo', 'Leo', { repairTickets: [1] }).repairTutorialSeen).toBe(true)
+  })
+
   it('resets only the selected activity and removes its completion mark', () => {
     const progress: SessionProgress = {
       ...createSession('Leo'),

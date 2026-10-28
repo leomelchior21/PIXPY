@@ -85,6 +85,7 @@ export interface SessionProgress {
   ifElseLevels?: number[]
   repairTickets: number[]
   repairLog: RepairLogEntry[]
+  repairTutorialSeen: boolean
   moreChoiceLevels: number[]
   moreChoiceLog: MoreChoiceEvent[]
   conditionBosses: number[]

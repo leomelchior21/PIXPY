@@ -6,8 +6,9 @@ import type { SessionProgress } from '../../types'
 import { RepairShop } from './RepairShop'
 
 let latest: SessionProgress
+const seen = (fixed: number[] = []): SessionProgress => ({ ...createSession('Maya'), repairTickets: fixed, repairTutorialSeen: true })
 function Harness({ initial }: { initial?: SessionProgress }) {
-  const [progress, setProgress] = useState<SessionProgress>(() => initial ?? createSession('Maya'))
+  const [progress, setProgress] = useState<SessionProgress>(() => initial ?? seen())
   latest = progress
   return <RepairShop progress={progress} onProgress={setProgress} onBack={() => {}} />
 }
@@ -17,6 +18,26 @@ const line = (number: number) => fireEvent.click(screen.getByRole('button', { na
 const part = (code: string) => fireEvent.click(screen.getByRole('radio', { name: code }))
 
 describe('Make it work: the repair shop', () => {
+  it('opens the guide on the first visit, remembers it was read, and reopens it from the help button', () => {
+    render(<Harness initial={createSession('Maya')} />)
+    const guide = screen.getByRole('dialog', { name: 'Customers bring you broken machines' })
+    for (const title of ['Make the bug happen', 'Name the kind of bug', 'Tap the broken line', 'Swap the part, then test everything']) {
+      fireEvent.click(within(guide).getByRole('button', { name: /NEXT/ }))
+      expect(screen.getByRole('dialog', { name: title })).toBeInTheDocument()
+    }
+    fireEvent.click(within(guide).getByRole('button', { name: /START REPAIRING/ }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(latest.repairTutorialSeen).toBe(true)
+    click('How the repair shop works')
+    expect(screen.getByRole('dialog', { name: 'Customers bring you broken machines' })).toBeInTheDocument()
+  })
+
+  it('keeps all eight tickets in one row and shows the machine without WebGL', () => {
+    render(<Harness />)
+    expect(within(screen.getByRole('navigation', { name: 'Repair tickets' })).getAllByRole('button')).toHaveLength(8)
+    expect(screen.getByRole('img', { name: 'ARCADE-3000: ready' })).toHaveClass('rs-stage--flat')
+  })
+
   it('walks one ticket through reproduce, diagnose, locate, fix, and verify', () => {
     render(<Harness />)
     expect(screen.getByRole('heading', { name: 'The arcade cabinet' })).toBeInTheDocument()
@@ -51,7 +72,7 @@ describe('Make it work: the repair shop', () => {
   })
 
   it('shows Python’s real report for a crash and explains a crash line that is not the bug', () => {
-    render(<Harness initial={{ ...createSession('Maya'), repairTickets: [1, 2, 3] }} />)
+    render(<Harness initial={seen([1, 2, 3])} />)
     expect(screen.getByRole('heading', { name: 'The ride gate' })).toBeInTheDocument()
     click('RUN WITH 120')
     expect(screen.getByText(/TypeError: '>=' not supported between instances of 'str' and 'int'/)).toBeInTheDocument()
@@ -64,7 +85,7 @@ describe('Make it work: the repair shop', () => {
   })
 
   it('reveals the second bug in the snack machine after the syntax error is fixed', () => {
-    render(<Harness initial={{ ...createSession('Maya'), repairTickets: [1, 2, 3, 4, 5, 6, 7] }} />)
+    render(<Harness initial={seen([1, 2, 3, 4, 5, 6, 7])} />)
     expect(screen.getByText('BUG 1 OF 2')).toBeInTheDocument()
     click('5'); click('RUN WITH 5')
     expect(screen.getByText(/SyntaxError: expected ':'/)).toBeInTheDocument()

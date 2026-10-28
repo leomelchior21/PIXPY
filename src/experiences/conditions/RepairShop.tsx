@@ -1,10 +1,12 @@
-import { ArrowLeft, ArrowRight, BatteryCharging, Bug, Check, ClipboardCheck, Cookie, DoorClosed, Fan, FlaskConical, Gamepad2, Lamp, Lightbulb, Play, RotateCcw, Ruler, ScanSearch, Sparkles, Stamp, TriangleAlert, Trophy, Wrench, X } from 'lucide-react'
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { ArrowLeft, ArrowRight, BatteryCharging, Bug, Check, CircleHelp, ClipboardCheck, Cookie, DoorClosed, Fan, FlaskConical, Gamepad2, Lamp, Lightbulb, MousePointer, Play, Power, Rotate3d, RotateCcw, Ruler, ScanSearch, Sparkles, Stamp, TriangleAlert, Trophy, Wrench, X, Zap } from 'lucide-react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { PythonCode } from '../../components/PythonCode'
 import { behavesCorrectly, bugKindLabels, bugKindMeaning, expectedOutputs, repairTickets, runSegments, segmentLines, symptomKind, ticketSegments, type BugKind, type RepairMachineId, type RepairTicket } from '../../data/repairShop'
 import { flattenProgram, formatPythonError, type DecisionRun } from '../../lib/decisionTracer'
 import { completeActivity } from '../../session/progressSession'
 import type { RepairLogEntry, SessionProgress } from '../../types'
+import { RepairStage, type StageView } from './repair/RepairStage'
+import { RepairTutorial } from './repair/RepairTutorial'
 import './repairShop.css'
 
 interface Props {
@@ -32,12 +34,12 @@ const machines: Record<RepairMachineId, { icon: typeof Gamepad2; label: string; 
   snack: { icon: Cookie, label: 'SNACK-O-MAT', model: 'VEND 5', color: '#ff9b6e' },
 }
 
-const stepOrder: Array<{ id: Exclude<Step, 'done'>; label: string; icon: typeof Bug }> = [
-  { id: 'reproduce', label: 'Reproduce', icon: FlaskConical },
-  { id: 'diagnose', label: 'Diagnose', icon: Stamp },
-  { id: 'locate', label: 'Locate', icon: ScanSearch },
-  { id: 'fix', label: 'Fix', icon: Wrench },
-  { id: 'verify', label: 'Verify', icon: ClipboardCheck },
+const stepOrder: Array<{ id: Exclude<Step, 'done'>; label: string; hint: string; icon: typeof Bug }> = [
+  { id: 'reproduce', label: 'Reproduce', hint: 'Make it fail', icon: FlaskConical },
+  { id: 'diagnose', label: 'Diagnose', hint: 'Name the bug', icon: Stamp },
+  { id: 'locate', label: 'Locate', hint: 'Find the line', icon: ScanSearch },
+  { id: 'fix', label: 'Fix', hint: 'Swap the part', icon: Wrench },
+  { id: 'verify', label: 'Verify', hint: 'Pass every test', icon: ClipboardCheck },
 ]
 
 const stampOrder: BugKind[] = ['syntax', 'runtime', 'logic']
@@ -62,6 +64,7 @@ export function RepairShop({ progress, onProgress, onBack }: Props) {
   const fixed = progress.repairTickets
   const [index, setIndex] = useState(() => firstOpenTicket(fixed))
   const [finished, setFinished] = useState(() => fixed.length === repairTickets.length)
+  const [guide, setGuide] = useState(() => !progress.repairTutorialSeen)
   const progressRef = useRef(progress)
   useEffect(() => { progressRef.current = progress }, [progress])
   const nextOpen = repairTickets.findIndex((ticket) => !fixed.includes(ticket.id))
@@ -76,6 +79,16 @@ export function RepairShop({ progress, onProgress, onBack }: Props) {
     onProgress(updated)
   }
 
+  const closeGuide = () => {
+    setGuide(false)
+    if (progressRef.current.repairTutorialSeen) return
+    const updated = { ...progressRef.current, repairTutorialSeen: true }
+    progressRef.current = updated
+    onProgress(updated)
+  }
+  const tutorial = guide && <RepairTutorial onClose={closeGuide} />
+  const openGuide = () => setGuide(true)
+
   const next = () => {
     const tickets = progressRef.current.repairTickets
     if (tickets.length === repairTickets.length && index === repairTickets.length - 1) { setFinished(true); return }
@@ -84,8 +97,9 @@ export function RepairShop({ progress, onProgress, onBack }: Props) {
   }
 
   if (finished) return <main className="rs-screen">
-    <Toolbar onBack={onBack} counter={<><Trophy size={18} /> Shop certified</>} />
-    <TicketRail index={-1} fixed={fixed} accessible={accessible} onSelect={(i) => { setIndex(i); setFinished(false) }} />
+    <Toolbar onBack={onBack} onHelp={openGuide} counter={<><Trophy size={18} /> Certified</>}>
+      <TicketRail index={-1} fixed={fixed} accessible={accessible} onSelect={(i) => { setIndex(i); setFinished(false) }} />
+    </Toolbar>
     <section className="rs-certificate">
       <div className="rs-certificate__card">
         <span className="rs-certificate__seal"><Wrench size={42} /></span>
@@ -96,17 +110,23 @@ export function RepairShop({ progress, onProgress, onBack }: Props) {
         <div className="rs-certificate__actions"><button className="rs-primary" onClick={() => { setIndex(0); setFinished(false) }}><RotateCcw size={17} /> REPAIR AGAIN</button><button className="rs-secondary" onClick={onBack}>BACK TO CONDITIONS <ArrowRight size={17} /></button></div>
       </div>
     </section>
+    {tutorial}
   </main>
 
-  return <TicketBench key={repairTickets[index].id} ticket={repairTickets[index]} index={index} fixed={fixed} accessible={accessible}
-    onSelect={(i) => { if (accessible(i)) setIndex(i) }} onBack={onBack} onRecord={record} onNext={next} />
+  return <>
+    <TicketBench key={repairTickets[index].id} ticket={repairTickets[index]} index={index} fixed={fixed} accessible={accessible}
+      onSelect={(i) => { if (accessible(i)) setIndex(i) }} onBack={onBack} onHelp={openGuide} onRecord={record} onNext={next} />
+    {tutorial}
+  </>
 }
 
-function Toolbar({ onBack, counter }: { onBack: () => void; counter: React.ReactNode }) {
+function Toolbar({ onBack, onHelp, counter, children }: { onBack: () => void; onHelp: () => void; counter: ReactNode; children: ReactNode }) {
   return <header className="rs-toolbar">
-    <button className="rs-back" onClick={onBack}><ArrowLeft size={17} /> Conditions</button>
+    <button className="rs-back" onClick={onBack} aria-label="Back to Conditions"><ArrowLeft size={17} /><span>Conditions</span></button>
     <div className="rs-brand"><span><Wrench size={20} /></span><div><b>MAKE IT WORK</b><small>THE REPAIR SHOP</small></div></div>
+    {children}
     <div className="rs-counter">{counter}</div>
+    <button className="rs-help" onClick={onHelp} aria-label="How the repair shop works"><CircleHelp size={18} /><span>How it works</span></button>
   </header>
 }
 
@@ -117,9 +137,8 @@ function TicketRail({ index, fixed, accessible, onSelect, disabled = false }: { 
       const Icon = machines[ticket.machine].icon
       return <button key={ticket.id} className={`rs-rail__ticket ${i === index ? 'is-current' : ''} ${done ? 'is-done' : ''}`} style={{ '--machine': machines[ticket.machine].color } as CSSProperties}
         disabled={disabled || !accessible(i)} aria-current={i === index ? 'step' : undefined} aria-label={`Ticket ${ticket.id}: ${ticket.title}${done ? ', fixed' : accessible(i) ? '' : ', locked'}`} onClick={() => onSelect(i)}>
-        <span className="rs-rail__number">#{String(ticket.id).padStart(2, '0')}</span>
-        <Icon size={16} aria-hidden="true" />
-        {done && <span className="rs-rail__stamp" aria-hidden="true">FIXED</span>}
+        <span className="rs-rail__number">{String(ticket.id).padStart(2, '0')}</span>
+        {done ? <Check className="rs-rail__done" size={15} strokeWidth={3} aria-hidden="true" /> : <Icon size={15} aria-hidden="true" />}
       </button>
     })}
   </nav>
@@ -132,11 +151,12 @@ interface BenchProps {
   accessible: (i: number) => boolean
   onSelect: (i: number) => void
   onBack: () => void
+  onHelp: () => void
   onRecord: (entry: RepairLogEntry) => void
   onNext: () => void
 }
 
-function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onRecord, onNext }: BenchProps) {
+function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onHelp, onRecord, onNext }: BenchProps) {
   const [step, setStep] = useState<Step>('reproduce')
   const [bugIndex, setBugIndex] = useState(0)
   const [installed, setInstalled] = useState<Record<number, number>>({})
@@ -333,48 +353,54 @@ function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onRec
   const benchInput = step === 'verify' ? bench.find((test) => test.status === 'running')?.input ?? null : null
   const repaired = step === 'verify' || step === 'done'
   const broken = step !== 'done' && (reproInput !== null || lastRun !== null && !lastRun.ok)
+  const fault = machine === 'crash' && lastRun?.result.error ? lastRun.result.error.phase === 'syntax' ? 'syntax' : 'runtime' : null
+  const shownInput = machine === 'running' && benchInput ? benchInput : lastRun?.input ?? reproInput ?? draft
+  const stageView: StageView = {
+    mood: machine, fault, broken: broken && machine !== 'running', variable: ticket.variable, input: shownInput,
+    outputs: lastRun?.result.outputs ?? [], error: lastRun?.result.error?.type ?? null,
+    caption: machine === 'running' ? step === 'verify' ? `TEST BENCH · ${ticket.variable} = ${benchInput ?? '…'}` : `${ticket.variable} = ${shownInput}`
+      : machine === 'crash' ? lastRun?.result.error?.type ?? 'ERROR' : machine === 'fixed' ? 'ALL TESTS PASSED' : machine === 'idle' ? 'READY' : `${ticket.variable} = ${shownInput}`,
+  }
+  const status = machine === 'crash' ? fault === 'syntax' ? { tone: 'crash', text: 'WON’T START', icon: Power } : { tone: 'crash', text: 'CRASHED', icon: Zap }
+    : machine === 'wrong' ? { tone: 'wrong', text: 'WRONG ANSWER', icon: TriangleAlert }
+    : machine === 'ok' ? { tone: 'ok', text: 'WORKS', icon: Check }
+    : machine === 'fixed' ? { tone: 'ok', text: 'FIXED', icon: Sparkles }
+    : machine === 'running' ? { tone: 'running', text: step === 'verify' ? 'TESTING' : 'RUNNING', icon: Play }
+    : { tone: 'idle', text: broken ? 'OUT OF ORDER' : 'READY', icon: broken ? Bug : Power }
+  const StatusIcon = status.icon
+  const stampBadge = stamped && step !== 'done' && <span key={stamped} className={`rs-machine__stamp rs-kind--${stamped}`}>{bugKindLabels[stamped]}</span>
 
   return <main className={`rs-screen rs-step--${step}`} style={{ '--machine': meta.color } as CSSProperties}>
-    <Toolbar onBack={onBack} counter={<><span>TICKET</span><b>{String(ticket.id).padStart(2, '0')}</b><small>/ {String(repairTickets.length).padStart(2, '0')}</small></>} />
-    <TicketRail index={index} fixed={fixed} accessible={accessible} onSelect={onSelect} disabled={busy} />
+    <Toolbar onBack={onBack} onHelp={onHelp} counter={<><span>TICKET</span><b>{String(ticket.id).padStart(2, '0')}</b><small>/ {String(repairTickets.length).padStart(2, '0')}</small></>}>
+      <TicketRail index={index} fixed={fixed} accessible={accessible} onSelect={onSelect} disabled={busy} />
+    </Toolbar>
     <section className="rs-layout" inert={showDone}>
       <div className="rs-bench">
         <article className="rs-complaint">
-          <header><span className="rs-kicker">REPAIR TICKET #{String(ticket.id).padStart(2, '0')}</span>{ticket.bugs.length > 1 && <span className="rs-bug-count"><Bug size={12} /> BUG {bugIndex + 1} OF {ticket.bugs.length}</span>}</header>
+          <header><span className="rs-kicker">REPAIR TICKET #{String(ticket.id).padStart(2, '0')} · {meta.label}</span>{ticket.bugs.length > 1 && <span className="rs-bug-count"><Bug size={12} /> BUG {bugIndex + 1} OF {ticket.bugs.length}</span>}</header>
           <h1>{ticket.title}</h1>
           <blockquote><p>“{ticket.complaint}”</p><cite>— {ticket.customer}</cite></blockquote>
           <div className="rs-rule"><span>SHOULD DO</span><p>{ticket.rule}</p></div>
         </article>
-        <div className={`rs-machine rs-machine--${machine} ${broken ? 'is-broken' : ''}`} aria-label={`${meta.label}: ${machine === 'crash' ? 'crashed' : machine === 'fixed' ? 'fixed' : machine}`} role="img">
-          <div className="rs-machine__head"><i className="rs-machine__led" /><b>{meta.label}</b><small>{meta.model}</small></div>
-          <div className="rs-machine__screen">
-            <div className="rs-machine__glass">
-              {machine === 'running' && <><small>{step === 'verify' ? `TEST BENCH${benchInput ? ` · ${ticket.variable} = ${benchInput}` : ''}` : `${ticket.variable} = ${lastRun?.input ?? reproInput ?? draft}`}</small><strong className="rs-blink">RUNNING…</strong></>}
-              {machine === 'idle' && <><small>READY</small><strong>_<span className="rs-cursor" /></strong></>}
-              {(machine === 'ok' || machine === 'wrong') && lastRun && <><small>{ticket.variable} = {lastRun.input}</small>{lastRun.result.outputs.length ? lastRun.result.outputs.map((output, i) => <strong key={i}>{output}</strong>) : <strong className="is-empty">(nothing)</strong>}</>}
-              {machine === 'crash' && lastRun?.result.error && <><small>{lastRun.result.error.type.toUpperCase()}</small><strong className="rs-glitch" data-text="ERROR">ERROR</strong></>}
-              {machine === 'fixed' && <><small>ALL TESTS PASSED</small><strong>WORKING!</strong></>}
-            </div>
-          </div>
-          <div className="rs-machine__body">
-            <span className="rs-machine__icon"><MachineIcon size={46} strokeWidth={1.6} /></span>
-            <span className="rs-machine__slot"><small>INPUT</small><b>{machine === 'running' && benchInput ? benchInput : lastRun?.input ?? reproInput ?? '—'}</b></span>
-          </div>
-          {broken && machine !== 'running' && <div className="rs-tape" aria-hidden="true"><span>OUT OF ORDER · OUT OF ORDER · OUT OF ORDER</span></div>}
-          {machine === 'crash' && <div className="rs-sparks" aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <i key={i} style={{ '--a': `${i * 36}deg`, '--d': `${(i % 4) * 60}ms` } as CSSProperties} />)}<b /><b /><b /></div>}
-          {machine === 'fixed' && <div className="rs-burst" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ '--a': `${i * 26}deg`, '--d': `${(i % 5) * 50}ms` } as CSSProperties} />)}</div>}
-          {stamped && step !== 'done' && <span key={stamped} className={`rs-machine__stamp rs-kind--${stamped}`}>{bugKindLabels[stamped]}</span>}
-        </div>
-        <ol className="rs-steps" aria-label="Repair steps">{stepOrder.map((item, i) => {
-          const Icon = item.icon
-          const state = step === 'done' || i < stepIndex ? 'is-done' : i === stepIndex ? 'is-current' : ''
-          return <li key={item.id} className={state} aria-current={i === stepIndex ? 'step' : undefined}><span>{state === 'is-done' ? <Check size={14} /> : <Icon size={14} />}</span>{item.label}</li>
-        })}</ol>
+        <RepairStage machine={ticket.machine} view={stageView} label={`${meta.label}: ${status.text.toLowerCase()}`}
+          fallback={<FlatMachine meta={meta} machine={machine} broken={broken} lastRun={lastRun} reproInput={reproInput} draft={draft} benchInput={benchInput} step={step} variable={ticket.variable} stamp={stampBadge} />}
+          overlay={<>
+            <div className="rs-stage__plate"><span style={{ background: meta.color }}><MachineIcon size={16} /></span><div><b>{meta.label}</b><small>{meta.model}</small></div></div>
+            <div className={`rs-stage__status is-${status.tone}`}><StatusIcon size={14} />{status.text}</div>
+            <div className="rs-stage__input"><small>INPUT</small><b>{ticket.variable} = {shownInput || '?'}</b></div>
+            <div className="rs-stage__hint" aria-hidden="true"><Rotate3d size={14} /> drag to turn</div>
+            {stampBadge}
+          </>} />
       </div>
 
       <div className="rs-desk">
+        <ol className="rs-steps" aria-label="Repair steps" style={{ '--progress': `${(step === 'done' ? 4 : stepIndex) / 4}` } as CSSProperties}>{stepOrder.map((item, i) => {
+          const Icon = item.icon
+          const state = step === 'done' || i < stepIndex ? 'is-done' : i === stepIndex ? 'is-current' : ''
+          return <li key={item.id} className={state} aria-current={i === stepIndex ? 'step' : undefined}><span>{state === 'is-done' ? <Check size={15} strokeWidth={3} /> : <Icon size={15} />}</span><b>{item.label}</b><small>{item.hint}</small></li>
+        })}</ol>
         <div className={`rs-code ${step === 'locate' ? 'is-locating' : ''}`}>
-          <header><div className="rs-dots" aria-hidden="true"><i /><i /><i /></div><span>machine.py</span>{(reproInput || lastRun) && <button onClick={restart} disabled={busy} aria-label="Restart this ticket"><RotateCcw size={14} /> Restart</button>}</header>
+          <header><div className="rs-dots" aria-hidden="true"><i /><i /><i /></div><span>machine.py</span>{step === 'locate' && <em className="rs-code__tap"><MousePointer size={13} /> tap a line</em>}{(reproInput || lastRun) && <button onClick={restart} disabled={busy} aria-label="Restart this ticket"><RotateCcw size={14} /> Restart</button>}</header>
           <div className="rs-code__lines" aria-label="Machine program">{lines.map((line, i) => {
             const classes = [traceLine === i ? 'is-executing' : '', errorLine === i && machine === 'crash' ? 'is-error' : '', located.includes(i) ? repaired ? 'is-installed' : 'is-located' : '', wrongLine === i ? 'is-wrong' : '', freshLines.includes(i) ? 'is-fresh' : ''].join(' ')
             const content = <><span className="rs-code__number">{i + 1}</span><PythonCode code={line || ' '} />{located.includes(i) && (repaired ? <Check className="rs-code__ok" size={15} /> : <Bug className="rs-code__bug" size={15} />)}{errorLine === i && machine === 'crash' && <TriangleAlert className="rs-code__alert" size={15} />}</>
@@ -438,6 +464,44 @@ function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onRec
       </div>
     </div>}
   </main>
+}
+
+interface FlatProps {
+  meta: (typeof machines)[RepairMachineId]
+  machine: MachineState
+  broken: boolean
+  lastRun: LastRun | null
+  reproInput: string | null
+  draft: string
+  benchInput: string | null
+  step: Step
+  variable: string
+  stamp: ReactNode
+}
+
+/** The drawn machine, used where the 3D scene cannot run. */
+function FlatMachine({ meta, machine, broken, lastRun, reproInput, draft, benchInput, step, variable, stamp }: FlatProps) {
+  const MachineIcon = meta.icon
+  return <div className={`rs-machine rs-machine--${machine} ${broken ? 'is-broken' : ''}`}>
+    <div className="rs-machine__head"><i className="rs-machine__led" /><b>{meta.label}</b><small>{meta.model}</small></div>
+    <div className="rs-machine__screen">
+      <div className="rs-machine__glass">
+        {machine === 'running' && <><small>{step === 'verify' ? `TEST BENCH${benchInput ? ` · ${variable} = ${benchInput}` : ''}` : `${variable} = ${lastRun?.input ?? reproInput ?? draft}`}</small><strong className="rs-blink">RUNNING…</strong></>}
+        {machine === 'idle' && <><small>READY</small><strong>_<span className="rs-cursor" /></strong></>}
+        {(machine === 'ok' || machine === 'wrong') && lastRun && <><small>{variable} = {lastRun.input}</small>{lastRun.result.outputs.length ? lastRun.result.outputs.map((output, i) => <strong key={i}>{output}</strong>) : <strong className="is-empty">(nothing)</strong>}</>}
+        {machine === 'crash' && lastRun?.result.error && <><small>{lastRun.result.error.type.toUpperCase()}</small><strong className="rs-glitch" data-text="ERROR">ERROR</strong></>}
+        {machine === 'fixed' && <><small>ALL TESTS PASSED</small><strong>WORKING!</strong></>}
+      </div>
+    </div>
+    <div className="rs-machine__body">
+      <span className="rs-machine__icon"><MachineIcon size={46} strokeWidth={1.6} /></span>
+      <span className="rs-machine__slot"><small>INPUT</small><b>{machine === 'running' && benchInput ? benchInput : lastRun?.input ?? reproInput ?? '—'}</b></span>
+    </div>
+    {broken && machine !== 'running' && <div className="rs-tape" aria-hidden="true"><span>OUT OF ORDER · OUT OF ORDER · OUT OF ORDER</span></div>}
+    {machine === 'crash' && <div className="rs-sparks" aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <i key={i} style={{ '--a': `${i * 36}deg`, '--d': `${(i % 4) * 60}ms` } as CSSProperties} />)}<b /><b /><b /></div>}
+    {machine === 'fixed' && <div className="rs-burst" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ '--a': `${i * 26}deg`, '--d': `${(i % 5) * 50}ms` } as CSSProperties} />)}</div>}
+    {stamp}
+  </div>
 }
 
 function Console({ run, variable }: { run: LastRun; variable: string }) {
