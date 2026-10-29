@@ -9,6 +9,7 @@ import { completeActivity } from '../../session/progressSession'
 import type { BossAttackEvent, BossFighter, SessionProgress } from '../../types'
 import { BadgeArt, BadgeAward, BadgeCase } from './BossBadges'
 import { BossIntro } from './BossIntro'
+import { BossScene } from './BossScenes'
 import { bossBadges } from '../../data/bossBadges'
 import { defaultFighter, pixelColor } from '../../data/bossFighters'
 import { FighterSprite, MiniSprite } from './BossSprites'
@@ -264,6 +265,8 @@ function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelec
     <BossTrail index={index} defeated={defeated} accessible={accessible} onSelect={onSelect} disabled={busy} />
     <section className="ba-layout">
       <div className={`ba-arena ${shot ? `${shot.hit ? 'is-impact' : 'is-countered'} ${shot.id % 2 ? 'is-odd' : 'is-even'}` : ''}`} style={{ '--boss': boss.palette.body, '--accent': boss.palette.accent } as CSSProperties}>
+        <BossScene bossId={boss.id} />
+        <div className="ba-arena__shade" aria-hidden="true" />
         <div className="ba-arena__sky" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ '--x': `${(i * 37) % 100}%`, '--d': `${(i % 5) * 0.7}s`, '--s': `${4 + (i % 4) * 2}px` } as CSSProperties} />)}</div>
         <div className="ba-arena__floor" aria-hidden="true" />
         <header className="ba-hp">

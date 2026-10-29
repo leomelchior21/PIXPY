@@ -5,7 +5,8 @@ import { moreChoiceLevels } from '../data/moreChoices'
 import { repairTickets } from '../data/repairShop'
 import { levelCount } from '../experiences/conditions/backroom/backroomLevels'
 import { completedIfElseLevels } from './ifElseProgress'
-import type { BossAttackEvent, IfElseLearningEvent, MoreChoiceEvent, RepairLogEntry, SessionProgress } from '../types'
+import { fighterBases } from '../data/bossFighters'
+import type { BossAttackEvent, BossFighter, IfElseLearningEvent, MoreChoiceEvent, RepairLogEntry, SessionProgress } from '../types'
 
 export const learningErrorLabels: Record<NonNullable<IfElseLearningEvent['errorKind']>, string> = {
   structure: 'Structure error', condition: 'Condition error', logic: 'Logic error', output: 'Output error', runtime: 'Run error',
@@ -39,6 +40,7 @@ export function repairProgress(progress: SessionProgress | null) {
     runs: log.reduce((sum, entry) => sum + count(entry.runs), 0),
     hints: log.reduce((sum, entry) => sum + count(entry.hints), 0),
     lastTicket: last ? repairTickets.find((ticket) => ticket.id === last.ticket)?.title ?? null : null,
+    guideSeen: progress?.repairTutorialSeen === true,
   }
 }
 
@@ -56,6 +58,7 @@ export function moreChoiceProgress(progress: SessionProgress | null) {
     drops: log.filter((event) => event.kind === 'drop').length,
     hints: log.filter((event) => event.kind === 'hint').length,
     lastLevel: last ? moreChoiceLevels.find((level) => level.id === last.level) ?? null : null,
+    guideSeen: progress?.moreChoiceTutorialSeen === true,
   }
 }
 
@@ -73,7 +76,20 @@ export function bossProgress(progress: SessionProgress | null) {
     toughest: toughestAttacks > 1 ? { name: conditionBosses.find((boss) => boss.id === toughestId)?.name ?? '', attacks: toughestAttacks } : null,
     lastBoss: last ? conditionBosses.find((boss) => boss.id === last.boss)?.name ?? null : null,
     lastHits: last ? `${count(last.hits)} / ${count(last.total)}` : null,
+    // One badge per defeated boss.
+    badges: defeated.length,
+    fighter: fighterSummary(progress?.bossFighter),
+    guideSeen: progress?.bossTutorialSeen === true,
   }
+}
+
+/** "Merlin · Wizard", from the fighter a student built in the arena intro. */
+function fighterSummary(value: unknown): string | null {
+  if (!value || typeof value !== 'object') return null
+  const fighter = value as Partial<BossFighter>
+  const base = fighterBases.find((item) => item.id === fighter.base)
+  const name = typeof fighter.name === 'string' ? fighter.name.trim().slice(0, 12) : ''
+  return base ? `${name || 'Coder'} · ${base.label}` : null
 }
 
 export function conditionsProgress(progress: SessionProgress | null) {

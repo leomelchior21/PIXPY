@@ -166,9 +166,9 @@
 .mc-exit circle { fill: #1f2340; stroke: #5a6194; stroke-width: 2.5; }
 .mc-exit text { fill: #9aa3bd; font-size: 10px; font-weight: 800; text-anchor: middle; }
 .mc-exit.is-on circle { stroke: #ffe58a; }
-.mc-ball { transition: transform .5s cubic-bezier(.45, 0, .25, 1.15); filter: drop-shadow(0 0 10px #ffcb47aa); }
-.mc-ball text { fill: #3d2a00; font-size: 11px; font-weight: 900; text-anchor: middle; }
-.mc-ball.is-landed circle { animation: mc-squash .4s ease .45s both; transform-box: fill-box; transform-origin: center; }
+.mc-ball { transition: transform .52s cubic-bezier(.55, 0, .35, 1.25); filter: drop-shadow(0 0 10px #a994ff88); }
+.mc-ball text { fill: #fff; stroke: #1d1060; stroke-width: 3px; paint-order: stroke; font-size: 12px; font-weight: 900; text-anchor: middle; }
+.mc-ball.is-landed .mc-marble { animation: mc-bounce .7s ease .42s both; transform-box: fill-box; transform-origin: 50% 100%; }
 .mc-tower.is-reset .mc-ball { transition: none; }
 .mc-spark { fill: #ffe58a; filter: drop-shadow(0 0 8px #ffcb47); animation: mc-spark .5s ease-out both; }
 .mc-tower.is-swapping .mc-gate rect { stroke: #ffe58a; }
@@ -314,3 +314,20 @@
 .mc-help { display: grid; place-items: center; width: 38px; height: 38px; margin-left: 10px; border: 2px solid var(--mc-ink); border-radius: 9px; color: var(--mc-ink); background: #fff; box-shadow: 2px 2px 0 var(--mc-ink); cursor: pointer; }
 .mc-help:hover { background: #efe9ff; }
 .guide-backdrop .mc-tut, .guide-backdrop .mc-tut * { font-family: 'IBM Plex Mono', monospace !important; }
+
+/* The marble. */
+.mc-ghost { pointer-events: none; transition: transform .52s cubic-bezier(.55, 0, .35, 1.25), opacity .3s ease; }
+.mc-tower.is-reset .mc-ghost { transition: none; }
+.mc-ball__shadow { fill: #000; opacity: .35; filter: blur(1.5px); }
+.mc-marble__spin { transform-box: fill-box; transform-origin: center; }
+.mc-ball.is-moving .mc-marble__spin { animation: mc-roll .5s linear infinite; }
+.mc-ball.is-checking .mc-marble { animation: mc-wobble .45s ease both; transform-box: fill-box; transform-origin: center; }
+.mc-landing { pointer-events: none; }
+.mc-landing__ripple { fill: none; stroke: var(--c, #fff); stroke-width: 3; transform-box: fill-box; transform-origin: center; animation: mc-ripple .8s .45s ease-out both; }
+.mc-landing__spark { fill: var(--c, #fff); transform: rotate(var(--a)) translateY(0); animation: mc-splash .7s .45s cubic-bezier(.1, .8, .3, 1) both; }
+@keyframes mc-roll { to { transform: rotate(360deg); } }
+@keyframes mc-wobble { 0%, 100% { transform: none; } 25% { transform: translateX(-3px) rotate(-8deg); } 60% { transform: translateX(2px) rotate(5deg); } }
+@keyframes mc-bounce { 0% { transform: none; } 18% { transform: scale(1.25, .72); } 40% { transform: translateY(-14px) scale(.92, 1.1); } 62% { transform: scale(1.12, .86); } 78% { transform: translateY(-5px); } 100% { transform: none; } }
+@keyframes mc-ripple { 0% { opacity: 1; transform: scale(.6); } 100% { opacity: 0; transform: scale(2.6); } }
+@keyframes mc-splash { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-34px); } }
+@media (prefers-reduced-motion: reduce) { .mc-ghost, .mc-landing { display: none; } }

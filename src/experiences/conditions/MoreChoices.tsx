@@ -437,7 +437,8 @@ function Tower({ chain, frames, frame, seen, value, colorOf, unreachable, swapPh
   const label = `Sorting tower with ${rows} questions. ${nested ? 'Questions are nested inside else, so the ball stops in one bin.' : 'Separate questions: the ball passes every question.'}`
   return <svg className={`mc-tower ${nested ? 'is-nested' : 'is-separate'} ${swapping ? 'is-swapping' : ''} ${swapPhase === 'snap' ? 'is-snap' : ''} ${frame <= 0 ? 'is-reset' : ''}`} viewBox={`0 0 ${W} ${height}`} role="img" aria-label={label}>
     <defs>
-      <radialGradient id="mc-ball-shine" cx="35%" cy="30%" r="70%"><stop offset="0%" stopColor="#fff" /><stop offset="35%" stopColor="#ffe58a" /><stop offset="100%" stopColor="#f2a516" /></radialGradient>
+      <radialGradient id="mc-marble-body" cx="38%" cy="32%" r="78%"><stop offset="0%" stopColor="#f3edff" /><stop offset="22%" stopColor="#a994ff" /><stop offset="68%" stopColor="#5532e0" /><stop offset="100%" stopColor="#1d1060" /></radialGradient>
+      <linearGradient id="mc-marble-swirl" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffe066" /><stop offset="100%" stopColor="#ff6fa8" /></linearGradient>
       <filter id="mc-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
     </defs>
     <path className="mc-hopper" d={`M${TRUNK - 30} 4 H${TRUNK + 30} L${TRUNK + 12} 46 H${TRUNK - 12} Z`} />
@@ -476,9 +477,25 @@ function Tower({ chain, frames, frame, seen, value, colorOf, unreachable, swapPh
       </g>
     })}
     {current?.spark !== undefined && <circle key={`spark-${frame}`} className="mc-spark" cx={0} cy={0} r={8} style={{ '--sy': `${rowY(current.spark)}px`, '--sx0': `${TRUNK}px`, '--sx1': `${BIN_X + BIN_W / 2}px` } as CSSProperties} />}
-    <g className={`mc-ball ${dropping ? 'is-moving' : ''} ${current?.lit !== undefined ? 'is-landed' : ''}`} style={{ transform: `translate(${ball.x}px, ${ball.y}px)` }}>
-      <circle r={17} fill="url(#mc-ball-shine)" />
-      <text y={4}>{value}</text>
+    {/* A glass marble: ghosts trail it while it falls, its swirl spins as it rolls, and it bounces into the bin. */}
+    {[3, 2, 1].map((lag) => <g key={`ghost-${lag}`} className="mc-ghost" aria-hidden="true" style={{ transform: `translate(${ball.x}px, ${ball.y}px)`, transitionDelay: `${lag * 45}ms`, opacity: dropping ? 0.22 - lag * 0.05 : 0 }}><circle r={15} fill="url(#mc-marble-body)" /></g>)}
+    {current?.lit !== undefined && <g key={`land-${frame}`} className="mc-landing" aria-hidden="true" style={{ transform: `translate(${ball.x}px, ${ball.y}px)`, '--c': colorOf(binList[current.lit] ?? '') } as CSSProperties}>
+      <circle className="mc-landing__ripple" r={20} />
+      {Array.from({ length: 8 }, (_, i) => <circle key={i} className="mc-landing__spark" r={3} style={{ '--a': `${i * 45}deg` } as CSSProperties} />)}
+    </g>}
+    <g className={`mc-ball ${dropping ? 'is-moving' : ''} ${current?.lit !== undefined ? 'is-landed' : ''} ${current?.tested ? 'is-checking' : ''}`} style={{ transform: `translate(${ball.x}px, ${ball.y}px)` }}>
+      <ellipse className="mc-ball__shadow" cx={0} cy={21} rx={14} ry={4} />
+      <g className="mc-marble">
+        <circle r={18} fill="url(#mc-marble-body)" />
+        <g className="mc-marble__spin">
+          <circle r={18} fill="transparent" />
+          <path d="M-13 5 C-8 -11 9 -13 13 -2 C6 -7 -3 -5 -7 7 Z" fill="url(#mc-marble-swirl)" opacity=".85" />
+          <path d="M11 7 C4 15 -9 13 -12 6" stroke="#ffffffaa" strokeWidth="2" fill="none" strokeLinecap="round" />
+        </g>
+        <ellipse cx={-6} cy={-9} rx={6.5} ry={3.6} fill="#fff" opacity=".9" transform="rotate(-30 -6 -9)" />
+        <circle r={17.2} fill="none" stroke="#ffffff66" strokeWidth="1.5" />
+      </g>
+      <text className="mc-ball__value" y={5}>{value}</text>
     </g>
   </svg>
 }

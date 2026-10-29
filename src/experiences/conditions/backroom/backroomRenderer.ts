@@ -84,11 +84,26 @@ function createCanvasRenderer(canvas: HTMLCanvasElement): BackroomRendererHandle
 }
 
 // The 3D scene loads as its own chunk; until it is ready nothing is drawn.
-export function createBackroomRenderer(canvas: HTMLCanvasElement): BackroomRendererHandle {
+// Building it (procedural textures, then shader compiling on the first frame) blocks the page for a
+// few seconds, so it starts only after the loading screen has painted, and `onReady` fires once the
+// first frame is on screen.
+export function createBackroomRenderer(canvas: HTMLCanvasElement, onReady?: () => void): BackroomRendererHandle {
   let active: BackroomRendererHandle | null = null
   let disposed = false
-  const fallback = () => { if (!disposed && !active) active = createCanvasRenderer(canvas) }
-  if (supportsWebGL()) {
+  let announced = false
+  let rendered = false
+  const ready = () => {
+    if (announced || disposed) return
+    announced = true
+    requestAnimationFrame(() => { if (!disposed) onReady?.() })
+  }
+  const fallback = () => {
+    if (!disposed && !active) active = createCanvasRenderer(canvas)
+    ready()
+  }
+  const start = () => {
+    if (disposed) return
+    if (!supportsWebGL()) { fallback(); return }
     import('./backroomScene')
       .then((module) => {
         if (disposed) return
@@ -96,9 +111,16 @@ export function createBackroomRenderer(canvas: HTMLCanvasElement): BackroomRende
         if (!active) fallback()
       })
       .catch(fallback)
-  } else fallback()
+  }
+  // Two frames: one to lay out the loading screen, one to paint it.
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(start))
+  else start()
   return {
-    render: (view) => active?.render(view),
+    render: (view) => {
+      if (!active) return
+      active.render(view)
+      if (!rendered) { rendered = true; ready() }
+    },
     resize: () => active?.resize(),
     dispose: () => { disposed = true; active?.dispose(); active = null },
   }

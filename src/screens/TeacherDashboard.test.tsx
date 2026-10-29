@@ -129,6 +129,9 @@ describe('TeacherDashboard', () => {
       moreChoiceLevels: [1, 2, 3, 4, 5],
       moreChoiceLog: [{ level: 4, kind: 'prediction' as const, ok: true, at: 1 }, { level: 4, kind: 'prediction' as const, ok: false, at: 2 }, { level: 6, kind: 'check' as const, ok: false, at: 3 }],
       conditionBosses: [1, 2],
+      repairTutorialSeen: true,
+      bossTutorialSeen: true,
+      bossFighter: { base: 'wizard' as const, color: 4, name: 'Merlin' },
       conditionBossLog: [{ boss: 2, hits: 3, total: 6, hints: 1, at: 1 }, { boss: 2, hits: 6, total: 6, hints: 1, at: 2 }, { boss: 3, hits: 0, total: 5, hints: 0, at: 3 }],
     }
     cloud.loadClassProgress.mockResolvedValueOnce([{ username: 'adaa', displayName: 'Ada A.', className: 'A', team: 'white', progress, updatedAt: null, lastLoginAt: null }])
@@ -146,5 +149,10 @@ describe('TeacherDashboard', () => {
     expect(screen.getByText('2 / 10 bosses defeated')).toBeInTheDocument()
     expect(screen.getByText('Toughest: Fan Golem (2 attacks)')).toBeInTheDocument()
     expect(screen.getByText(/Last: Glitch Lock · 0 \/ 5 hits/)).toBeInTheDocument()
+    // Records saved by the newer activity features reach the dashboard too.
+    expect(screen.getByText('2 / 10 badges')).toBeInTheDocument()
+    expect(screen.getByText('Fighter: Merlin · Wizard')).toBeInTheDocument()
+    expect(screen.getByText('Guide watched')).toBeInTheDocument()
+    expect(screen.getByText('Intro not watched yet')).toBeInTheDocument()
   })
 })
