@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, BatteryCharging, Bug, Check, CircleHelp, ClipboardCheck, Cookie, DoorClosed, Fan, FlaskConical, Gamepad2, Lamp, Lightbulb, MousePointer, Play, Power, Rotate3d, RotateCcw, Ruler, ScanSearch, Sparkles, Stamp, TriangleAlert, Trophy, Wrench, X, Zap } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BatteryCharging, Bug, Check, CircleHelp, ClipboardCheck, Cookie, DoorClosed, Fan, FlaskConical, Gamepad2, Lamp, Lightbulb, MousePointer, Play, Power, Rotate3d, RotateCcw, Ruler, ScanSearch, Sparkles, Stamp, TriangleAlert, Trophy, UserRound, Wrench, X, Zap } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { PythonCode } from '../../components/PythonCode'
 import { behavesCorrectly, bugKindLabels, bugKindMeaning, expectedOutputs, repairTickets, runSegments, segmentLines, symptomKind, ticketSegments, type BugKind, type RepairMachineId, type RepairTicket } from '../../data/repairShop'
@@ -6,6 +6,8 @@ import { flattenProgram, formatPythonError, type DecisionRun } from '../../lib/d
 import { completeActivity } from '../../session/progressSession'
 import type { RepairLogEntry, SessionProgress } from '../../types'
 import { AsciiTitle } from './repair/AsciiTitle'
+import { MonkeyFix } from './repair/MonkeyFix'
+import { RepairMeter } from './repair/RepairMeter'
 import { RepairStage, type StageStyle, type StageView } from './repair/RepairStage'
 import { RepairTutorial } from './repair/RepairTutorial'
 import './repairShop.css'
@@ -44,6 +46,7 @@ const stepOrder: Array<{ id: Exclude<Step, 'done'>; label: string; hint: string;
 ]
 
 const stampOrder: BugKind[] = ['syntax', 'runtime', 'logic']
+const avatarColors = ['#ff7aa2', '#72dcff', '#b9f352', '#ffcb47', '#7fd8ff', '#b49cff', '#ffd96a', '#ff9b6e']
 const stampIcons: Record<BugKind, typeof Bug> = { syntax: Power, runtime: Zap, logic: CircleHelp }
 
 const missions: Record<Step, { title: string; text: (variable: string) => string }> = {
@@ -367,6 +370,15 @@ function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onHel
     : 'Think about the value from the complaint AND all the other values. The test bench will try both.'
 
   const stepIndex = stepOrder.findIndex((item) => item.id === step)
+  // Repair progress: each bug's diagnose, locate and fix share 60%, the test bench fills up to 95%,
+  // and the monkey's last hammer blow in the finale takes it to 100%.
+  const stepShare: Record<Step, number> = { reproduce: 0, diagnose: 0.25, locate: 0.5, fix: 0.75, verify: 1, done: 1 }
+  const benchPassed = bench.filter((test) => test.status === 'pass').length
+  const meterPercent = step === 'done' ? 100
+    : step === 'verify' ? 60 + 35 * (benchPassed / ticket.tests.length)
+    : 60 * (bugIndex + stepShare[step]) / ticket.bugs.length
+  const meterLabel = step === 'done' ? 'Every test passed' : step === 'verify' ? `${benchPassed} of ${ticket.tests.length} tests passed`
+    : step === 'reproduce' ? (bugIndex > 0 ? 'One bug fixed' : 'Make the bug happen') : step === 'diagnose' ? 'Bug reproduced' : step === 'locate' ? 'Bug named' : 'Broken line found'
   const benchInput = step === 'verify' ? bench.find((test) => test.status === 'running')?.input ?? null : null
   const repaired = step === 'verify' || step === 'done'
   const broken = step !== 'done' && (reproInput !== null || lastRun !== null && !lastRun.ok)
@@ -407,16 +419,20 @@ function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onHel
           <p className="rs-story__meta"><span>TICKET {String(ticket.id).padStart(2, '0')}/{String(repairTickets.length).padStart(2, '0')}</span><span>{meta.model}</span>{ticket.bugs.length > 1 && <span className="rs-bug-count"><Bug size={11} /> BUG {bugIndex + 1} OF {ticket.bugs.length}</span>}</p>
           <AsciiTitle text={meta.label} />
           <h1>{ticket.title}</h1>
-          <figure className="rs-story__quote">
-            <blockquote><p>“{ticket.complaint}”</p></blockquote>
-            <figcaption><b>{who}</b>{role && <> · {role}</>}</figcaption>
+          {/* The complaint arrives like a chat message from the customer. */}
+          <figure className="rs-story__quote rs-chat" style={{ '--avatar': avatarColors[(ticket.id - 1) % avatarColors.length] } as CSSProperties}>
+            <span className="rs-chat__avatar" aria-hidden="true"><UserRound size={22} strokeWidth={2.2} /><i /></span>
+            <div className="rs-chat__bubble">
+              <figcaption><b>{who}</b>{role && <small>{role}</small>}<time>just now</time></figcaption>
+              <blockquote><p>{ticket.complaint}</p></blockquote>
+            </div>
           </figure>
           <p className="rs-story__spec"><b>MUST DO</b><span>{ticket.rule}</span></p>
         </header>
         <RepairStage machine={ticket.machine} view={stageView} style={stageStyle} label={`${meta.label}: ${status.text.toLowerCase()}`}
           fallback={<FlatMachine meta={meta} machine={machine} broken={broken} lastRun={lastRun} reproInput={reproInput} draft={draft} benchInput={benchInput} step={step} variable={ticket.variable} stamp={stampBadge} />}
           overlay={<>
-            <div className="rs-stage__style" role="group" aria-label="Machine view">{(['real', 'ascii'] as const).map((option) => <button key={option} aria-pressed={stageStyle === option} onClick={() => chooseStyle(option)}>{option === 'ascii' ? 'ASCII' : '3D'}</button>)}</div>
+            <div className="rs-stage__style" role="group" aria-label="Machine view">{(['real', 'ascii'] as const).map((option) => <button key={option} aria-pressed={stageStyle === option} onClick={() => chooseStyle(option)}>{option === 'ascii' ? 'MATRIX' : '3D'}</button>)}</div>
             <div className="rs-stage__hint" aria-hidden="true"><Rotate3d size={13} /> drag to turn · pinch to zoom</div>
             {stampBadge}
           </>} />
@@ -426,6 +442,9 @@ function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onHel
           <span className="rs-readout__screen"><small>OUT</small><b>{screenText}</b></span>
         </footer>
       </article>
+
+      {/* Between the panels: the repair gauge. */}
+      <RepairMeter percent={meterPercent} label={meterLabel} />
 
       {/* Right: the workbench for the current step. */}
       <section className="rs-work" aria-label="Workbench">
@@ -489,13 +508,17 @@ function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onHel
     </section>
 
     {showDone && <div className="rs-done-backdrop">
+      {/* Two columns so the monkey, the lesson and both buttons fit on one screen without scrolling. */}
       <div className="rs-done" role="dialog" aria-modal="true" aria-labelledby="rs-done-title">
         <span className="rs-done__stamp" aria-hidden="true">FIXED</span>
-        <p className="rs-kicker">TICKET #{String(ticket.id).padStart(2, '0')} · {meta.label}</p>
-        <h2 id="rs-done-title">Machine fixed!</h2>
-        {ticket.bugs.map((item, i) => <p key={i} className="rs-done__lesson"><span className={`rs-kind rs-kind--${item.kind}`}>{bugKindLabels[item.kind]}</span>{item.lesson}</p>)}
-        <dl className="rs-done__stats"><div><dt>Test runs</dt><dd>{stats.runs}</dd></div><div><dt>Tests passed</dt><dd>{ticket.tests.length} / {ticket.tests.length}</dd></div><div><dt>Retries</dt><dd>{stats.stampMisses + stats.locateMisses + stats.fixMisses + stats.verifyFails}</dd></div></dl>
-        <div className="rs-done__actions"><button className="rs-primary" autoFocus onClick={() => { setShowDone(false); onNext() }}>{index === repairTickets.length - 1 ? 'FINISH' : 'NEXT TICKET'} <ArrowRight size={17} /></button><button className="rs-secondary" onClick={() => setShowDone(false)}>REVIEW THE FIX</button></div>
+        <MonkeyFix last={index === repairTickets.length - 1} />
+        <div className="rs-done__info">
+          <p className="rs-kicker">TICKET #{String(ticket.id).padStart(2, '0')} · {meta.label}</p>
+          <h2 id="rs-done-title">Machine fixed!</h2>
+          {ticket.bugs.map((item, i) => <p key={i} className="rs-done__lesson"><span className={`rs-kind rs-kind--${item.kind}`}>{bugKindLabels[item.kind]}</span>{item.lesson}</p>)}
+          <dl className="rs-done__stats"><div><dt>Test runs</dt><dd>{stats.runs}</dd></div><div><dt>Tests passed</dt><dd>{ticket.tests.length} / {ticket.tests.length}</dd></div><div><dt>Retries</dt><dd>{stats.stampMisses + stats.locateMisses + stats.fixMisses + stats.verifyFails}</dd></div></dl>
+          <div className="rs-done__actions"><button className="rs-primary" autoFocus onClick={() => { setShowDone(false); onNext() }}>{index === repairTickets.length - 1 ? 'FINISH' : 'NEXT TICKET'} <ArrowRight size={17} /></button><button className="rs-secondary" onClick={() => setShowDone(false)}>REVIEW THE FIX</button></div>
+        </div>
       </div>
     </div>}
   </main>

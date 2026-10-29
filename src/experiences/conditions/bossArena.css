@@ -463,3 +463,54 @@
 @media (max-height: 640px) { .bb-award__badge .bb-art { transform: scale(.8); } .bb-case__slot { width: 74px; height: 74px; } }
 @media (prefers-reduced-motion: reduce) { .bb-award-backdrop *, .bb-backdrop *, .ba-reveal { animation: none !important; } }
 .ba-footer .ba-case-button b { color: #ffe8a8; font-size: 11px; }
+
+/* Heavier hits: the bolt, a burst of shards, a flash, knockback and a shaking arena. All land with the bolt, 0.3 s in. */
+.ba-field .ba-bolt { width: 34px; height: 34px; margin: -17px 0 0 -17px; }
+.ba-field .ba-bolt.is-hit { box-shadow: 0 0 26px 10px #ffcb47aa, -26px 14px 22px -4px #ffe06688, -50px 26px 26px -8px #ffe06644; }
+.ba-field .ba-bolt.is-miss { box-shadow: 0 0 26px 10px #ff3b5caa, 26px -14px 22px -4px #ff5f7e88, 50px -26px 26px -8px #ff5f7e44; }
+.ba-impact { position: absolute; z-index: 4; width: 0; height: 0; pointer-events: none; }
+.ba-impact.is-hit { left: 68%; top: 36%; }
+.ba-impact.is-miss { left: 16%; top: 70%; }
+.ba-impact b { position: absolute; left: -70px; top: -70px; width: 140px; height: 140px; background: conic-gradient(from 0deg, #fff 0 6deg, transparent 6deg 30deg, #fff 30deg 36deg, transparent 36deg 60deg, #fff 60deg 66deg, transparent 66deg 90deg, #fff 90deg 96deg, transparent 96deg 120deg, #fff 120deg 126deg, transparent 126deg 150deg, #fff 150deg 156deg, transparent 156deg 180deg, #fff 180deg 186deg, transparent 186deg 210deg, #fff 210deg 216deg, transparent 216deg 240deg, #fff 240deg 246deg, transparent 246deg 270deg, #fff 270deg 276deg, transparent 276deg 300deg, #fff 300deg 306deg, transparent 306deg 330deg, #fff 330deg 336deg, transparent 336deg); border-radius: 50%; -webkit-mask-image: radial-gradient(circle, transparent 12%, #000 18%, #000 45%, transparent 70%); mask-image: radial-gradient(circle, transparent 12%, #000 18%, #000 45%, transparent 70%); opacity: 0; animation: ba-burst .45s .3s ease-out both; }
+.ba-impact.is-hit b { filter: drop-shadow(0 0 10px #ffe066) sepia(1) saturate(4) hue-rotate(5deg); }
+.ba-impact.is-miss b { filter: drop-shadow(0 0 10px #ff3b5c) sepia(1) saturate(6) hue-rotate(-40deg); }
+.ba-impact i { position: absolute; left: -4px; top: -4px; width: 8px; height: 22px; border-radius: 4px; opacity: 0; transform: rotate(var(--a)) translateY(0); animation: ba-shard .55s .3s cubic-bezier(.1, .8, .3, 1) both; }
+.ba-impact.is-hit i { background: linear-gradient(#fff, #ffe066, #ff9b3d); box-shadow: 0 0 10px #ffcb47; }
+.ba-impact.is-miss i { background: linear-gradient(#fff, #ff8fa1, #d6283c); box-shadow: 0 0 10px #ff3b5c; }
+.ba-flash { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; animation: ba-flash .35s .3s ease-out both; }
+.ba-flash.is-hit { background: radial-gradient(circle at 68% 36%, #ffffffcc, #ffe06644 30%, transparent 60%); }
+.ba-flash.is-miss { background: radial-gradient(circle at 16% 70%, #ff5f7ecc, #ff3b5c44 30%, transparent 62%); }
+.ba-field .ba-damage { font-size: 46px; -webkit-text-stroke: 2px #000; text-shadow: 4px 4px 0 #000, 0 0 18px currentColor; animation: ba-pow .9s .3s cubic-bezier(.2, 1.6, .4, 1) both; }
+.ba-field .ba-boss.is-hit .ba-sprite { animation: ba-knock .6s .3s cubic-bezier(.2, .9, .3, 1) both; }
+.ba-fighter.is-striking > .ba-mini { animation: ba-lunge-hard .5s ease both; }
+.ba-fighter.is-hurt > .ba-mini { animation: ba-knock-back .6s .3s cubic-bezier(.2, .9, .3, 1) both; }
+.ba-arena.is-impact.is-odd { animation: ba-slam-a .45s .3s ease-out both; }
+.ba-arena.is-impact.is-even { animation: ba-slam-b .45s .3s ease-out both; }
+.ba-arena.is-countered.is-odd { animation: ba-slam-a .5s .3s ease-out both; }
+.ba-arena.is-countered.is-even { animation: ba-slam-b .5s .3s ease-out both; }
+@keyframes ba-burst { 0% { opacity: 1; transform: scale(.2) rotate(0); } 60% { opacity: 1; } 100% { opacity: 0; transform: scale(1.5) rotate(25deg); } }
+@keyframes ba-shard { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scaleY(1.2); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(var(--l) * -1)) scaleY(.4); } }
+@keyframes ba-flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes ba-pow { 0% { opacity: 0; transform: scale(2.6) rotate(-12deg); } 25% { opacity: 1; transform: scale(.9) rotate(-6deg); } 40% { transform: scale(1.1) rotate(-8deg); } 100% { opacity: 0; transform: translateY(-46px) scale(1) rotate(-8deg); } }
+@keyframes ba-knock { 0% { transform: none; filter: brightness(1); } 8% { transform: translate(34px, -14px) rotate(9deg) scale(.92, 1.08); filter: brightness(4) saturate(0); } 25% { transform: translate(26px, -8px) rotate(6deg); filter: brightness(2.2); } 55% { transform: translate(-6px, 2px) rotate(-2deg); filter: brightness(1.2); } 100% { transform: none; filter: brightness(1); } }
+@keyframes ba-knock-back { 0% { transform: none; filter: none; } 8% { transform: translate(-30px, 12px) rotate(-10deg) scale(1.08, .92); filter: brightness(3) sepia(1) hue-rotate(-50deg) saturate(6); } 30% { transform: translate(-22px, 8px) rotate(-6deg); filter: brightness(1.8) sepia(1) hue-rotate(-50deg) saturate(4); } 60% { transform: translate(6px, -2px) rotate(2deg); filter: none; } 100% { transform: none; } }
+@keyframes ba-lunge-hard { 0% { transform: none; } 30% { transform: translate(70px, -36px) scale(1.12) rotate(6deg); } 45% { transform: translate(64px, -32px) scale(1.08) rotate(6deg); } 100% { transform: none; } }
+@keyframes ba-slam-a { 0% { transform: none; } 15% { transform: translate(-9px, 6px) rotate(-.6deg); } 35% { transform: translate(8px, -5px) rotate(.5deg); } 55% { transform: translate(-5px, 3px); } 75% { transform: translate(3px, -2px); } 100% { transform: none; } }
+@keyframes ba-slam-b { 0% { transform: none; } 15% { transform: translate(9px, 6px) rotate(.6deg); } 35% { transform: translate(-8px, -5px) rotate(-.5deg); } 55% { transform: translate(5px, 3px); } 75% { transform: translate(-3px, -2px); } 100% { transform: none; } }
+
+/* A new badge drops from the middle of the case into its slot. */
+.bb-case header { position: relative; }
+.bb-case__new { margin-left: auto; margin-right: 44px; padding: 4px 12px; border: 2px solid #1a0d12; border-radius: 30px; color: #1a0d12; background: #ffe066; box-shadow: 0 0 16px #ffe06699; font: 800 12px 'IBM Plex Mono', monospace; animation: bi-slam .5s 1.25s cubic-bezier(.2, 1.6, .4, 1) both; }
+.bb-case__slot { position: relative; }
+.bb-case__grid li.is-arriving { z-index: 2; animation: none; }
+.bb-case__grid li.is-arriving > b, .bb-case__grid li.is-arriving > small, .bb-case__grid li.is-arriving > i { animation: bi-copy .4s 1.3s ease both; }
+.bb-case__drop { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; animation: bb-drop 1.2s .25s cubic-bezier(.3, .1, .3, 1) both; }
+.bb-case__drop .bb-art { filter: drop-shadow(0 0 24px #ffe066) drop-shadow(0 8px 0 rgba(0, 0, 0, .5)); }
+.bb-case__ring { position: absolute; inset: -6px; border: 4px solid #ffe066; border-radius: 50%; opacity: 0; box-shadow: 0 0 24px #ffe066, inset 0 0 18px #ffe06688; animation: bb-ring .7s 1.3s ease-out both; }
+.bb-case__grid li.is-arriving .bb-case__slot { animation: bb-thud .45s 1.3s ease both; }
+@keyframes bb-drop { 0% { opacity: 0; transform: translate(var(--fx), var(--fy)) scale(2.4) rotate(-20deg); } 15% { opacity: 1; transform: translate(var(--fx), var(--fy)) scale(2.6) rotate(0); } 45% { transform: translate(var(--fx), var(--fy)) scale(2.6) rotate(360deg); } 88% { transform: translate(0, -6px) scale(.9) rotate(360deg); } 100% { opacity: 1; transform: none; } }
+@keyframes bb-ring { 0% { opacity: 1; transform: scale(.7); } 100% { opacity: 0; transform: scale(1.7); } }
+@keyframes bb-thud { 0% { transform: none; } 35% { transform: translateY(5px) scale(1.08, .92); } 100% { transform: none; } }
+.bb-backdrop .bb-case .bb-case__new { font-family: 'IBM Plex Mono', monospace !important; }
+@media (prefers-reduced-motion: reduce) { .ba-impact, .ba-flash { display: none; } .bb-case__drop { animation: none !important; } }
+.bb-case { overflow-x: hidden; }

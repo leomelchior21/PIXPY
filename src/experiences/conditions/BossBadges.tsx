@@ -1,5 +1,5 @@
 import { Award, X } from 'lucide-react'
-import { useEffect, useId, type CSSProperties } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { bossBadges, type BadgeShape, type BossBadge } from '../../data/bossBadges'
 import { conditionBosses } from '../../data/conditionBosses'
 
@@ -61,7 +61,16 @@ export function BadgeArt({ badge, size, locked = false }: { badge: BossBadge; si
 }
 
 /** Every badge, earned or still waiting, in a velvet case. */
-export function BadgeCase({ earned, onClose }: { earned: number[]; onClose: () => void }) {
+export function BadgeCase({ earned, arriving, onClose }: { earned: number[]; arriving?: number; onClose: () => void }) {
+  const grid = useRef<HTMLOListElement>(null)
+  // How far the arriving badge's slot sits from the middle of the case: the badge starts there, big, and drops in.
+  const [start, setStart] = useState<{ x: number; y: number } | null>(null)
+  useLayoutEffect(() => {
+    const slot = grid.current?.querySelector('.is-arriving .bb-case__slot')
+    if (!grid.current || !slot) return
+    const box = grid.current.getBoundingClientRect(), place = slot.getBoundingClientRect()
+    setStart({ x: box.left + box.width / 2 - (place.left + place.width / 2), y: box.top + box.height / 2 - (place.top + place.height / 2) })
+  }, [arriving])
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
@@ -71,12 +80,17 @@ export function BadgeCase({ earned, onClose }: { earned: number[]; onClose: () =
   return <div className="bb-backdrop" onClick={onClose}>
     <div className="bb-case" role="dialog" aria-modal="true" aria-labelledby="bb-case-title" onClick={(event) => event.stopPropagation()}>
       <button className="bb-close" onClick={onClose} aria-label="Close the badge case"><X size={18} /></button>
-      <header><Award size={26} /><div><h2 id="bb-case-title">Badge case</h2><p>{count} of {bossBadges.length} badges · one for every boss you defeat</p></div></header>
-      <ol className="bb-case__grid">{bossBadges.map((badge, i) => {
+      <header><Award size={26} /><div><h2 id="bb-case-title">Badge case</h2><p>{count} of {bossBadges.length} badges · one for every boss you defeat</p></div>{arriving && <span className="bb-case__new" key={arriving}>+1 BADGE</span>}</header>
+      <ol className="bb-case__grid" ref={grid}>{bossBadges.map((badge, i) => {
         const has = earned.includes(badge.id)
         const boss = conditionBosses[i]
-        return <li key={badge.id} className={has ? 'is-earned' : ''} style={{ '--i': i } as CSSProperties}>
-          <span className="bb-case__slot"><BadgeArt badge={badge} size={74} locked={!has} /></span>
+        const landing = badge.id === arriving
+        return <li key={badge.id} className={`${has ? 'is-earned' : ''} ${landing ? 'is-arriving' : ''}`} style={{ '--i': i } as CSSProperties}>
+          <span className="bb-case__slot">
+            {landing && <BadgeArt badge={badge} size={74} locked />}
+            {landing ? start && <span className="bb-case__drop" style={{ '--fx': `${start.x}px`, '--fy': `${start.y}px` } as CSSProperties}><BadgeArt badge={badge} size={74} /></span> : <BadgeArt badge={badge} size={74} locked={!has} />}
+            {landing && <span className="bb-case__ring" aria-hidden="true" />}
+          </span>
           <b>{has ? badge.name : '???'}</b>
           <small>{has ? badge.skill : `Defeat boss ${String(badge.id).padStart(2, '0')}`}</small>
           {has && <i>{boss.name}</i>}

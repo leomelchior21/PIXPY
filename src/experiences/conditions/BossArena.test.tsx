@@ -58,7 +58,7 @@ describe('Conditions final bosses', { timeout: 40000 }, () => {
   it('starts round 1 with the if and else written, missing only the last print', () => {
     render(<Harness />)
     expect(screen.getByText('ROUND 1 · WRITE THE LAST PRINT')).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: /Code to defeat/ })).toHaveValue('age = int(input())\nif age >= 18:\n    print("Welcome in")\nelse:\n    # Write the print for anyone younger\n')
+    expect(screen.getByRole('textbox', { name: /Code to defeat/ })).toHaveValue('# Write the print for anyone younger, under else.\nage = int(input())\nif age >= 18:\n    print("Welcome in")\nelse:\n    ')
   })
 
   it('fights with real tests, explains a boundary miss, and records each attack', async () => {
@@ -85,12 +85,16 @@ describe('Conditions final bosses', { timeout: 40000 }, () => {
     expect(latest.conditionBossLog.map((event) => event.hits)).toEqual([4, 5])
     // The first win awards a badge, which then sits in the badge case.
     expect(await screen.findByRole('dialog', { name: 'Gate Badge' }, settle)).toBeInTheDocument()
+    // Adding it opens the case, where the new badge drops into its slot.
     fireEvent.click(screen.getByRole('button', { name: 'ADD TO BADGE CASE' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Badge case: 1 of 10 badges' }))
     const badgeCase = screen.getByRole('dialog', { name: 'Badge case' })
+    expect(within(badgeCase).getByText('+1 BADGE')).toBeInTheDocument()
     expect(within(badgeCase).getByText('Gate Badge')).toBeInTheDocument()
     expect(within(badgeCase).getAllByText('???')).toHaveLength(9)
     fireEvent.click(within(badgeCase).getByRole('button', { name: 'Close the badge case' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Badge case: 1 of 10 badges' }))
+    expect(screen.getByRole('dialog', { name: 'Badge case' })).not.toHaveTextContent('+1 BADGE')
+    fireEvent.click(screen.getByRole('button', { name: 'Close the badge case' }))
     fireEvent.click(screen.getByRole('button', { name: /NEXT BOSS/ }))
     expect(screen.getByRole('heading', { name: 'The overheated lab' })).toBeInTheDocument()
   })

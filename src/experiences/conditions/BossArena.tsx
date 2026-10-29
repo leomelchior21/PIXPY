@@ -52,6 +52,8 @@ export function BossArena({ progress, onProgress, onBack }: Props) {
   const [finished, setFinished] = useState(() => firstOpen === -1)
   const [intro, setIntro] = useState(() => !progress.bossTutorialSeen)
   const [caseOpen, setCaseOpen] = useState(false)
+  const [arriving, setArriving] = useState<number | undefined>()
+  const openCase = (badge?: number) => { setArriving(badge); setCaseOpen(true) }
   const drafts = useRef<Record<number, string>>({})
   const progressRef = useRef(progress)
   useEffect(() => { progressRef.current = progress }, [progress])
@@ -77,7 +79,7 @@ export function BossArena({ progress, onProgress, onBack }: Props) {
   const openIntro = () => setIntro(true)
   const introScreen = <>
     {intro && <BossIntro fighter={fighter} onClose={closeIntro} />}
-    {caseOpen && <BadgeCase earned={defeated} onClose={() => setCaseOpen(false)} />}
+    {caseOpen && <BadgeCase earned={defeated} arriving={arriving} onClose={() => setCaseOpen(false)} />}
   </>
 
   const next = () => {
@@ -97,7 +99,7 @@ export function BossArena({ progress, onProgress, onBack }: Props) {
         <h1>Conditions Champion</h1>
         <p>Your decisions survived {conditionBosses.reduce((sum, boss) => sum + boss.tests.length, 0)} surprise tests, aimed right at the edges of every rule.</p>
         <div className="ba-hall__row">{conditionBosses.map((boss) => <MiniSprite key={boss.id} boss={boss} size={3} beaten />)}</div>
-        <div className="ba-hall__actions"><button className="ba-primary" onClick={() => setCaseOpen(true)}><Award size={17} /> BADGE CASE</button><button className="ba-secondary" onClick={() => { setIndex(0); setFinished(false) }}><RotateCcw size={17} /> REMATCH</button><button className="ba-secondary" onClick={onBack}>BACK TO CONDITIONS <ArrowRight size={17} /></button></div>
+        <div className="ba-hall__actions"><button className="ba-primary" onClick={() => openCase()}><Award size={17} /> BADGE CASE</button><button className="ba-secondary" onClick={() => { setIndex(0); setFinished(false) }}><RotateCcw size={17} /> REMATCH</button><button className="ba-secondary" onClick={onBack}>BACK TO CONDITIONS <ArrowRight size={17} /></button></div>
       </div>
     </section>
     {introScreen}
@@ -106,7 +108,7 @@ export function BossArena({ progress, onProgress, onBack }: Props) {
   const boss = conditionBosses[index]
   return <>
     <BossFight key={boss.id} boss={boss} fighter={fighter} index={index} defeated={defeated} accessible={accessible} drafts={drafts.current}
-      onSelect={(i) => { if (accessible(i)) setIndex(i) }} onBack={onBack} onHelp={openIntro} onOpenCase={() => setCaseOpen(true)} onRecord={record} onNext={next} />
+      onSelect={(i) => { if (accessible(i)) setIndex(i) }} onBack={onBack} onHelp={openIntro} onOpenCase={openCase} onRecord={record} onNext={next} />
     {introScreen}
   </>
 }
@@ -154,7 +156,8 @@ interface FightProps {
   onSelect: (i: number) => void
   onBack: () => void
   onHelp: () => void
-  onOpenCase: () => void
+  /** Opens the badge case; `arriving` animates that badge into its slot. */
+  onOpenCase: (arriving?: number) => void
   onRecord: (event: BossAttackEvent) => void
   onNext: () => void
 }
@@ -228,7 +231,7 @@ function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelec
       await pause(stopError && i > 0 ? 80 : 280)
       if (run !== version.current) return
       setShot({ id: i, hit })
-      await pause(380)
+      await pause(480)
       if (run !== version.current) return
       if (hit) { hits += 1; setHp((value) => value - 1) } else setHeroHp((value) => value - 1)
       tests[i] = { ...tests[i], status: hit ? 'hit' : 'miss', got, path, error: failure }
@@ -260,7 +263,7 @@ function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelec
     <Toolbar onBack={onBack} onHelp={onHelp} counter={<><span>BOSS</span><b>{String(boss.id).padStart(2, '0')}</b><small>/ {conditionBosses.length}</small></>} />
     <BossTrail index={index} defeated={defeated} accessible={accessible} onSelect={onSelect} disabled={busy} />
     <section className="ba-layout">
-      <div className={`ba-arena ${shot && !shot.hit ? 'is-countered' : ''}`} style={{ '--boss': boss.palette.body, '--accent': boss.palette.accent } as CSSProperties}>
+      <div className={`ba-arena ${shot ? `${shot.hit ? 'is-impact' : 'is-countered'} ${shot.id % 2 ? 'is-odd' : 'is-even'}` : ''}`} style={{ '--boss': boss.palette.body, '--accent': boss.palette.accent } as CSSProperties}>
         <div className="ba-arena__sky" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ '--x': `${(i * 37) % 100}%`, '--d': `${(i % 5) * 0.7}s`, '--s': `${4 + (i % 4) * 2}px` } as CSSProperties} />)}</div>
         <div className="ba-arena__floor" aria-hidden="true" />
         <header className="ba-hp">
@@ -286,6 +289,9 @@ function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelec
             <span>HP {heroHp}/{boss.tests.length}</span>
           </div>
           {shot && <span key={`bolt-${shot.id}`} className={`ba-bolt ${shot.hit ? 'is-hit' : 'is-miss'}`} aria-hidden="true" />}
+          {/* The punch lands: a burst of shards where the blow hits, and a flash over the whole arena. */}
+          {shot && <span key={`impact-${shot.id}`} className={`ba-impact ${shot.hit ? 'is-hit' : 'is-miss'}`} aria-hidden="true"><b />{Array.from({ length: 10 }, (_, i) => <i key={i} style={{ '--a': `${i * 36 + 8}deg`, '--l': `${46 + (i % 3) * 18}px` } as CSSProperties} />)}</span>}
+          {shot && <span key={`flash-${shot.id}`} className={`ba-flash ${shot.hit ? 'is-hit' : 'is-miss'}`} aria-hidden="true" />}
         </div>
         {phase === 'defeated' && <div className="ba-victory"><span>DEFEATED!</span><Trophy size={34} /></div>}
         <ol className="ba-tests" aria-label="Surprise tests">{cards.map((card, i) => <li key={i} className={`is-${card.status}`}>
@@ -320,7 +326,7 @@ function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelec
     </section>
 
     <footer className={`ba-footer ba-footer--${note.tone}`}>
-      <button className={`ba-case-button ${newBadge ? 'is-new' : ''}`} onClick={onOpenCase} aria-label={`Badge case: ${earnedCount} of ${bossBadges.length} badges`}>
+      <button className={`ba-case-button ${newBadge ? 'is-new' : ''}`} onClick={() => onOpenCase()} aria-label={`Badge case: ${earnedCount} of ${bossBadges.length} badges`}>
         <span className="ba-case-button__stack">{(earnedCount ? bossBadges.filter((badge) => earned.includes(badge.id)).slice(-3) : [bossBadges[0]]).map((badge) => <BadgeArt key={badge.id} badge={badge} size={32} locked={!earnedCount} />)}</span>
         <span><b>BADGES</b><small>{earnedCount} / {bossBadges.length}</small></span>
       </button>
@@ -329,6 +335,6 @@ function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelec
         ? <button className="ba-primary" onClick={onNext}>{index === conditionBosses.length - 1 ? 'CLAIM THE CROWN' : 'NEXT BOSS'} <ArrowRight size={17} /></button>
         : <button className="ba-primary" onClick={() => void attack()} disabled={busy}>{busy ? <LoaderCircle size={17} className="ba-spin" /> : <Swords size={17} />} {busy ? 'ATTACKING…' : `ATTACK · ${boss.tests.length} TESTS`}</button>}
     </footer>
-    {award && <BadgeAward badge={badge} total={earnedCount} onClose={() => { setAward(false); setNewBadge(true) }} />}
+    {award && <BadgeAward badge={badge} total={earnedCount} onClose={() => { setAward(false); setNewBadge(true); onOpenCase(boss.id) }} />}
   </main>
 }

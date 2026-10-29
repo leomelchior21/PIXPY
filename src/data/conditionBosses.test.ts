@@ -40,6 +40,8 @@ describe('conditions final bosses', () => {
     expect(third.starter).not.toContain('else')
     expect(third.starter).not.toContain('print(')
     for (const boss of rest) expect(boss.starter, boss.name).not.toMatch(/\bif\b|else|print\(/)
+    // The instruction is a comment on the first line, never inside the code.
+    for (const boss of [first, second, third]) expect(boss.starter.split('\n').slice(1).join('\n'), boss.name).not.toContain('#')
   })
 
   it('ignores input prompts and accepts equal numbers', () => {
