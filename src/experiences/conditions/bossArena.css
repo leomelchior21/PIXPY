@@ -569,3 +569,10 @@
 @keyframes bs-cart { from { transform: translateX(-90px); } to { transform: translateX(480px); } }
 @keyframes bs-paper { from { transform: translateY(0) rotate(0); } to { transform: translateY(-340px) rotate(200deg); } }
 @media (prefers-reduced-motion: reduce) { .ba-scene * { animation: none !important; } }
+/* The scene is the place itself: full strength, its own floor, and only a soft vignette on top. */
+.ba-arena .ba-scene { opacity: 1; }
+.ba-arena .ba-arena__floor { display: none; }
+.ba-arena .ba-arena__sky { opacity: .35; }
+.ba-arena .ba-arena__shade { background: radial-gradient(ellipse at 55% 45%, transparent 45%, rgba(10, 8, 18, .55) 100%), linear-gradient(rgba(10, 8, 18, .35), transparent 22%, transparent 72%, rgba(10, 8, 18, .6)); }
+.ba-field .ba-boss__shadow { background: radial-gradient(ellipse, rgba(0, 0, 0, .55), transparent 70%); border-color: transparent; }
+.ba-fighter__platform { background: radial-gradient(ellipse, rgba(0, 0, 0, .55), transparent 70%); border-color: transparent; }
