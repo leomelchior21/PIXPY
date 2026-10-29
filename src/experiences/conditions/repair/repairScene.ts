@@ -29,6 +29,9 @@ export type StageStyle = 'ascii' | 'real'
 export interface RepairSceneHandle {
   update(view: StageView): void
   setStyle(style: StageStyle): void
+  /** Multiplies the camera distance: below 1 moves closer. */
+  zoomBy(factor: number): void
+  resetView(): void
   resize(): void
   dispose(): void
 }
@@ -423,30 +426,44 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
     })
   }
 
-  // Camera, framed on the machine; drag to turn around it.
+  // Camera, framed on the whole machine. Drag turns all the way around it; wheel or pinch zooms.
   const clock = new THREE.Clock()
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.05, 40)
   const target = center.clone()
-  // Aim a little above the middle: the top of the panel sits under the story text.
-  target.y = center.y + size.y * 0.05
-  let yaw = 0.32, pitch = 0.12, yawGoal = yaw, pitchGoal = pitch, distance = 4
-  let lastTouch = -10
-  let dragging: { x: number; y: number; yaw: number; pitch: number } | null = null
+  let yaw = 0.32, pitch = 0.12, yawGoal = yaw, pitchGoal = pitch, fit = 4, zoom = 1, zoomGoal = 1
+  // Until someone moves the camera it sways gently around the resting view.
+  let moved = false
+  const pointers = new Map<number, { x: number; y: number }>()
+  let gesture: { yaw: number; pitch: number; x: number; y: number; spread: number; zoom: number } | null = null
+  const spread = () => { const [a, b] = [...pointers.values()]; return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0 }
+  const startGesture = () => {
+    const [first] = [...pointers.values()]
+    gesture = first ? { yaw: yawGoal, pitch: pitchGoal, x: first.x, y: first.y, spread: spread(), zoom: zoomGoal } : null
+  }
+  // Zooming in stops before the camera reaches the machine.
+  const radius = size.length() / 2
+  const zoomTo = (value: number) => { zoomGoal = THREE.MathUtils.clamp(value, Math.min(0.9, (radius * 1.25) / fit), 1.9); moved = true }
   const onDown = (event: PointerEvent) => {
-    dragging = { x: event.clientX, y: event.clientY, yaw: yawGoal, pitch: pitchGoal }
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
     canvas.setPointerCapture?.(event.pointerId)
+    startGesture()
   }
   const onMove = (event: PointerEvent) => {
-    if (!dragging) return
-    yawGoal = THREE.MathUtils.clamp(dragging.yaw - (event.clientX - dragging.x) * 0.006, -0.85, 0.85)
-    pitchGoal = THREE.MathUtils.clamp(dragging.pitch + (event.clientY - dragging.y) * 0.004, -0.04, 0.5)
-    lastTouch = clock.elapsedTime
+    if (!pointers.has(event.pointerId) || !gesture) return
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    moved = true
+    if (pointers.size >= 2 && gesture.spread > 0) { zoomTo(gesture.zoom * gesture.spread / Math.max(1, spread())); return }
+    const [first] = [...pointers.values()]
+    yawGoal = gesture.yaw - (first.x - gesture.x) * 0.008
+    pitchGoal = THREE.MathUtils.clamp(gesture.pitch + (first.y - gesture.y) * 0.005, -0.15, 1.25)
   }
-  const onUp = () => { dragging = null; lastTouch = clock.elapsedTime }
+  const onUp = (event: PointerEvent) => { pointers.delete(event.pointerId); startGesture() }
+  const onWheel = (event: WheelEvent) => { event.preventDefault(); zoomTo(zoomGoal * Math.exp(event.deltaY * 0.0012)) }
   canvas.addEventListener('pointerdown', onDown)
   canvas.addEventListener('pointermove', onMove)
   canvas.addEventListener('pointerup', onUp)
   canvas.addEventListener('pointercancel', onUp)
+  canvas.addEventListener('wheel', onWheel, { passive: false })
 
   const composer = new EffectComposer(renderer)
   composer.addPass(new RenderPass(scene, camera))
@@ -477,8 +494,8 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
     camera.aspect = width / height
     const vertical = THREE.MathUtils.degToRad(FOV) / 2
     const horizontal = Math.atan(Math.tan(vertical) * camera.aspect)
-    // Framed close: the machine fills the panel.
-    distance = Math.max((size.y * 0.5 + 0.07) / Math.tan(vertical), (size.x * 0.5 + 0.06) / Math.tan(horizontal)) * 0.98 + size.z * 0.5
+    // Framed so the whole machine fits, with a little room around it.
+    fit = Math.max((size.y * 0.5 + 0.1) / Math.tan(vertical), (size.x * 0.5 + 0.1) / Math.tan(horizontal)) * 1.04 + size.z * 0.5
     camera.updateProjectionMatrix()
   }
   resize()
@@ -600,13 +617,17 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
     // Machine shake and camera.
     const shake = calm ? 0 : runtime ? Math.max(0, 1 - moodTime / 0.7) * 0.012 : view.mood === 'running' ? 0.0012 : 0
     rig.root.position.set((Math.random() - 0.5) * shake, 0, (Math.random() - 0.5) * shake)
-    const idle = !dragging && t - lastTouch > 3
-    // ASCII looks at the machine almost head-on, where its shape is clearest.
-    const restYaw = THREE.MathUtils.lerp(0.3, 0.16, asciiMix), restPitch = THREE.MathUtils.lerp(0.12, 0.06, asciiMix)
-    const sway = idle && !calm ? Math.sin(t * 0.25) * THREE.MathUtils.lerp(0.12, 0.05, asciiMix) : 0
-    yaw += ((idle ? restYaw + sway : yawGoal) - yaw) * Math.min(1, dt * (idle ? 0.8 : 8))
-    pitch += ((idle ? restPitch : pitchGoal) - pitch) * Math.min(1, dt * (idle ? 0.8 : 8))
-    if (idle) { yawGoal = yaw; pitchGoal = pitch }
+    if (!moved) {
+      // ASCII rests almost head-on, where its shape is clearest.
+      const sway = calm ? 0 : Math.sin(t * 0.25) * THREE.MathUtils.lerp(0.12, 0.05, asciiMix)
+      yawGoal = THREE.MathUtils.lerp(0.3, 0.16, asciiMix) + sway
+      pitchGoal = THREE.MathUtils.lerp(0.12, 0.06, asciiMix)
+    }
+    const ease = Math.min(1, dt * (moved ? 9 : 1.2))
+    yaw += (yawGoal - yaw) * ease
+    pitch += (pitchGoal - pitch) * ease
+    zoom += (zoomGoal - zoom) * Math.min(1, dt * 9)
+    const distance = fit * zoom
     camera.position.set(target.x + Math.sin(yaw) * Math.cos(pitch) * distance, target.y + Math.sin(pitch) * distance, target.z + Math.cos(yaw) * Math.cos(pitch) * distance)
     camera.lookAt(target)
 
@@ -644,6 +665,14 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
       view = next
     },
     setStyle(next) { style = next },
+    zoomBy(factor) { zoomTo(zoomGoal * factor) },
+    resetView() {
+      moved = false
+      zoomGoal = 1
+      // Come back by the short way round.
+      const rest = THREE.MathUtils.lerp(0.3, 0.16, asciiMix)
+      yaw = rest + THREE.MathUtils.euclideanModulo(yaw - rest + Math.PI, Math.PI * 2) - Math.PI
+    },
     resize,
     dispose() {
       disposed = true
@@ -652,6 +681,7 @@ export function createRepairScene(canvas: HTMLCanvasElement, machine: RepairMach
       canvas.removeEventListener('pointermove', onMove)
       canvas.removeEventListener('pointerup', onUp)
       canvas.removeEventListener('pointercancel', onUp)
+      canvas.removeEventListener('wheel', onWheel)
       scene.traverse((object) => {
         const mesh = object as THREE.Mesh
         mesh.geometry?.dispose()

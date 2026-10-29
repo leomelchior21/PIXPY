@@ -1,0 +1,73 @@
+/* Conditions activity cards: a screenshot cover with the title on it, and a paper footer. */
+.cond-grid { column-gap: 18px; row-gap: 18px; }
+.cond-card { --card-accent: #ffcb47; --card-paper: #fffdf6; --card-text: #4f4c43; position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 0; overflow: hidden; border: 3px solid var(--ink); border-radius: 16px; color: var(--ink); background: var(--card-paper); box-shadow: 6px 6px 0 var(--ink); text-align: left; cursor: pointer; isolation: isolate; -webkit-tap-highlight-color: transparent; transition: transform .18s ease, box-shadow .18s ease; }
+.cond-card:hover { transform: translate(-3px, -3px); box-shadow: 10px 10px 0 var(--ink); }
+.cond-card:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+.cond-card:focus-visible { outline: 3px solid var(--card-accent); outline-offset: 3px; }
+
+.cond-card__media { position: relative; flex: 1 1 auto; min-height: 76px; overflow: hidden; border-bottom: 3px solid var(--ink); background: #15171c; }
+.cond-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2, .8, .3, 1); }
+.cond-card:hover .cond-card__media img { transform: scale(1.06); }
+.cond-card__media::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10, 10, 12, 0) 35%, rgba(10, 10, 12, .82) 100%); }
+
+.cond-card__order { position: absolute; top: 10px; left: 10px; z-index: 2; padding: 3px 8px; border: 2px solid var(--ink); border-radius: 8px; color: var(--ink); background: var(--card-accent); box-shadow: 2px 2px 0 var(--ink); font: 800 13px 'IBM Plex Mono', monospace; }
+.cond-card__ribbon { position: absolute; top: 10px; right: 10px; z-index: 2; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border: 2px solid var(--ink); border-radius: 8px; color: var(--ink); background: #7dffab; box-shadow: 2px 2px 0 var(--ink); font: 800 10px 'IBM Plex Mono', monospace; font-style: normal; letter-spacing: .06em; }
+
+/* The title sits on the bottom of the picture. */
+.cond-card__title { position: absolute; z-index: 2; left: 12px; right: 12px; display: flex; align-items: center; gap: 10px; bottom: calc(var(--body-height, 74px) + 10px); color: #fff; }
+.cond-card__title strong { min-width: 0; font: 850 clamp(16px, 1.55vw, 23px)/1.02 var(--ui-font); letter-spacing: -.02em; text-shadow: 0 2px 0 rgba(0, 0, 0, .55), 0 0 18px rgba(0, 0, 0, .6); }
+.cond-card__icon { display: grid; flex-shrink: 0; place-items: center; width: 38px; height: 38px; border: 2px solid var(--ink); border-radius: 10px; color: var(--ink); background: var(--card-accent); box-shadow: 2px 2px 0 var(--ink); }
+
+.cond-card__body { display: grid; flex-shrink: 0; gap: 8px; height: var(--body-height, 74px); padding: 10px 14px; background: var(--card-paper); }
+.cond-card__body p { margin: 0; overflow: hidden; color: var(--card-text); font-size: 12.5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.cond-card__state { display: flex; align-items: center; gap: 6px; align-self: end; color: var(--ink); font: 800 11px 'IBM Plex Mono', monospace; letter-spacing: .03em; }
+.cond-card__state svg:last-child { margin-left: auto; }
+.cond-card.is-complete .cond-card__state { color: #2f8a52; }
+
+/* Picture framing per activity. */
+.cond-card--backroom-run .cond-card__media img { object-position: 50% 62%; }
+.cond-card--make-it-work .cond-card__media img { object-position: 50% 30%; }
+.cond-card--more-than-one-choice .cond-card__media img { object-position: 70% 40%; }
+.cond-card--choice-machine .cond-card__media img, .cond-card--if-else .cond-card__media img { object-position: 0 0; }
+.cond-card--conditions-final-bosses .cond-card__media img { object-position: 50% 55%; }
+
+/* Backroom Run: black arcade identity. */
+.cond-card--backroom-run { --card-paper: #121418; --card-text: #aab4c4; --card-accent: #ffd447 !important; color: #f2f4ee; }
+.cond-card--backroom-run .cond-card__state { color: #ffd447; }
+.cond-card--backroom-run:hover { box-shadow: 10px 10px 0 var(--ink), 0 0 30px rgba(255, 212, 71, .28); }
+
+/* Repair Shop: workshop yellow. */
+.cond-card--make-it-work .cond-card__media::before { content: ''; position: absolute; inset: 0; z-index: 1; background: repeating-linear-gradient(-45deg, rgba(255, 210, 31, .9) 0 10px, rgba(22, 22, 26, .9) 10px 20px); clip-path: polygon(0 0, 54px 0, 0 54px); }
+
+/* Final Bosses: the dramatic last round. */
+.cond-card--conditions-final-bosses { --card-paper: #170a0a; --card-text: #f0b9a8; --card-accent: #ff5a36 !important; color: #fff3ec; border-color: #000; animation: cond-boss-glow 2.6s ease-in-out infinite; }
+.cond-card--conditions-final-bosses .cond-card__media { border-bottom-color: #000; }
+.cond-card--conditions-final-bosses .cond-card__media img { filter: saturate(1.25) contrast(1.08); }
+.cond-card--conditions-final-bosses .cond-card__media::after { background: radial-gradient(ellipse at 50% 125%, rgba(255, 90, 40, .7), rgba(120, 10, 10, .15) 50%, transparent 70%), linear-gradient(180deg, rgba(60, 0, 0, .25) 0%, transparent 35%, rgba(23, 10, 10, .9) 100%); }
+.cond-card--conditions-final-bosses .cond-card__media::before { content: ''; position: absolute; inset: 0; z-index: 1; background-image: radial-gradient(circle, #ffb36b 0 1.5px, transparent 2px), radial-gradient(circle, #ff6a3d 0 1px, transparent 1.5px); background-size: 46px 60px, 31px 44px; background-position: 0 0, 14px 22px; opacity: .8; animation: cond-embers 3.2s linear infinite; mix-blend-mode: screen; }
+.cond-card--conditions-final-bosses .cond-card__title strong { color: #fff; font-size: clamp(18px, 1.8vw, 27px); text-transform: uppercase; letter-spacing: .02em; text-shadow: 0 0 12px rgba(255, 90, 40, .9), 0 2px 0 #3a0000; }
+.cond-card--conditions-final-bosses .cond-card__icon { color: #fff; background: #d6281a; box-shadow: 2px 2px 0 #000, 0 0 14px rgba(255, 90, 40, .8); }
+.cond-card--conditions-final-bosses .cond-card__order { color: #fff; background: #d6281a; border-color: #000; box-shadow: 2px 2px 0 #000; }
+.cond-card--conditions-final-bosses .cond-card__state { color: #ffb36b; }
+.cond-card__ribbon.is-final { color: #fff; background: linear-gradient(90deg, #d6281a, #ff7a2f); border-color: #000; box-shadow: 2px 2px 0 #000, 0 0 16px rgba(255, 90, 40, .7); animation: cond-pulse 1.4s ease-in-out infinite; }
+.cond-card--conditions-final-bosses:hover { box-shadow: 10px 10px 0 #000, 0 0 40px rgba(255, 90, 40, .55); }
+
+@keyframes cond-boss-glow { 50% { box-shadow: 6px 6px 0 #000, 0 0 26px rgba(255, 90, 40, .45); } }
+@keyframes cond-embers { from { background-position: 0 0, 14px 22px; } to { background-position: 0 -60px, 14px -22px; } }
+@keyframes cond-pulse { 50% { transform: scale(1.06); } }
+
+/* The app's UI font rule would replace these code-font labels. */
+.conditions-home .cond-card .cond-card__order, .conditions-home .cond-card .cond-card__ribbon, .conditions-home .cond-card .cond-card__state { font-family: 'IBM Plex Mono', monospace !important; }
+
+@media (max-height: 700px) {
+  .cond-card { --body-height: 62px; }
+  .cond-card__body { gap: 4px; padding: 8px 12px; }
+  .cond-card__body p { font-size: 11.5px; -webkit-line-clamp: 1; }
+  .cond-card__icon { width: 32px; height: 32px; }
+}
+@media (max-width: 800px) {
+  .cond-card { min-height: 210px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cond-card, .cond-card *, .cond-card::before, .cond-card *::before { animation: none !important; transition: none !important; }
+}

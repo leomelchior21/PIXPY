@@ -1,5 +1,5 @@
-import { ArrowLeft, ArrowRight, BatteryCharging, Bug, Check, CircleHelp, Cookie, DoorClosed, Fan, Gamepad2, Lamp, MousePointerClick, Play, Power, Ruler, Trophy, Wrench, X, Zap } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { ArrowRight, BatteryCharging, Bug, Check, CircleHelp, Cookie, DoorClosed, Fan, Gamepad2, Lamp, MousePointerClick, Play, Power, Ruler, Trophy, Wrench, Zap } from 'lucide-react'
+import { ActivityGuide, type GuideSlide } from '../../../components/ActivityGuide'
 
 interface Props {
   onClose: () => void
@@ -7,7 +7,7 @@ interface Props {
 
 const machineIcons = [Gamepad2, DoorClosed, BatteryCharging, Ruler, Fan, Trophy, Lamp, Cookie]
 
-const slides = [
+const slides: GuideSlide[] = [
   {
     kicker: 'WELCOME TO THE REPAIR SHOP',
     title: 'Customers bring you broken machines',
@@ -66,32 +66,5 @@ const slides = [
 
 /** Five cards that explain the repair steps. Opens on the first visit and from the help button. */
 export function RepairTutorial({ onClose }: Props) {
-  const [index, setIndex] = useState(0)
-  const slide = slides[index]
-  const last = index === slides.length - 1
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-      if (event.key === 'ArrowRight') setIndex((current) => Math.min(slides.length - 1, current + 1))
-      if (event.key === 'ArrowLeft') setIndex((current) => Math.max(0, current - 1))
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  return <div className="rs-tut-backdrop">
-    <div className="rs-tut" role="dialog" aria-modal="true" aria-labelledby="rs-tut-title">
-      <button className="rs-tut__close" onClick={onClose} aria-label="Close the guide"><X size={18} /></button>
-      <div key={index} className="rs-tut__stage">{slide.art}</div>
-      <p className="rs-kicker">{slide.kicker}</p>
-      <h2 id="rs-tut-title">{slide.title}</h2>
-      <p className="rs-tut__text">{slide.text}</p>
-      <div className="rs-tut__nav">
-        <button className="rs-secondary" onClick={() => setIndex(index - 1)} disabled={index === 0}><ArrowLeft size={16} /> BACK</button>
-        <div className="rs-tut__dots" aria-hidden="true">{slides.map((_, dot) => <i key={dot} className={dot === index ? 'is-on' : ''} />)}</div>
-        <button className="rs-primary" autoFocus onClick={() => (last ? onClose() : setIndex(index + 1))}>{last ? <>START REPAIRING <Wrench size={16} /></> : <>NEXT <ArrowRight size={16} /></>}</button>
-      </div>
-    </div>
-  </div>
+  return <ActivityGuide slides={slides} finish={<>START REPAIRING <Wrench size={16} /></>} onClose={onClose} />
 }

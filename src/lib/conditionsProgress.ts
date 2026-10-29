@@ -25,7 +25,7 @@ function records<T>(value: unknown, valid: (item: Partial<T>) => boolean): T[] {
 
 const repairSteps = [['stampMisses', 'Naming the bug'], ['locateMisses', 'Finding the line'], ['fixMisses', 'Choosing the fix'], ['verifyFails', 'Passing every test']] as const
 
-/** Make it work: tickets fixed and the step that caused the most retries. */
+/** Repair Shop: tickets fixed and the step that caused the most retries. */
 export function repairProgress(progress: SessionProgress | null) {
   const fixed = ids(progress?.repairTickets, repairTickets.length)
   const log = records<RepairLogEntry>(progress?.repairLog, (entry) => Number.isInteger(entry.ticket) && typeof entry.at === 'number')

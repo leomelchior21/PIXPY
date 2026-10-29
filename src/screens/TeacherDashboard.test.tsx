@@ -114,7 +114,7 @@ describe('TeacherDashboard', () => {
     expect(screen.getByText('1 / 1 matched Python', { exact: false })).toBeInTheDocument()
     expect(screen.getByTitle('Intro: complete')).toBeInTheDocument()
     expect(screen.getByTitle('Live flow: complete')).toBeInTheDocument()
-    expect(screen.getByTitle('MAKE IT WORK')).toBeInTheDocument()
+    expect(screen.getByTitle('REPAIR SHOP')).toBeInTheDocument()
     expect(screen.queryByText('Last check: Logic error')).not.toBeInTheDocument()
   })
 

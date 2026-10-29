@@ -1,3 +1,4 @@
+import { Minus, Plus, Scan } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { RepairMachineId } from '../../../data/repairShop'
 import type { RepairSceneHandle, StageStyle, StageView } from './repairScene'
@@ -72,5 +73,10 @@ export function RepairStage({ machine, view, style, label, fallback, overlay }: 
     {mode !== 'flat' && <canvas ref={canvasRef} className="rs-stage__canvas" />}
     {mode === 'loading' && <p className="rs-stage__loading">Wheeling the machine in…</p>}
     {mode === 'flat' ? fallback : overlay}
+    {mode === '3d' && <div className="rs-stage__view" role="group" aria-label="Camera">
+      <button onClick={() => handle.current?.zoomBy(0.8)} aria-label="Zoom in"><Plus size={16} /></button>
+      <button onClick={() => handle.current?.zoomBy(1.25)} aria-label="Zoom out"><Minus size={16} /></button>
+      <button onClick={() => handle.current?.resetView()} aria-label="Reset the view"><Scan size={15} /></button>
+    </div>}
   </div>
 }

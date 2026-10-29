@@ -273,3 +273,44 @@
 
 /* The app forces its UI font on most elements; tower code and slots stay monospace. */
 .mc-screen .mc-tower.mc-tower text, .mc-screen .mc-code .mc-slot.mc-slot, .mc-screen .mc-input.mc-input label b, .mc-win .mc-map.mc-map .mc-map__seg span, .mc-screen .mc-map.mc-map .mc-map__seg span { font-family: 'IBM Plex Mono', monospace !important; }
+
+/* Pictures inside the intro guide. */
+.mc-tut { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 16px; width: 100%; color: #fff; font-family: 'IBM Plex Mono', monospace; }
+.mc-tut--tower { flex-direction: column; gap: 8px; }
+.mc-tut__ball { display: grid; place-items: center; width: 38px; height: 38px; border: 2px solid #fff; border-radius: 50%; color: #17181d; background: #a994ff; font-weight: 800; animation: mc-tut-drop 2.4s cubic-bezier(.5, 0, .5, 1) infinite; }
+.mc-tut__gates { display: grid; gap: 4px; justify-items: center; }
+.mc-tut__gates code, .mc-tut pre code { padding: 3px 10px; border: 1px solid #ffffff26; border-radius: 6px; color: #e8ecf4; background: #1e2330; font-size: 13px; }
+.mc-tut__gates code.is-hit { border-color: #5fd38a; box-shadow: 0 0 0 2px #5fd38a44; }
+.mc-tut__bins { display: flex; gap: 8px; }
+.mc-tut__bins span { min-width: 70px; padding: 8px 10px; border: 2px dashed #ffffff40; border-radius: 0 0 12px 12px; color: #c9c3b4; font-size: 13px; font-weight: 700; text-align: center; }
+.mc-tut__bins span.is-hit { border-style: solid; border-color: #5fd38a; color: #17181d; background: #5fd38a; animation: mc-tut-land 2.4s ease infinite; }
+.mc-tut pre { display: grid; gap: 3px; margin: 0; white-space: pre; }
+.mc-tut pre code { display: block; border-color: transparent; background: none; }
+.mc-tut pre code b { margin-left: 10px; padding: 1px 6px; border-radius: 4px; font-size: 10px; }
+.mc-tut pre code.is-true { border-color: #5fd38a80; background: #5fd38a1f; }
+.mc-tut pre code.is-true b { color: #0f2a17; background: #5fd38a; }
+.mc-tut pre code.is-false b { color: #3a0a12; background: #ff8fa1; }
+.mc-tut pre code.is-path { color: #fff; background: #ffffff10; }
+.mc-tut__out { display: grid; gap: 4px; min-width: 120px; padding: 10px 12px; border: 2px solid #2b2724; border-radius: 10px; background: #0c120e; }
+.mc-tut__out small { color: #9c947f; font-size: 10px; }
+.mc-tut__out b { color: #8dffb0; font-size: 15px; }
+.mc-tut__out em { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; color: #ffb347; font-size: 11px; font-style: normal; font-weight: 800; animation: mc-tut-pulse 1.2s ease-in-out infinite; }
+.mc-tut__out em.is-good { color: #6cf09a; animation: none; }
+.mc-tut--map { flex-direction: column; gap: 6px; }
+.mc-tut__bar { display: flex; width: min(380px, 100%); height: 34px; overflow: hidden; border: 2px solid #fff; border-radius: 8px; }
+.mc-tut__bar i { display: grid; place-items: center; color: #17181d; font-size: 12px; font-style: normal; font-weight: 800; animation: mc-tut-grow .6s ease both; }
+.mc-tut__bar i:nth-child(2) { animation-delay: .2s; }
+.mc-tut__bar i:nth-child(3) { animation-delay: .4s; }
+.mc-tut__scale { display: flex; justify-content: space-between; width: min(380px, 100%); color: #c9c3b4; font-size: 11px; }
+.mc-tut__stepper { display: flex; align-items: center; overflow: hidden; border: 2px solid #fff; border-radius: 10px; }
+.mc-tut__stepper span, .mc-tut__stepper b { display: grid; place-items: center; min-width: 38px; height: 38px; font-size: 16px; }
+.mc-tut__stepper b { min-width: 56px; color: #17181d; background: #fff; }
+.mc-tut__drop, .mc-tut__build { display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 10px; color: #17181d; background: #a994ff; font-size: 12px; font-weight: 800; }
+.mc-tut__drop { background: #ffcb47; animation: mc-tut-pulse 1.2s ease-in-out infinite; }
+@keyframes mc-tut-drop { 0% { transform: translateY(-14px); opacity: 0; } 20% { opacity: 1; } 60%, 100% { transform: translateY(0); } }
+@keyframes mc-tut-land { 0%, 55% { transform: scale(1); } 65% { transform: scale(1.12); } 80%, 100% { transform: scale(1); } }
+@keyframes mc-tut-grow { from { flex-grow: 0; opacity: 0; } }
+@keyframes mc-tut-pulse { 50% { transform: scale(1.06); } }
+.mc-help { display: grid; place-items: center; width: 38px; height: 38px; margin-left: 10px; border: 2px solid var(--mc-ink); border-radius: 9px; color: var(--mc-ink); background: #fff; box-shadow: 2px 2px 0 var(--mc-ink); cursor: pointer; }
+.mc-help:hover { background: #efe9ff; }
+.guide-backdrop .mc-tut, .guide-backdrop .mc-tut * { font-family: 'IBM Plex Mono', monospace !important; }

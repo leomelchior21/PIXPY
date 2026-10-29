@@ -55,9 +55,10 @@ const missions: Record<Step, { title: string; text: (variable: string) => string
   done: { title: 'Ticket closed', text: () => 'Every test passed. The customer is happy.' },
 }
 
-const styleKey = 'pixpy.repair-view.v1'
+// The realistic 3D view comes first; ASCII art is the alternative.
+const styleKey = 'pixpy.repair-view.v2'
 function savedStyle(): StageStyle {
-  try { return localStorage.getItem(styleKey) === 'real' ? 'real' : 'ascii' } catch { return 'ascii' }
+  try { return localStorage.getItem(styleKey) === 'ascii' ? 'ascii' : 'real' } catch { return 'real' }
 }
 const stampHints: Record<BugKind, string> = {
   syntax: 'No line ran at all.',
@@ -139,7 +140,7 @@ export function RepairShop({ progress, onProgress, onBack }: Props) {
 function Toolbar({ onBack, onHelp, counter, children }: { onBack: () => void; onHelp: () => void; counter: ReactNode; children: ReactNode }) {
   return <header className="rs-toolbar">
     <button className="rs-back" onClick={onBack} aria-label="Back to Conditions"><ArrowLeft size={17} /><span>Conditions</span></button>
-    <div className="rs-brand"><span><Wrench size={20} /></span><div><b>MAKE IT WORK</b><small>THE REPAIR SHOP</small></div></div>
+    <div className="rs-brand"><span><Wrench size={20} /></span><div><b>REPAIR SHOP</b><small>FIND AND FIX THE BUGS</small></div></div>
     {children}
     <div className="rs-counter">{counter}</div>
     <button className="rs-help" onClick={onHelp} aria-label="How the repair shop works"><CircleHelp size={18} /><span>How it works</span></button>
@@ -415,8 +416,8 @@ function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onHel
         <RepairStage machine={ticket.machine} view={stageView} style={stageStyle} label={`${meta.label}: ${status.text.toLowerCase()}`}
           fallback={<FlatMachine meta={meta} machine={machine} broken={broken} lastRun={lastRun} reproInput={reproInput} draft={draft} benchInput={benchInput} step={step} variable={ticket.variable} stamp={stampBadge} />}
           overlay={<>
-            <div className="rs-stage__style" role="group" aria-label="Machine view">{(['ascii', 'real'] as const).map((option) => <button key={option} aria-pressed={stageStyle === option} onClick={() => chooseStyle(option)}>{option === 'ascii' ? 'ASCII' : '3D'}</button>)}</div>
-            <div className="rs-stage__hint" aria-hidden="true"><Rotate3d size={13} /> drag</div>
+            <div className="rs-stage__style" role="group" aria-label="Machine view">{(['real', 'ascii'] as const).map((option) => <button key={option} aria-pressed={stageStyle === option} onClick={() => chooseStyle(option)}>{option === 'ascii' ? 'ASCII' : '3D'}</button>)}</div>
+            <div className="rs-stage__hint" aria-hidden="true"><Rotate3d size={13} /> drag to turn · pinch to zoom</div>
             {stampBadge}
           </>} />
         <footer className="rs-story__readout">

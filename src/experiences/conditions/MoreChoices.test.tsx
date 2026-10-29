@@ -7,7 +7,7 @@ import { MoreChoices } from './MoreChoices'
 
 let latest: SessionProgress
 function Harness({ initial }: { initial?: SessionProgress }) {
-  const [progress, setProgress] = useState<SessionProgress>(() => initial ?? createSession('Maya'))
+  const [progress, setProgress] = useState<SessionProgress>(() => ({ ...(initial ?? createSession('Maya')), moreChoiceTutorialSeen: initial?.moreChoiceTutorialSeen ?? true }))
   latest = progress
   return <MoreChoices progress={progress} onProgress={setProgress} onBack={() => {}} />
 }
@@ -17,6 +17,17 @@ const setValue = (value: number) => fireEvent.change(screen.getByRole('slider'),
 const teacher = { ...createSession('Leo', 'leleomaker', true) }
 
 describe('More than one choice: the sorting tower', () => {
+  it('opens the intro on the first visit and again from the help button', () => {
+    render(<Harness initial={{ ...createSession('Maya'), moreChoiceTutorialSeen: false }} />)
+    expect(screen.getByRole('dialog', { name: 'Drop a value, watch where it lands' })).toBeInTheDocument()
+    for (let step = 0; step < 4; step += 1) click(/NEXT/)
+    click(/START SORTING/)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(latest.moreChoiceTutorialSeen).toBe(true)
+    click('How the sorting tower works')
+    expect(screen.getByRole('dialog', { name: 'Drop a value, watch where it lands' })).toBeInTheDocument()
+  })
+
   it('rewards finding two messages from separate ifs and reveals the map', async () => {
     render(<Harness />)
     expect(screen.getByRole('heading', { name: 'Two at once?' })).toBeInTheDocument()

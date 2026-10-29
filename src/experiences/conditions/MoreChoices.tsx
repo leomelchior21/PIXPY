@@ -1,10 +1,11 @@
-import { ArrowDownUp, ArrowLeft, ArrowRight, Check, Lightbulb, Minus, MoveDown, Plus, RotateCcw, ScanLine, Sparkles, Split, Trophy, X } from 'lucide-react'
+import { ArrowDownUp, ArrowLeft, ArrowRight, Check, CircleHelp, Lightbulb, Minus, MoveDown, Plus, RotateCcw, ScanLine, Sparkles, Split, Trophy, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { PythonCode } from '../../components/PythonCode'
 import { chainComplete, chainMap, chainProgram, firstMismatch, moreChoiceLevels, runChain, unreachableMessages, type ChainLine, type DecisionChain, type MapSegment, type MoreChoiceLevel } from '../../data/moreChoices'
 import type { DecisionRun } from '../../lib/decisionTracer'
 import { completeActivity } from '../../session/progressSession'
 import type { MoreChoiceEvent, SessionProgress } from '../../types'
+import { MoreChoicesGuide } from './MoreChoicesGuide'
 import './moreChoices.css'
 
 interface Props {
@@ -71,6 +72,7 @@ export function MoreChoices({ progress, onProgress, onBack }: Props) {
   const nextOpen = moreChoiceLevels.findIndex((level) => !solved.includes(level.id))
   const [index, setIndex] = useState(() => Math.max(0, nextOpen))
   const [finished, setFinished] = useState(() => nextOpen === -1)
+  const [guide, setGuide] = useState(() => !progress.moreChoiceTutorialSeen)
   const progressRef = useRef(progress)
   useEffect(() => { progressRef.current = progress }, [progress])
   const accessible = (i: number) => progress.isTeacher || solved.includes(moreChoiceLevels[i].id) || i === nextOpen
@@ -84,6 +86,16 @@ export function MoreChoices({ progress, onProgress, onBack }: Props) {
     onProgress(updated)
   }
 
+  const closeGuide = () => {
+    setGuide(false)
+    if (progressRef.current.moreChoiceTutorialSeen) return
+    const updated = { ...progressRef.current, moreChoiceTutorialSeen: true }
+    progressRef.current = updated
+    onProgress(updated)
+  }
+  const openGuide = () => setGuide(true)
+  const tutorial = guide && <MoreChoicesGuide onClose={closeGuide} />
+
   const next = () => {
     const levels = progressRef.current.moreChoiceLevels
     if (index === moreChoiceLevels.length - 1) { if (levels.length === moreChoiceLevels.length) setFinished(true); else onBack(); return }
@@ -91,7 +103,7 @@ export function MoreChoices({ progress, onProgress, onBack }: Props) {
   }
 
   if (finished) return <main className="mc-screen">
-    <Toolbar onBack={onBack} counter={<><Trophy size={18} /> Complete!</>} />
+    <Toolbar onBack={onBack} onHelp={openGuide} counter={<><Trophy size={18} /> Complete!</>} />
     <LevelNav index={-1} solved={solved} accessible={accessible} onSelect={(i) => { setIndex(i); setFinished(false) }} />
     <section className="mc-finish">
       <div className="mc-finish__card">
@@ -102,17 +114,21 @@ export function MoreChoices({ progress, onProgress, onBack }: Props) {
         <div className="mc-finish__actions"><button className="mc-primary" onClick={() => { setIndex(0); setFinished(false) }}><RotateCcw size={17} /> PLAY AGAIN</button><button className="mc-secondary" onClick={onBack}>BACK TO CONDITIONS <ArrowRight size={17} /></button></div>
       </div>
     </section>
+    {tutorial}
   </main>
 
-  return <ChoiceLevel key={moreChoiceLevels[index].id} level={moreChoiceLevels[index]} index={index} solved={solved} accessible={accessible}
-    onSelect={(i) => { if (accessible(i)) setIndex(i) }} onBack={onBack} onLog={log} onNext={next} />
+  return <>
+    <ChoiceLevel key={moreChoiceLevels[index].id} level={moreChoiceLevels[index]} index={index} solved={solved} accessible={accessible}
+      onSelect={(i) => { if (accessible(i)) setIndex(i) }} onBack={onBack} onHelp={openGuide} onLog={log} onNext={next} />
+    {tutorial}
+  </>
 }
 
-function Toolbar({ onBack, counter }: { onBack: () => void; counter: React.ReactNode }) {
+function Toolbar({ onBack, onHelp, counter }: { onBack: () => void; onHelp: () => void; counter: React.ReactNode }) {
   return <header className="mc-toolbar">
     <button className="mc-back" onClick={onBack}><ArrowLeft size={17} /> Conditions</button>
     <div className="mc-brand"><span><Split size={20} /></span><div><b>MORE THAN ONE CHOICE?</b><small>THE SORTING TOWER</small></div></div>
-    <div className="mc-counter">{counter}</div>
+    <div className="mc-counter">{counter}<button className="mc-help" onClick={onHelp} aria-label="How the sorting tower works"><CircleHelp size={18} /></button></div>
   </header>
 }
 
@@ -133,6 +149,7 @@ interface LevelProps {
   accessible: (i: number) => boolean
   onSelect: (i: number) => void
   onBack: () => void
+  onHelp: () => void
   onLog: (event: Omit<MoreChoiceEvent, 'at'>, solved?: boolean) => void
   onNext: () => void
 }
@@ -140,7 +157,7 @@ interface LevelProps {
 type Slot = 'q0' | 'q1' | 'm0' | 'm1' | 'm2'
 const slotOrder: Slot[] = ['q0', 'm0', 'q1', 'm1', 'm2']
 
-function ChoiceLevel({ level, index, solved, accessible, onSelect, onBack, onLog, onNext }: LevelProps) {
+function ChoiceLevel({ level, index, solved, accessible, onSelect, onBack, onHelp, onLog, onNext }: LevelProps) {
   const builder = level.mode === 'build' || level.mode === 'convert' || level.mode === 'solo'
   const [chain, setChain] = useState<DecisionChain>(level.chain)
   const [value, setValue] = useState(level.start)
@@ -311,7 +328,7 @@ function ChoiceLevel({ level, index, solved, accessible, onSelect, onBack, onLog
       : <button className="mc-primary" disabled={!ready || busy || level.mode === 'predict' && !prediction} onClick={drop}><MoveDown size={17} /> {dropping ? 'DROPPING…' : `DROP ${dropValue}`}</button>
 
   return <main className={`mc-screen mc-mode--${level.mode}`}>
-    <Toolbar onBack={onBack} counter={<><span>LEVEL</span><b>{String(level.id).padStart(2, '0')}</b><small>/ {String(moreChoiceLevels.length).padStart(2, '0')}</small></>} />
+    <Toolbar onBack={onBack} onHelp={onHelp} counter={<><span>LEVEL</span><b>{String(level.id).padStart(2, '0')}</b><small>/ {String(moreChoiceLevels.length).padStart(2, '0')}</small></>} />
     <LevelNav index={index} solved={solved} accessible={accessible} onSelect={onSelect} disabled={busy} />
     <section className="mc-layout" inert={showWin}>
       <aside className="mc-mission">

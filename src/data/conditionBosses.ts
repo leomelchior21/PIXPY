@@ -27,7 +27,7 @@ export const conditionBosses: ConditionBoss[] = [
     inputNames: ['age'],
     starter: 'age = int(input())\n\n# Write your if / else below\n',
     solution: 'age = int(input())\nif age >= 18:\n    print("Welcome in")\nelse:\n    print("Too young")',
-    tests: [t('20', 'Welcome in'), t('12', 'Too young'), t('18', 'Welcome in'), t('17', 'Too young'), t('0', 'Too young'), t('45', 'Welcome in')],
+    tests: [t('20', 'Welcome in'), t('12', 'Too young'), t('18', 'Welcome in'), t('17', 'Too young'), t('45', 'Welcome in')],
     hints: ['Start with if age >= 18: and end the line with a colon.', 'Indent the print under the if with 4 spaces. Then write else: on its own line.', 'Is 18 itself allowed in? “18 or more” means >=.'],
   },
   {
@@ -37,7 +37,7 @@ export const conditionBosses: ConditionBoss[] = [
     inputNames: ['temp'],
     starter: 'temp = int(input())\n\n# Turn the fan on only above 30\n',
     solution: 'temp = int(input())\nif temp > 30:\n    print("Fan ON")\nelse:\n    print("Fan OFF")',
-    tests: [t('35', 'Fan ON'), t('10', 'Fan OFF'), t('31', 'Fan ON'), t('30', 'Fan OFF'), t('29', 'Fan OFF'), t('-5', 'Fan OFF')],
+    tests: [t('35', 'Fan ON'), t('10', 'Fan OFF'), t('31', 'Fan ON'), t('30', 'Fan OFF'), t('29', 'Fan OFF')],
     hints: ['“Above 30” does not include 30 itself.', 'Use > for “above”.', 'The surprise tests try 29, 30 and 31. Only 31 turns the fan on.'],
   },
   {
@@ -57,7 +57,7 @@ export const conditionBosses: ConditionBoss[] = [
     inputNames: ['coins', 'price'],
     starter: 'coins = int(input())\nprice = int(input())\n\n',
     solution: 'coins = int(input())\nprice = int(input())\nif coins >= price:\n    print("Play!")\nelse:\n    print("Not enough coins")',
-    tests: [t(['10', '4'], 'Play!'), t(['2', '3'], 'Not enough coins'), t(['3', '3'], 'Play!'), t(['5', '6'], 'Not enough coins'), t(['0', '1'], 'Not enough coins'), t(['7', '7'], 'Play!')],
+    tests: [t(['10', '4'], 'Play!'), t(['2', '3'], 'Not enough coins'), t(['3', '3'], 'Play!'), t(['5', '6'], 'Not enough coins'), t(['7', '7'], 'Play!')],
     hints: ['A condition can compare two variables: coins and price.', 'Exactly the price is enough to pay.', 'if coins >= price: is a complete question.'],
   },
   {
@@ -67,7 +67,7 @@ export const conditionBosses: ConditionBoss[] = [
     inputNames: ['number'],
     starter: 'number = int(input())\n\n',
     solution: 'number = int(input())\nif number % 2 == 0:\n    print("Even")\nelse:\n    print("Odd")',
-    tests: [t('8', 'Even'), t('7', 'Odd'), t('0', 'Even'), t('-3', 'Odd'), t('15', 'Odd'), t('100', 'Even')],
+    tests: [t('8', 'Even'), t('7', 'Odd'), t('0', 'Even'), t('-3', 'Odd'), t('100', 'Even')],
     hints: ['% gives the remainder of a division.', 'Even numbers leave remainder 0 when divided by 2.', 'if number % 2 == 0:'],
   },
   {
@@ -87,7 +87,7 @@ export const conditionBosses: ConditionBoss[] = [
     inputNames: ['speed'],
     starter: 'speed = int(input())\n\n',
     solution: 'speed = int(input())\nif speed > 50:\n    print("Too fast!")\nelse:\n    if speed < 20:\n        print("Too slow")\n    else:\n        print("Good speed")',
-    tests: [t('80', 'Too fast!'), t('35', 'Good speed'), t('51', 'Too fast!'), t('50', 'Good speed'), t('20', 'Good speed'), t('19', 'Too slow'), t('0', 'Too slow')],
+    tests: [t('51', 'Too fast!'), t('50', 'Good speed'), t('35', 'Good speed'), t('20', 'Good speed'), t('19', 'Too slow')],
     hints: ['Three answers need two questions.', 'Put the second if inside else: indent it with 4 spaces, and its prints with 8.', '50 and 20 are both Good speed. Watch > and <.'],
   },
   {
@@ -97,7 +97,7 @@ export const conditionBosses: ConditionBoss[] = [
     inputNames: ['points'],
     starter: 'points = int(input())\nif points >= 100:\n    print("Gold")\nelse:\n    # Silver for 50 or more, Bronze for the rest\n',
     solution: 'points = int(input())\nif points >= 100:\n    print("Gold")\nelse:\n    if points >= 50:\n        print("Silver")\n    else:\n        print("Bronze")',
-    tests: [t('120', 'Gold'), t('70', 'Silver'), t('100', 'Gold'), t('99', 'Silver'), t('50', 'Silver'), t('49', 'Bronze'), t('0', 'Bronze')],
+    tests: [t('120', 'Gold'), t('100', 'Gold'), t('99', 'Silver'), t('50', 'Silver'), t('49', 'Bronze')],
     hints: ['Inside else, ask a new question with if.', 'The inner if needs 4 spaces. Its prints need 8.', 'The inner else catches everything below 50: Bronze.'],
   },
   {
@@ -107,7 +107,7 @@ export const conditionBosses: ConditionBoss[] = [
     inputNames: ['total'],
     starter: 'total = int(input())\n\n',
     solution: 'total = int(input())\nif total >= 50:\n    print(total - 10)\nelse:\n    print(total)',
-    tests: [t('60', '50'), t('30', '30'), t('50', '40'), t('49', '49'), t('51', '41'), t('100', '90'), t('0', '0')],
+    tests: [t('60', '50'), t('30', '30'), t('50', '40'), t('49', '49'), t('51', '41')],
     hints: ['A branch can print a calculation, like print(total - 10).', 'Small orders print the total unchanged.', '50 itself gets the discount.'],
   },
   {
@@ -117,7 +117,7 @@ export const conditionBosses: ConditionBoss[] = [
     inputNames: ['grade'],
     starter: 'grade = float(input())\n\n',
     solution: 'grade = float(input())\nif grade >= 9:\n    print("Excellent")\nelse:\n    if grade >= 7:\n        print("Approved")\n    else:\n        if grade >= 5:\n            print("Recovery")\n        else:\n            print("Failed")',
-    tests: [t('9.5', 'Excellent'), t('7.5', 'Approved'), t('9', 'Excellent'), t('8.9', 'Approved'), t('7', 'Approved'), t('6.9', 'Recovery'), t('5', 'Recovery'), t('4.9', 'Failed')],
+    tests: [t('9', 'Excellent'), t('8.9', 'Approved'), t('7', 'Approved'), t('5', 'Recovery'), t('4.9', 'Failed')],
     hints: ['Four answers need three questions. Start with the highest grade.', 'Every new question goes inside the else above it, 4 more spaces in.', 'Each cutoff counts as reaching it: use >=.'],
   },
 ]

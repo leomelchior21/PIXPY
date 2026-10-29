@@ -19,11 +19,11 @@ describe('conditions final bosses', () => {
     }
   })
 
-  it('aim tests at both sides of every cutoff', () => {
+  it('use exactly five tests, aimed at both sides of every cutoff', () => {
     for (const boss of conditionBosses) {
       const outcomes = new Set(boss.tests.map((test) => test.expected))
       expect(outcomes.size, boss.name).toBeGreaterThanOrEqual(2)
-      expect(boss.tests.length).toBeGreaterThanOrEqual(5)
+      expect(boss.tests, boss.name).toHaveLength(5)
     }
   })
 

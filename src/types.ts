@@ -88,6 +88,7 @@ export interface SessionProgress {
   repairTutorialSeen: boolean
   moreChoiceLevels: number[]
   moreChoiceLog: MoreChoiceEvent[]
+  moreChoiceTutorialSeen: boolean
   conditionBosses: number[]
   conditionBossLog: BossAttackEvent[]
   blackBoxLevels: number[]

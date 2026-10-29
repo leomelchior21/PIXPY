@@ -66,7 +66,7 @@ describe('PixPy classroom session', () => {
     await user.click(await screen.findByRole('button', { name: 'Open Conditions' }))
 
     expect(screen.getByRole('heading', { name: 'Conditions' })).toBeInTheDocument()
-    for (const [index, title] of ['BACKROOM RUN', 'HOW THE COMPUTER MAKES A CHOICE', 'IF/ELSE', 'MAKE IT WORK', 'MORE THAN ONE CHOICE?', 'Final Bosses'].entries()) {
+    for (const [index, title] of ['BACKROOM RUN', 'HOW THE COMPUTER MAKES A CHOICE', 'IF/ELSE', 'REPAIR SHOP', 'MORE THAN ONE CHOICE?', 'Final Bosses'].entries()) {
       const number = String(index + 1).padStart(2, '0')
       const button = screen.getByRole('button', { name: new RegExp(`^${number} ${title.replace('?', '\\?')}:`, 'i') })
       expect(button).toBeEnabled()

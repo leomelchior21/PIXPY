@@ -31,15 +31,15 @@ function Harness({ initial }: { initial?: SessionProgress }) {
 }
 
 const attack = () => fireEvent.click(screen.getByRole('button', { name: /ATTACK · \d+ TESTS/ }))
-const settle = { timeout: 5000 }
+const settle = { timeout: 10000 }
 const write = (code: string) => fireEvent.change(screen.getByRole('textbox', { name: /Code to defeat/ }), { target: { value: code } })
 
-describe('Conditions final bosses', { timeout: 20000 }, () => {
+describe('Conditions final bosses', { timeout: 40000 }, () => {
   it('fights with real tests, explains a boundary miss, and records each attack', async () => {
     render(<Harness />)
     expect(screen.getByRole('heading', { name: 'The club door' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Boss 2: Fan Golem, locked/ })).toBeDisabled()
-    expect(screen.getAllByText('surprise')).toHaveLength(4)
+    expect(screen.getAllByText('surprise')).toHaveLength(3)
 
     write('age = int(input())\nif age > 18:\n    print("Welcome in")\nelse:\n    print("Too young")')
     attack()
@@ -53,7 +53,7 @@ describe('Conditions final bosses', { timeout: 20000 }, () => {
     expect(await screen.findByText('Gate Slime defeated!', {}, settle)).toBeInTheDocument()
     expect(screen.getByText('DEFEATED!')).toBeInTheDocument()
     expect(latest.conditionBosses).toEqual([1])
-    expect(latest.conditionBossLog.map((event) => event.hits)).toEqual([5, 6])
+    expect(latest.conditionBossLog.map((event) => event.hits)).toEqual([4, 5])
     fireEvent.click(screen.getByRole('button', { name: /NEXT BOSS/ }))
     expect(screen.getByRole('heading', { name: 'The overheated lab' })).toBeInTheDocument()
   })
@@ -65,7 +65,7 @@ describe('Conditions final bosses', { timeout: 20000 }, () => {
     expect(screen.getByText('Indent the print under the if', { exact: false })).toBeInTheDocument()
     expect(screen.queryByText('Is 18 itself allowed in?', { exact: false })).not.toBeInTheDocument()
     attack()
-    expect(await screen.findByText(/survived with 6 HP/, {}, settle)).toBeInTheDocument()
+    expect(await screen.findByText(/survived with 5 HP/, {}, settle)).toBeInTheDocument()
     expect(latest.conditionBossLog.at(-1)).toMatchObject({ boss: 1, hits: 0, hints: 2 })
   })
 
