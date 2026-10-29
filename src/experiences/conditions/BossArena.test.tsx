@@ -25,7 +25,7 @@ vi.mock('../../components/CodeEditor', () => ({
 
 let latest: SessionProgress
 function Harness({ initial }: { initial?: SessionProgress }) {
-  const [progress, setProgress] = useState<SessionProgress>(() => initial ?? createSession('Maya'))
+  const [progress, setProgress] = useState<SessionProgress>(() => ({ ...(initial ?? createSession('Maya')), bossTutorialSeen: initial?.bossTutorialSeen ?? true }))
   latest = progress
   return <BossArena progress={progress} onProgress={setProgress} onBack={() => {}} />
 }
@@ -35,6 +35,32 @@ const settle = { timeout: 10000 }
 const write = (code: string) => fireEvent.change(screen.getByRole('textbox', { name: /Code to defeat/ }), { target: { value: code } })
 
 describe('Conditions final bosses', { timeout: 40000 }, () => {
+  it('builds a fighter in the intro, then shows it in the arena', () => {
+    render(<Harness initial={{ ...createSession('Maya'), bossTutorialSeen: false }} />)
+    expect(screen.getByRole('dialog', { name: 'Create your fighter' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('radio', { name: 'Cat' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Violet' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Fighter name' }), { target: { value: 'Zed' } })
+    fireEvent.click(screen.getByRole('button', { name: /READY/ }))
+    for (const title of ['Your fighter against ten bosses', 'Right answers hit, wrong answers hurt', 'Two tests shown, three surprises', 'Each round, you write more', 'Ten bosses wait in the arena']) {
+      expect(screen.getByRole('dialog', { name: title })).toBeInTheDocument()
+      if (title !== 'Ten bosses wait in the arena') fireEvent.click(screen.getByRole('button', { name: /NEXT/ }))
+    }
+    fireEvent.click(screen.getByRole('button', { name: /ENTER THE ARENA/ }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(latest).toMatchObject({ bossTutorialSeen: true, bossFighter: { base: 'cat', color: 4, name: 'Zed' } })
+    expect(screen.getByRole('img', { name: 'Zed, your fighter' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'How the arena works' }))
+    expect(screen.getByRole('dialog', { name: 'Create your fighter' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Fighter name' })).toHaveValue('Zed')
+  })
+
+  it('starts round 1 with the if and else written, missing only the last print', () => {
+    render(<Harness />)
+    expect(screen.getByText('ROUND 1 · WRITE THE LAST PRINT')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /Code to defeat/ })).toHaveValue('age = int(input())\nif age >= 18:\n    print("Welcome in")\nelse:\n    # Write the print for anyone younger\n')
+  })
+
   it('fights with real tests, explains a boundary miss, and records each attack', async () => {
     render(<Harness />)
     expect(screen.getByRole('heading', { name: 'The club door' })).toBeInTheDocument()
@@ -47,6 +73,8 @@ describe('Conditions final bosses', { timeout: 40000 }, () => {
     expect(screen.getByText('WHAT HAPPENED IN TEST 3')).toBeInTheDocument()
     expect(screen.getByText('18 > 18 → False')).toBeInTheDocument()
     expect(screen.getByRole('meter', { name: 'Gate Slime health' })).toHaveAttribute('aria-valuenow', '1')
+    // The one failed test is one hit on the student's fighter.
+    expect(screen.getByRole('meter', { name: 'Maya health' })).toHaveAttribute('aria-valuenow', '4')
 
     write('age = int(input())\nif age >= 18:\n    print("Welcome in")\nelse:\n    print("Too young")')
     attack()
@@ -62,8 +90,8 @@ describe('Conditions final bosses', { timeout: 40000 }, () => {
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: /Need a hint/ }))
     fireEvent.click(screen.getByRole('button', { name: /Another hint/ }))
-    expect(screen.getByText('Indent the print under the if', { exact: false })).toBeInTheDocument()
-    expect(screen.queryByText('Is 18 itself allowed in?', { exact: false })).not.toBeInTheDocument()
+    expect(screen.getByText('Indent the print under else', { exact: false })).toBeInTheDocument()
+    expect(screen.queryByText('Text needs quotes', { exact: false })).not.toBeInTheDocument()
     attack()
     expect(await screen.findByText(/survived with 5 HP/, {}, settle)).toBeInTheDocument()
     expect(latest.conditionBossLog.at(-1)).toMatchObject({ boss: 1, hits: 0, hints: 2 })

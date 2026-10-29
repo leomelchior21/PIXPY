@@ -27,6 +27,21 @@ describe('conditions final bosses', () => {
     }
   })
 
+  it('gives less help each round, until students write the whole decision from round 4', () => {
+    const [first, second, third, ...rest] = conditionBosses
+    expect(first.starter).toContain('if age >= 18:')
+    expect(first.starter).toContain('else:')
+    expect(first.starter).toContain('print("Welcome in")')
+    expect(first.starter).not.toContain('Too young')
+    expect(second.starter).toContain('if temp > 30:')
+    expect(second.starter).toContain('else:')
+    expect(second.starter).not.toContain('print(')
+    expect(third.starter).toContain('if code == 4729:')
+    expect(third.starter).not.toContain('else')
+    expect(third.starter).not.toContain('print(')
+    for (const boss of rest) expect(boss.starter, boss.name).not.toMatch(/\bif\b|else|print\(/)
+  })
+
   it('ignores input prompts and accepts equal numbers', () => {
     expect(cleanBossOutput('age = int(input("Age: "))', 'Age: Welcome in')).toBe('Welcome in')
     expect(bossOutputMatches('40.0', '40')).toBe(true)

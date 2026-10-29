@@ -15,6 +15,7 @@ import {
   type IfElseLearningEvent,
   type BossAttackEvent,
   type MoreChoiceEvent,
+  type BossFighter,
   type RepairLogEntry,
 } from '../types'
 
@@ -44,6 +45,8 @@ export const emptyProgress: Omit<SessionProgress, 'name' | 'username' | 'isTeach
   moreChoiceTutorialSeen: false,
   conditionBosses: [],
   conditionBossLog: [],
+  bossTutorialSeen: false,
+  bossFighter: null,
   blackBoxLevels: [],
   blackBoxQuizAnswers: [],
   blackBoxQuizStartedAt: null,
@@ -145,6 +148,8 @@ function normalizeProgress(parsed: Partial<SessionProgress>): SessionProgress | 
     moreChoiceTutorialSeen: parsed.moreChoiceTutorialSeen === true || choiceLevels.length > 0,
     conditionBosses: bosses,
     conditionBossLog: cleanBossLog(parsed.conditionBossLog),
+    bossTutorialSeen: parsed.bossTutorialSeen === true || bosses.length > 0,
+    bossFighter: cleanBossFighter(parsed.bossFighter),
     blackBoxQuizAnswers,
     blackBoxQuizStartedAt: cleanTimestamp(parsed.blackBoxQuizStartedAt),
     blackBoxQuizElapsedMs: cleanElapsed(parsed.blackBoxQuizElapsedMs),
@@ -251,6 +256,15 @@ function cleanIdList(value: unknown, maximum: number): number[] {
 
 function isCount(value: unknown, maximum = 100000): value is number {
   return Number.isInteger(value) && (value as number) >= 0 && (value as number) <= maximum
+}
+
+function cleanBossFighter(value: unknown): BossFighter | null {
+  if (!value || typeof value !== 'object') return null
+  const fighter = value as Partial<BossFighter>
+  if (!['bot', 'blob', 'cat', 'wizard'].includes(fighter.base as string)) return null
+  const color = Number.isInteger(fighter.color) && fighter.color! >= 0 && fighter.color! < 6 ? fighter.color! : 0
+  const name = typeof fighter.name === 'string' ? fighter.name.trim().slice(0, 12) : ''
+  return { base: fighter.base as BossFighter['base'], color, name: name || 'Coder' }
 }
 
 function cleanRepairLog(value: unknown): RepairLogEntry[] {

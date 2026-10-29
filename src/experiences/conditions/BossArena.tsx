@@ -1,12 +1,15 @@
-import { ArrowLeft, ArrowRight, Check, Crown, Lightbulb, LoaderCircle, Lock, RotateCcw, Skull, Swords, Trophy, X } from 'lucide-react'
-import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { ArrowLeft, ArrowRight, Check, CircleHelp, Crown, Lightbulb, LoaderCircle, Lock, RotateCcw, Skull, Swords, Trophy, X } from 'lucide-react'
+import { memo, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
 import { bossOutputMatches, bossSprite, cleanBossOutput, conditionBosses, type ConditionBoss } from '../../data/conditionBosses'
 import { runDecisionProgram } from '../../lib/decisionTracer'
 import { runGuidedPython } from '../../lib/guidedPython'
 import { PythonRunError, pythonRunner } from '../../lib/pythonRunner'
 import { completeActivity } from '../../session/progressSession'
-import type { BossAttackEvent, SessionProgress } from '../../types'
+import type { BossAttackEvent, BossFighter, SessionProgress } from '../../types'
+import { BossIntro } from './BossIntro'
+import { defaultFighter, pixelColor } from '../../data/bossFighters'
+import { FighterSprite, MiniSprite } from './BossSprites'
 import './bossArena.css'
 
 interface Props {
@@ -20,7 +23,6 @@ interface TestCard { inputs: string[]; expected: string; status: TestStatus; got
 type Phase = 'ready' | 'attacking' | 'survived' | 'defeated'
 
 const EXAMPLES = 2
-const kindLabels: Record<ConditionBoss['kind'], string> = { write: 'WRITE THE DECISION', fix: 'FIX THE BROKEN CODE', finish: 'FINISH THE CODE' }
 
 function reducedMotion(): boolean {
   return typeof window.matchMedia !== 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -28,20 +30,6 @@ function reducedMotion(): boolean {
 
 function freshCards(boss: ConditionBoss): TestCard[] {
   return boss.tests.map((test, i) => ({ ...test, status: i < EXAMPLES ? 'waiting' : 'hidden', got: '', path: [], error: null }))
-}
-
-function pixelColor(boss: ConditionBoss, key: string): string | null {
-  switch (key) {
-    case 'o': return '#1b1d2a'
-    case 'b': return boss.palette.body
-    case 'd': return boss.palette.shade
-    case 'l': return boss.palette.light
-    case 'a': return boss.palette.accent
-    case 'w': case 't': return '#ffffff'
-    case 'p': return '#1b1d2a'
-    case 'm': return '#3b1022'
-    default: return null
-  }
 }
 
 /** The path the tracer saw, only when it agrees with the real run. */
@@ -60,6 +48,7 @@ export function BossArena({ progress, onProgress, onBack }: Props) {
   const firstOpen = conditionBosses.findIndex((boss) => !defeated.includes(boss.id))
   const [index, setIndex] = useState(() => Math.max(0, firstOpen))
   const [finished, setFinished] = useState(() => firstOpen === -1)
+  const [intro, setIntro] = useState(() => !progress.bossTutorialSeen)
   const drafts = useRef<Record<number, string>>({})
   const progressRef = useRef(progress)
   useEffect(() => { progressRef.current = progress }, [progress])
@@ -75,6 +64,16 @@ export function BossArena({ progress, onProgress, onBack }: Props) {
     onProgress(updated)
   }
 
+  const fighter = progress.bossFighter ?? defaultFighter(progress.name)
+  const closeIntro = (created: BossFighter) => {
+    setIntro(false)
+    const updated = { ...progressRef.current, bossTutorialSeen: true, bossFighter: created }
+    progressRef.current = updated
+    onProgress(updated)
+  }
+  const openIntro = () => setIntro(true)
+  const introScreen = intro && <BossIntro fighter={fighter} onClose={closeIntro} />
+
   const next = () => {
     const bosses = progressRef.current.conditionBosses
     if (bosses.length === conditionBosses.length && index === conditionBosses.length - 1) { setFinished(true); return }
@@ -83,7 +82,7 @@ export function BossArena({ progress, onProgress, onBack }: Props) {
   }
 
   if (finished) return <main className="ba-screen">
-    <Toolbar onBack={onBack} counter={<><Crown size={18} /> Champion</>} />
+    <Toolbar onBack={onBack} onHelp={openIntro} counter={<><Crown size={18} /> Champion</>} />
     <BossTrail index={-1} defeated={defeated} accessible={accessible} onSelect={(i) => { setIndex(i); setFinished(false) }} />
     <section className="ba-hall">
       <div className="ba-hall__card">
@@ -95,27 +94,23 @@ export function BossArena({ progress, onProgress, onBack }: Props) {
         <div className="ba-hall__actions"><button className="ba-primary" onClick={() => { setIndex(0); setFinished(false) }}><RotateCcw size={17} /> REMATCH</button><button className="ba-secondary" onClick={onBack}>BACK TO CONDITIONS <ArrowRight size={17} /></button></div>
       </div>
     </section>
+    {introScreen}
   </main>
 
   const boss = conditionBosses[index]
-  return <BossFight key={boss.id} boss={boss} index={index} defeated={defeated} accessible={accessible} drafts={drafts.current}
-    onSelect={(i) => { if (accessible(i)) setIndex(i) }} onBack={onBack} onRecord={record} onNext={next} />
+  return <>
+    <BossFight key={boss.id} boss={boss} fighter={fighter} index={index} defeated={defeated} accessible={accessible} drafts={drafts.current}
+      onSelect={(i) => { if (accessible(i)) setIndex(i) }} onBack={onBack} onHelp={openIntro} onRecord={record} onNext={next} />
+    {introScreen}
+  </>
 }
 
-function Toolbar({ onBack, counter }: { onBack: () => void; counter: React.ReactNode }) {
+function Toolbar({ onBack, onHelp, counter }: { onBack: () => void; onHelp: () => void; counter: React.ReactNode }) {
   return <header className="ba-toolbar">
     <button className="ba-back" onClick={onBack}><ArrowLeft size={17} /> Conditions</button>
     <div className="ba-brand"><span><Swords size={20} /></span><div><b>FINAL BOSSES</b><small>THE CONDITIONS ARENA</small></div></div>
-    <div className="ba-counter">{counter}</div>
+    <div className="ba-counter">{counter}<button className="bi-help" onClick={onHelp} aria-label="How the arena works"><CircleHelp size={18} /></button></div>
   </header>
-}
-
-function MiniSprite({ boss, size, beaten = false, locked = false }: { boss: ConditionBoss; size: number; beaten?: boolean; locked?: boolean }) {
-  const shadow = useMemo(() => bossSprite(boss.sprite).flatMap((row, y) => [...row].flatMap((key, x) => {
-    const color = pixelColor(boss, key)
-    return color ? [`${x * size}px ${y * size}px 0 ${locked ? '#2a2d3d' : color}`] : []
-  })).join(','), [boss, size, locked])
-  return <span className={`ba-mini ${beaten ? 'is-beaten' : ''}`} style={{ width: size * 16, height: size * 16 }} aria-hidden="true"><i style={{ width: size, height: size, boxShadow: shadow }} /></span>
 }
 
 /** 256 pixels that only re-render when the boss changes. */
@@ -145,22 +140,26 @@ function BossTrail({ index, defeated, accessible, onSelect, disabled = false }: 
 
 interface FightProps {
   boss: ConditionBoss
+  fighter: BossFighter
   index: number
   defeated: number[]
   accessible: (i: number) => boolean
   drafts: Record<number, string>
   onSelect: (i: number) => void
   onBack: () => void
+  onHelp: () => void
   onRecord: (event: BossAttackEvent) => void
   onNext: () => void
 }
 
-function BossFight({ boss, index, defeated, accessible, drafts, onSelect, onBack, onRecord, onNext }: FightProps) {
+function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelect, onBack, onHelp, onRecord, onNext }: FightProps) {
   const alreadyBeaten = defeated.includes(boss.id)
   const [code, setCode] = useState(() => drafts[boss.id] ?? boss.starter)
   const [cards, setCards] = useState<TestCard[]>(() => freshCards(boss))
   const [phase, setPhase] = useState<Phase>('ready')
   const [hp, setHp] = useState(boss.tests.length)
+  // The student's fighter loses one HP for every test the code fails.
+  const [heroHp, setHeroHp] = useState(boss.tests.length)
   const [shot, setShot] = useState<{ id: number; hit: boolean } | null>(null)
   const [hints, setHints] = useState(0)
   const [note, setNote] = useState<{ tone: 'info' | 'good' | 'bad'; title: string; text: string }>(() => alreadyBeaten
@@ -184,7 +183,7 @@ function BossFight({ boss, index, defeated, accessible, drafts, onSelect, onBack
     if (busy) return
     const run = ++version.current
     const tests = freshCards(boss)
-    setCards(tests); setPhase('attacking'); setHp(boss.tests.length); setShot(null)
+    setCards(tests); setPhase('attacking'); setHp(boss.tests.length); setHeroHp(boss.tests.length); setShot(null)
     setNote({ tone: 'info', title: 'Attack!', text: 'Your code runs once for every surprise test.' })
     let hits = 0
     let stopError: string | null = null
@@ -218,7 +217,7 @@ function BossFight({ boss, index, defeated, accessible, drafts, onSelect, onBack
       setShot({ id: i, hit })
       await pause(380)
       if (run !== version.current) return
-      if (hit) { hits += 1; setHp((value) => value - 1) }
+      if (hit) { hits += 1; setHp((value) => value - 1) } else setHeroHp((value) => value - 1)
       tests[i] = { ...tests[i], status: hit ? 'hit' : 'miss', got, path, error: failure }
       setCards([...tests])
       await pause(260)
@@ -238,13 +237,13 @@ function BossFight({ boss, index, defeated, accessible, drafts, onSelect, onBack
 
   const editCode = (value: string) => {
     setCode(value)
-    if (phase !== 'attacking' && phase !== 'ready') { setPhase('ready'); setHp(boss.tests.length); setCards(freshCards(boss)) }
+    if (phase !== 'attacking' && phase !== 'ready') { setPhase('ready'); setHp(boss.tests.length); setHeroHp(boss.tests.length); setCards(freshCards(boss)) }
   }
-  const resetCode = () => { version.current += 1; setCode(boss.starter); setPhase('ready'); setHp(boss.tests.length); setCards(freshCards(boss)); setShot(null) }
+  const resetCode = () => { version.current += 1; setCode(boss.starter); setPhase('ready'); setHp(boss.tests.length); setHeroHp(boss.tests.length); setCards(freshCards(boss)); setShot(null) }
   const nextHint = () => setHints((value) => Math.min(boss.hints.length, value + 1))
 
   return <main className={`ba-screen ba-phase--${phase}`}>
-    <Toolbar onBack={onBack} counter={<><span>BOSS</span><b>{String(boss.id).padStart(2, '0')}</b><small>/ {conditionBosses.length}</small></>} />
+    <Toolbar onBack={onBack} onHelp={onHelp} counter={<><span>BOSS</span><b>{String(boss.id).padStart(2, '0')}</b><small>/ {conditionBosses.length}</small></>} />
     <BossTrail index={index} defeated={defeated} accessible={accessible} onSelect={onSelect} disabled={busy} />
     <section className="ba-layout">
       <div className={`ba-arena ${shot && !shot.hit ? 'is-countered' : ''}`} style={{ '--boss': boss.palette.body, '--accent': boss.palette.accent } as CSSProperties}>
@@ -255,12 +254,24 @@ function BossFight({ boss, index, defeated, accessible, drafts, onSelect, onBack
           <div className="ba-hp__bar" role="meter" aria-label={`${boss.name} health`} aria-valuemin={0} aria-valuemax={boss.tests.length} aria-valuenow={hp}>{boss.tests.map((_, i) => <i key={i} className={i < hp ? 'is-full' : 'is-lost'} />)}</div>
           <span>HP {hp}/{boss.tests.length}</span>
         </header>
-        <div className={`ba-boss ${shot?.hit ? 'is-hit' : ''} ${shot && !shot.hit ? 'is-laughing' : ''} ${phase === 'defeated' ? 'is-defeated' : ''}`} key={phase === 'defeated' ? 'down' : 'up'} role="img" aria-label={`${boss.name}${phase === 'defeated' ? ', defeated' : ''}`}>
-          <BossSprite boss={boss} />
-          <span className="ba-boss__shadow" />
-          {shot && <span key={`dmg-${shot.id}`} className={`ba-damage ${shot.hit ? 'is-hit' : 'is-miss'}`}>{shot.hit ? '-1' : 'MISS'}</span>}
+        <div className="ba-field">
+          <div className={`ba-boss ${shot?.hit ? 'is-hit' : ''} ${shot && !shot.hit ? 'is-laughing' : ''} ${phase === 'defeated' ? 'is-defeated' : ''}`} key={phase === 'defeated' ? 'down' : 'up'} role="img" aria-label={`${boss.name}${phase === 'defeated' ? ', defeated' : ''}`}>
+            <span className="ba-boss__shadow" />
+            <BossSprite boss={boss} />
+            {shot?.hit && <span key={`dmg-${shot.id}`} className="ba-damage is-hit">-1</span>}
+          </div>
+          {/* The student's fighter: it strikes on a passed test and takes the hit on a failed one. */}
+          <div className={`ba-fighter ${shot?.hit ? 'is-striking' : ''} ${shot && !shot.hit ? 'is-hurt' : ''} ${phase === 'defeated' ? 'is-winning' : ''} ${heroHp === 0 ? 'is-down' : ''}`} key={shot ? `f-${shot.id}` : 'f'} role="img" aria-label={`${fighter.name}, your fighter`}>
+            <span className="ba-fighter__platform" />
+            <FighterSprite fighter={fighter} size={7} />
+            {shot && !shot.hit && <span className="ba-damage is-miss">-1</span>}
+          </div>
+          <div className="ba-fighter-card">
+            <div><b>{fighter.name}</b><small>YOUR FIGHTER</small></div>
+            <div className="ba-hp__bar is-hero" role="meter" aria-label={`${fighter.name} health`} aria-valuemin={0} aria-valuemax={boss.tests.length} aria-valuenow={heroHp}>{boss.tests.map((_, i) => <i key={i} className={i < heroHp ? 'is-full' : 'is-lost'} />)}</div>
+            <span>HP {heroHp}/{boss.tests.length}</span>
+          </div>
           {shot && <span key={`bolt-${shot.id}`} className={`ba-bolt ${shot.hit ? 'is-hit' : 'is-miss'}`} aria-hidden="true" />}
-          <div className="ba-hero" aria-hidden="true"><Swords size={22} /><small>YOUR CODE</small></div>
         </div>
         {phase === 'defeated' && <div className="ba-victory"><span>DEFEATED!</span><Trophy size={34} /></div>}
         <ol className="ba-tests" aria-label="Surprise tests">{cards.map((card, i) => <li key={i} className={`is-${card.status}`}>
@@ -272,7 +283,7 @@ function BossFight({ boss, index, defeated, accessible, drafts, onSelect, onBack
 
       <div className="ba-desk">
         <article className="ba-mission">
-          <header><span className={`ba-kind ba-kind--${boss.kind}`}>{kindLabels[boss.kind]}</span><span className="ba-inputs">{boss.inputNames.map((name) => <code key={name}>{name}</code>)}</span></header>
+          <header><span className={`ba-kind ba-kind--${boss.kind}`}>ROUND {boss.id} · {boss.task}</span><span className="ba-inputs">{boss.inputNames.map((name) => <code key={name}>{name}</code>)}</span></header>
           <h1>{boss.mission}</h1>
           <p>{boss.prompt}</p>
         </article>

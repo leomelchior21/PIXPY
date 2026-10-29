@@ -37,6 +37,11 @@ export interface IfElseLearningEvent {
   at: number
 }
 
+export type FighterBase = 'bot' | 'blob' | 'cat' | 'wizard'
+
+/** The character a student creates for the Final Bosses arena. */
+export interface BossFighter { base: FighterBase; color: number; name: string }
+
 export interface RepairLogEntry {
   ticket: number
   runs: number
@@ -91,6 +96,8 @@ export interface SessionProgress {
   moreChoiceTutorialSeen: boolean
   conditionBosses: number[]
   conditionBossLog: BossAttackEvent[]
+  bossTutorialSeen: boolean
+  bossFighter: BossFighter | null
   blackBoxLevels: number[]
   blackBoxQuizAnswers: number[]
   blackBoxQuizStartedAt: number | null

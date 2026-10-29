@@ -123,6 +123,12 @@ describe('session-only progress', () => {
     expect(restoreProgress('leo', 'Leo', { repairTickets: [1] }).repairTutorialSeen).toBe(true)
   })
 
+  it('keeps a valid arena fighter and drops a broken one', () => {
+    expect(restoreProgress('leo', 'Leo', { bossFighter: { base: 'cat', color: 4, name: '  Zed  ' } }).bossFighter).toEqual({ base: 'cat', color: 4, name: 'Zed' })
+    expect(restoreProgress('leo', 'Leo', { bossFighter: { base: 'dragon', color: 1, name: 'X' } }).bossFighter).toBeNull()
+    expect(restoreProgress('leo', 'Leo', { bossFighter: { base: 'bot', color: 99, name: '' } }).bossFighter).toEqual({ base: 'bot', color: 0, name: 'Coder' })
+  })
+
   it('resets only the selected activity and removes its completion mark', () => {
     const progress: SessionProgress = {
       ...createSession('Leo'),

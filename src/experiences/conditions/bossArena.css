@@ -169,7 +169,9 @@
   .ba-primary, .ba-secondary { min-height: 44px; }
 }
 @media (max-width: 1000px) {
-  .ba-trail { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  /* All ten bosses stay in one row: the numbers go, the sprites stay. */
+  .ba-trail { gap: 4px; }
+  .ba-trail button > span:not(.ba-mini) { display: none; }
   .ba-tests { grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); }
 }
 @media (max-width: 760px) {
@@ -190,3 +192,202 @@
 
 /* The app forces its UI font on most elements; numbers and test values stay monospace. */
 .ba-screen .ba-tests.ba-tests b, .ba-screen .ba-tests.ba-tests span, .ba-screen .ba-damage.ba-damage, .ba-screen .ba-hp.ba-hp > span, .ba-screen .ba-trail.ba-trail button > span:not(.ba-mini) { font-family: 'IBM Plex Mono', monospace !important; }
+
+/* The arena intro: a fight-game match-up between the student and the bosses. */
+.bi-backdrop { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 18px; background: radial-gradient(ellipse at 50% 40%, rgba(80, 12, 8, .82), rgba(5, 4, 8, .94) 70%); backdrop-filter: blur(4px); animation: bi-fade .3s ease both; }
+.bi { position: relative; display: grid; gap: 10px; width: min(760px, 100%); max-height: calc(100dvh - 36px); padding: 18px 22px 18px; overflow: hidden auto; border: 3px solid #000; border-radius: 22px; color: #fff3ec; background: linear-gradient(180deg, #1b0d10, #0b0709 60%); box-shadow: 0 0 0 2px #ff5a3655, 0 0 60px rgba(255, 90, 54, .35), 10px 10px 0 #000; animation: bi-rise .45s cubic-bezier(.2, 1.3, .4, 1) both; isolation: isolate; }
+.bi__embers { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.bi__embers i { position: absolute; bottom: -10px; left: var(--x); width: var(--s); height: var(--s); border-radius: 50%; background: #ffb36b; box-shadow: 0 0 8px #ff6a3d; opacity: 0; animation: bi-ember 4.2s var(--d) linear infinite; }
+.bi__close { position: absolute; top: 12px; right: 12px; z-index: 3; display: grid; place-items: center; width: 34px; height: 34px; border: 2px solid #ffffff40; border-radius: 9px; color: #fff; background: #00000080; cursor: pointer; }
+.bi__close:hover { border-color: #ff7a2f; }
+.bi__stage { position: relative; display: grid; place-items: center; min-height: 250px; padding: 20px 14px; overflow: hidden; border: 2px solid #000; border-radius: 16px; background: radial-gradient(ellipse at 50% 100%, rgba(255, 90, 54, .35), transparent 60%), repeating-linear-gradient(90deg, rgba(255, 255, 255, .025) 0 2px, transparent 2px 40px), #120a0d; box-shadow: inset 0 -30px 60px rgba(0, 0, 0, .6); }
+.bi__stage::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 34%; background: linear-gradient(transparent, rgba(255, 90, 54, .12)), repeating-linear-gradient(90deg, rgba(255, 130, 80, .18) 0 1px, transparent 1px 34px); transform: perspective(240px) rotateX(55deg); transform-origin: bottom; pointer-events: none; }
+.bi__copy { display: grid; gap: 4px; animation: bi-copy .4s .15s ease both; }
+.bi__kicker { display: flex; align-items: center; gap: 6px; margin: 0; color: #ff9a62; font: 800 11px 'IBM Plex Mono', monospace; letter-spacing: .16em; }
+.bi h2 { margin: 0; color: #fff; font: 900 clamp(24px, 3.4vw, 34px)/1.02 var(--ui-font); letter-spacing: -.03em; text-transform: uppercase; text-shadow: 0 0 18px rgba(255, 90, 54, .55), 3px 3px 0 #3a0000; }
+.bi__text { margin: 0; color: #f2c9bb; font-size: 15px; line-height: 1.5; }
+.bi__nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.bi__dots { display: flex; gap: 7px; }
+.bi__dots i { width: 10px; height: 10px; border: 2px solid #ff7a2f; transform: rotate(45deg); transition: background .25s, transform .25s; }
+.bi__dots i.is-past { background: #ff7a2f88; }
+.bi__dots i.is-on { background: #ff7a2f; box-shadow: 0 0 10px #ff7a2f; transform: rotate(45deg) scale(1.25); }
+.bi__back, .bi__next { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 8px 18px; border: 2px solid #000; border-radius: 11px; color: #fff; background: #2a1518; box-shadow: 3px 3px 0 #000; font: 800 12px 'IBM Plex Mono', monospace; letter-spacing: .06em; cursor: pointer; transition: transform .12s, box-shadow .12s; }
+.bi__next { background: linear-gradient(90deg, #d6281a, #ff7a2f); box-shadow: 3px 3px 0 #000, 0 0 18px rgba(255, 90, 54, .5); }
+.bi__back:hover:not(:disabled), .bi__next:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 #000, 0 0 22px rgba(255, 90, 54, .55); }
+.bi__back:disabled { opacity: .3; cursor: default; }
+
+/* Scene 1: the match-up. */
+.bi-versus { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; width: 100%; }
+.bi-versus__side { display: grid; place-items: center; }
+.bi-versus__side.is-left { animation: bi-in-left .55s cubic-bezier(.2, 1.2, .4, 1) both; }
+.bi-versus__side.is-right { animation: bi-in-right .55s .1s cubic-bezier(.2, 1.2, .4, 1) both; }
+.bi-hero { display: grid; justify-items: center; gap: 6px; }
+.bi-hero__badge { display: grid; place-items: center; width: 116px; height: 116px; border: 3px solid #000; border-radius: 26px; color: #071a10; background: linear-gradient(160deg, #b9f352, #4fd17a); box-shadow: 0 0 0 4px #7dffab55, 0 0 34px rgba(125, 255, 171, .6); animation: bi-breathe 2s ease-in-out infinite; }
+.bi-hero b { max-width: 180px; overflow: hidden; color: #b9ffd4; font: 900 20px var(--ui-font); text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; }
+.bi-hero small, .bi-boss small { color: #ffffff88; font: 800 10px 'IBM Plex Mono', monospace; letter-spacing: .16em; }
+.bi-hero.is-small .bi-hero__badge { width: 70px; height: 70px; border-radius: 18px; }
+.bi-hero.is-small b { font-size: 14px; }
+.bi-boss { display: grid; justify-items: center; gap: 6px; filter: drop-shadow(0 0 20px rgba(143, 220, 90, .45)); animation: bi-float 2.4s ease-in-out infinite; }
+.bi-boss b { color: #d4f7a8; font: 900 20px var(--ui-font); }
+.bi-versus__vs { position: relative; display: grid; place-items: center; width: 110px; height: 110px; }
+.bi-versus__vs span { position: relative; z-index: 1; color: #fff; font: 900 64px/1 var(--ui-font); font-style: italic; letter-spacing: -.06em; text-shadow: 0 0 22px #ff5a36, 4px 4px 0 #d6281a, 8px 8px 0 #000; animation: bi-slam .55s .45s cubic-bezier(.2, 1.6, .4, 1) both; }
+.bi-versus__vs i { position: absolute; inset: 50% auto auto 50%; width: 6px; height: 150%; background: linear-gradient(transparent, #ffe08a, transparent); transform: translate(-50%, -50%) rotate(25deg); opacity: 0; animation: bi-flash .6s .5s ease-out both; }
+.bi-versus__vs i:last-child { transform: translate(-50%, -50%) rotate(-25deg); }
+
+/* Scene 2: the attack. */
+.bi-fight { position: relative; z-index: 1; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; width: 100%; }
+.bi-fight__lane { position: relative; height: 10px; }
+.bi-fight__bolt { position: absolute; top: 50%; left: 0; width: 60px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, transparent, #b9f352, #fff); box-shadow: 0 0 16px #7dffab; transform: translateY(-50%); animation: bi-bolt 1.2s ease-in infinite; }
+.bi-fight__boss { position: relative; display: grid; justify-items: center; gap: 10px; }
+.bi-fight__sprite { animation: bi-hit 1.2s ease-in-out infinite; }
+.bi-hpbar { display: flex; gap: 4px; padding: 4px; border: 2px solid #000; border-radius: 6px; background: #000; }
+.bi-hpbar i { width: 22px; height: 10px; border-radius: 2px; background: #ff5f5f; animation: bi-hp 6s calc(var(--i) * 1.2s) steps(1) infinite; }
+.bi-fight__damage { position: absolute; top: 20px; right: -6px; color: #ffe08a; font: 900 24px var(--ui-font); text-shadow: 2px 2px 0 #000; animation: bi-damage 1.2s ease-out infinite; }
+
+/* Scene 3: the tests. */
+.bi-cards { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: 100%; perspective: 800px; }
+.bi-card { height: 104px; animation: bi-deal .45s calc(var(--i) * 90ms) cubic-bezier(.2, 1.2, .4, 1) both; }
+.bi-card__inner { position: relative; height: 100%; transform-style: preserve-3d; }
+.bi-card.is-surprise .bi-card__inner { animation: bi-flip 4.5s calc(1.2s + var(--i) * .25s) ease-in-out infinite; }
+.bi-card__face, .bi-card__back { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 4px; padding: 8px 4px; border: 2px solid #000; border-radius: 12px; backface-visibility: hidden; text-align: center; }
+.bi-card__face { color: #17181d; background: #fffdf6; box-shadow: 3px 3px 0 #000; }
+.bi-card__face b { font: 800 14px 'IBM Plex Mono', monospace; }
+.bi-card__face span { display: inline-flex; align-items: center; gap: 3px; color: #2f8a52; font: 700 11px 'IBM Plex Mono', monospace; }
+.bi-card small { font: 800 9px 'IBM Plex Mono', monospace; letter-spacing: .12em; opacity: .7; }
+.bi-card.is-surprise .bi-card__face { transform: rotateY(180deg); }
+.bi-card__back { color: #ffe08a; background: repeating-linear-gradient(45deg, #3a1518 0 8px, #2a0f12 8px 16px); box-shadow: 3px 3px 0 #000, 0 0 16px rgba(255, 90, 54, .35); }
+.bi-card__back b { font: 900 34px var(--ui-font); text-shadow: 0 0 12px #ff7a2f; }
+.bi-card__back span { font: 700 11px 'IBM Plex Mono', monospace; }
+
+/* Scene 4: the help runs out. */
+.bi-ladder { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: 8px; width: 100%; }
+.bi-step { display: grid; gap: 6px; padding: 8px; border: 2px solid #000; border-radius: 12px; background: #1e2330; box-shadow: 3px 3px 0 #000; transform: translateY(calc((3 - var(--i)) * 10px)); animation: bi-deal .45s calc(var(--i) * 140ms) ease both; }
+.bi-step__round { color: #ff9a62; font: 800 10px 'IBM Plex Mono', monospace; letter-spacing: .1em; }
+.bi-step pre { display: grid; gap: 1px; margin: 0; overflow: hidden; font: 600 10.5px 'IBM Plex Mono', monospace; white-space: pre; }
+.bi-step code { color: #e8ecf4; }
+.bi-step mark { border-radius: 2px; color: transparent; background: #ffcb47; box-shadow: 0 0 8px #ffcb4788; animation: bi-blank 1.4s ease-in-out infinite; }
+.bi-step b { color: #fff; font: 800 13px var(--ui-font); }
+
+/* Scene 5: the bosses coming. */
+.bi-lineup { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: end; justify-content: center; gap: 10px 8px; width: 100%; }
+.bi-lineup__boss { display: grid; justify-items: center; gap: 4px; animation: bi-march .5s calc(var(--i) * 110ms) cubic-bezier(.2, 1.2, .4, 1) both; }
+.bi-lineup__boss .ba-mini { filter: drop-shadow(0 0 6px rgba(255, 90, 54, .55)); }
+.bi-lineup__boss.is-first .ba-mini { filter: drop-shadow(0 0 12px rgba(143, 220, 90, .7)); }
+.bi-lineup__boss.is-final .ba-mini { filter: drop-shadow(0 0 16px rgba(255, 60, 30, .95)); animation: bi-breathe 1.6s ease-in-out infinite; }
+.bi-lineup__boss small { color: #ffffff70; font: 800 9px 'IBM Plex Mono', monospace; letter-spacing: .12em; }
+.bi-lineup__boss.is-first small { color: #d4f7a8; }
+.bi-lineup__boss.is-final small { color: #ff7a2f; }
+
+@keyframes bi-fade { from { opacity: 0; } }
+@keyframes bi-rise { from { opacity: 0; transform: translateY(30px) scale(.94); } }
+@keyframes bi-copy { from { opacity: 0; transform: translateY(8px); } }
+@keyframes bi-ember { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: .9; } 100% { transform: translateY(-110%) translateX(20px); opacity: 0; } }
+@keyframes bi-in-left { from { opacity: 0; transform: translateX(-120px); } }
+@keyframes bi-in-right { from { opacity: 0; transform: translateX(120px); } }
+@keyframes bi-slam { 0% { opacity: 0; transform: scale(3) rotate(-10deg); } 70% { opacity: 1; transform: scale(.9) rotate(-6deg); } 100% { transform: scale(1) rotate(-6deg); } }
+@keyframes bi-flash { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes bi-breathe { 50% { transform: scale(1.05); } }
+@keyframes bi-float { 50% { transform: translateY(-8px); } }
+@keyframes bi-bolt { 0% { left: 0; opacity: 0; } 15% { opacity: 1; } 70% { left: calc(100% - 60px); opacity: 1; } 100% { left: calc(100% - 60px); opacity: 0; } }
+@keyframes bi-hit { 0%, 62% { transform: none; filter: none; } 68% { transform: translateX(8px); filter: brightness(2.2); } 78% { transform: translateX(-4px); } 90% { transform: none; filter: none; } }
+@keyframes bi-damage { 0%, 62% { opacity: 0; transform: translateY(0); } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-26px); } }
+@keyframes bi-hp { 0% { background: #ff5f5f; } 20%, 100% { background: #3a1518; } }
+@keyframes bi-deal { from { opacity: 0; transform: translateY(24px) rotate(-4deg); } }
+@keyframes bi-flip { 0%, 40% { transform: rotateY(0); } 50%, 85% { transform: rotateY(180deg); } 95%, 100% { transform: rotateY(0); } }
+@keyframes bi-blank { 50% { opacity: .55; } }
+@keyframes bi-march { from { opacity: 0; transform: translateX(60px) scale(.6); } }
+
+.bi-help { display: grid; place-items: center; width: 38px; height: 38px; margin-left: 10px; border: 2px solid var(--ba-ink); border-radius: 9px; color: var(--ba-ink); background: #fff; box-shadow: 2px 2px 0 var(--ba-ink); cursor: pointer; }
+.bi-help:hover { background: #ffe6dc; }
+
+/* The app's UI font rule would replace the code font in these labels. */
+.bi-backdrop .bi .bi__kicker, .bi-backdrop .bi .bi__back, .bi-backdrop .bi .bi__next, .bi-backdrop .bi small, .bi-backdrop .bi .bi-card b, .bi-backdrop .bi .bi-card span, .bi-backdrop .bi .bi-step__round, .bi-backdrop .bi .bi-step pre { font-family: 'IBM Plex Mono', monospace !important; }
+
+@media (max-height: 640px) {
+  .bi__stage { min-height: 190px; padding-block: 12px; }
+  .bi-hero__badge { width: 84px; height: 84px; }
+  .bi-versus__vs span { font-size: 48px; }
+  .bi__text { font-size: 13.5px; }
+}
+@media (max-width: 640px) {
+  .bi-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .bi-ladder { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bi-versus__vs { width: 70px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bi-backdrop * { animation: none !important; }
+}
+
+/* Battle scene: the boss up on the right, the student's fighter down on the left, like a monster battle. */
+.ba-field { position: relative; flex: 1; min-height: 190px; }
+.ba-field .ba-boss { position: absolute; inset: 0 4% 30% 40%; min-height: 0; }
+.ba-field .ba-boss__shadow { bottom: 8%; width: 62%; max-width: 230px; height: 26px; border: 2px solid #ffffff14; background: radial-gradient(ellipse, #ffffff1c, #00000070 70%); filter: none; }
+.ba-field .ba-damage.is-hit { top: 6%; left: 62%; }
+.ba-fighter { position: absolute; left: 7%; bottom: 4%; z-index: 2; display: grid; place-items: center; }
+.ba-fighter > .ba-mini { position: relative; z-index: 1; filter: drop-shadow(0 6px 0 #00000055); animation: ba-idle 2.4s .4s ease-in-out infinite; }
+.ba-fighter__platform { position: absolute; bottom: -8px; left: 50%; width: 170px; height: 26px; border: 2px solid #ffffff14; border-radius: 50%; background: radial-gradient(ellipse, #ffffff1c, #00000070 70%); transform: translateX(-50%); }
+.ba-fighter .ba-damage.is-miss { top: -10px; left: 70%; color: #ff5f7e; font-size: 28px; }
+.ba-fighter.is-striking > .ba-mini { animation: ba-lunge .4s ease both; }
+.ba-fighter.is-hurt > .ba-mini { animation: ba-hurt .5s ease both; }
+.ba-fighter.is-winning > .ba-mini { animation: ba-cheer .6s .9s ease 3; }
+.ba-fighter.is-down > .ba-mini { filter: grayscale(.8) brightness(.7); }
+.ba-boss.is-laughing .ba-sprite { animation: ba-counter .45s ease both; }
+.ba-fighter-card { position: absolute; right: 12px; bottom: 12px; z-index: 3; display: grid; grid-template-columns: auto minmax(70px, 120px) auto; align-items: center; gap: 10px; padding: 8px 12px; border: 2px solid #000; border-radius: 12px 4px 12px 4px; color: var(--ba-ink); background: #fffdf6; box-shadow: 3px 3px 0 #000; }
+.ba-fighter-card b { display: block; font: 850 15px/1.05 var(--ui-font); }
+.ba-fighter-card small { color: #7a7487; font: 700 8px 'IBM Plex Mono', monospace; letter-spacing: .12em; }
+.ba-fighter-card > span { font: 800 11px 'IBM Plex Mono', monospace; color: #2f8a52; }
+.ba-hp__bar.is-hero { height: 14px; }
+.ba-hp__bar.is-hero i.is-full { background: linear-gradient(#9de3b0, #3fae64); box-shadow: inset 0 2px 0 #d9f7c7; }
+.ba-field .ba-bolt.is-hit { animation: ba-shot .38s ease-in both; }
+.ba-field .ba-bolt.is-miss { background: radial-gradient(circle, #fff, #ff8fa1 40%, #d6283c 75%); box-shadow: 0 0 18px 6px #ff3b5c88; animation: ba-return .42s ease-in both; }
+.ba-screen .ba-fighter-card.ba-fighter-card > span, .ba-screen .ba-fighter-card.ba-fighter-card small { font-family: 'IBM Plex Mono', monospace !important; }
+
+@keyframes ba-shot { from { left: 16%; top: 74%; transform: scale(.6); } to { left: 68%; top: 34%; transform: scale(1.25); } }
+@keyframes ba-return { from { left: 68%; top: 34%; transform: scale(.7); } to { left: 16%; top: 72%; transform: scale(1.3); } }
+@keyframes ba-lunge { 0% { transform: none; } 35% { transform: translate(34px, -18px) scale(1.05); } 100% { transform: none; } }
+@keyframes ba-hurt { 0%, 100% { transform: none; filter: none; } 20% { transform: translateX(-12px); filter: brightness(2.4) sepia(1) hue-rotate(-50deg) saturate(5); } 40% { transform: translateX(9px); } 60% { transform: translateX(-6px); filter: brightness(1.8) sepia(1) hue-rotate(-50deg) saturate(4); } 80% { transform: translateX(3px); } }
+@keyframes ba-counter { 0% { transform: none; } 40% { transform: translate(-30px, 16px) scale(1.06); } 100% { transform: none; } }
+@keyframes ba-cheer { 0%, 100% { transform: none; } 40% { transform: translateY(-22px); } }
+
+@media (max-height: 820px) and (min-width: 641px) {
+  .ba-fighter-card { padding: 6px 10px; gap: 8px; }
+  .ba-fighter-card b { font-size: 13px; }
+}
+@media (max-width: 1000px) {
+  .ba-fighter-card { grid-template-columns: auto minmax(56px, 90px); }
+  .ba-fighter-card > span { display: none; }
+  .ba-fighter__platform { width: 120px; }
+}
+
+/* Fighter builder in the intro. */
+.bi-hero__pad { display: grid; place-items: center; padding: 10px; border: 3px solid #000; border-radius: 22px; background: radial-gradient(circle at 50% 70%, #ffffff22, #00000040 70%); box-shadow: 0 0 0 4px #7dffab33, 0 0 30px rgba(125, 255, 171, .35); animation: bi-breathe 2s ease-in-out infinite; }
+.bi-hero__pad.is-big { padding: 14px; }
+.bi-create { position: relative; z-index: 1; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 22px; width: 100%; }
+.bi-create__preview { display: grid; justify-items: center; gap: 8px; }
+.bi-create__preview b { max-width: 180px; overflow: hidden; color: #b9ffd4; font: 900 20px var(--ui-font); text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; }
+.bi-create__controls { display: grid; gap: 12px; }
+.bi-create__row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.bi-create__row button { display: grid; justify-items: center; gap: 4px; padding: 8px 4px 6px; border: 2px solid #ffffff2a; border-radius: 12px; color: #fff; background: #ffffff0d; cursor: pointer; transition: transform .12s, border-color .12s; }
+.bi-create__row button:hover { transform: translateY(-2px); }
+.bi-create__row button.is-on { border-color: #7dffab; background: #7dffab1f; box-shadow: 0 0 14px #7dffab55; }
+.bi-create__row small { font: 800 10px 'IBM Plex Mono', monospace; letter-spacing: .08em; }
+.bi-create__colors { display: flex; flex-wrap: wrap; gap: 8px; }
+.bi-create__colors button { width: 34px; height: 34px; border: 3px solid #000; border-radius: 50%; background: linear-gradient(135deg, var(--swatch) 55%, var(--swatch-shade) 55%); box-shadow: 0 0 0 2px #ffffff30; cursor: pointer; transition: transform .12s; }
+.bi-create__colors button.is-on { box-shadow: 0 0 0 3px #fff, 0 0 14px var(--swatch); transform: scale(1.12); }
+.bi-create__name { display: grid; gap: 4px; }
+.bi-create__name small { color: #ff9a62; font: 800 10px 'IBM Plex Mono', monospace; letter-spacing: .14em; }
+.bi-create__name input { width: min(260px, 100%); min-height: 40px; padding: 6px 12px; border: 2px solid #ffffff40; border-radius: 10px; color: #fff; background: #00000066; font: 800 16px var(--ui-font); text-transform: uppercase; }
+.bi-create__name input:focus { border-color: #7dffab; outline: none; box-shadow: 0 0 12px #7dffab55; }
+.bi-fight__hero { animation: bi-strike 2.4s ease-in-out infinite; }
+/* One 2.4 s loop: the fighter strikes, then the boss hits back. */
+.bi-fight .bi-fight__bolt { animation: bi-bolt2 2.4s ease-in infinite; }
+.bi-fight .bi-fight__sprite { animation: bi-hit2 2.4s ease-in-out infinite; }
+.bi-fight .bi-fight__damage { animation: bi-damage2 2.4s ease-out infinite; }
+.bi-fight__counter { position: absolute; top: 50%; right: 0; width: 46px; height: 8px; border-radius: 4px; background: linear-gradient(270deg, transparent, #ff5f7e, #fff); box-shadow: 0 0 16px #ff3b5c; transform: translateY(-50%); opacity: 0; animation: bi-counter 2.4s ease-in infinite; }
+.bi-backdrop .bi .bi-create__row small, .bi-backdrop .bi .bi-create__name small { font-family: 'IBM Plex Mono', monospace !important; }
+@keyframes bi-strike { 0%, 100% { transform: none; filter: none; } 8% { transform: translateX(16px); } 16% { transform: none; } 78% { transform: none; filter: none; } 82% { transform: translateX(-10px); filter: brightness(2) sepia(1) hue-rotate(-50deg) saturate(4); } 90% { transform: translateX(5px); filter: none; } }
+@keyframes bi-counter { 0%, 50% { right: 0; opacity: 0; } 54% { right: 0; opacity: 1; } 78% { right: calc(100% - 46px); opacity: 1; } 82%, 100% { right: calc(100% - 46px); opacity: 0; } }
+@keyframes bi-bolt2 { 0% { left: 0; opacity: 0; } 6% { opacity: 1; } 30% { left: calc(100% - 60px); opacity: 1; } 34%, 100% { left: calc(100% - 60px); opacity: 0; } }
+@keyframes bi-hit2 { 0%, 29% { transform: none; filter: none; } 33% { transform: translateX(8px); filter: brightness(2.2); } 40% { transform: translateX(-4px); } 46%, 100% { transform: none; filter: none; } }
+@keyframes bi-damage2 { 0%, 29% { opacity: 0; transform: translateY(0); } 34% { opacity: 1; } 55%, 100% { opacity: 0; transform: translateY(-26px); } }
+@media (max-width: 640px) { .bi-create { grid-template-columns: 1fr; justify-items: center; } }
