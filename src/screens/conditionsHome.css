@@ -71,3 +71,10 @@
 @media (prefers-reduced-motion: reduce) {
   .cond-card, .cond-card *, .cond-card::before, .cond-card *::before { animation: none !important; transition: none !important; }
 }
+
+/* The title sits in the panel under the picture; the description lives only in the button label. */
+.cond-card .cond-card__title { position: static; color: inherit; }
+.cond-card .cond-card__title strong { text-shadow: none; }
+.cond-card--conditions-final-bosses .cond-card__title strong { color: #fff; text-shadow: 0 0 12px rgba(255, 90, 40, .8); }
+.cond-card__body { align-content: space-between; }
+@media (max-height: 700px) { .cond-card .cond-card__title strong { font-size: 15px; } }

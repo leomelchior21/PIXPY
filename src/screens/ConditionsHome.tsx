@@ -60,9 +60,8 @@ export function ConditionsHome({ progress, onNavigate }: Props) {
             <span className="cond-card__order" aria-hidden="true">{experience.order}</span>
             {index === 0 && !complete && <i className="cond-card__ribbon">START HERE</i>}
             {final && <i className="cond-card__ribbon is-final"><Flame size={13} /> FINAL ROUND</i>}
-            <span className="cond-card__title"><span className="cond-card__icon"><Icon size={20} /></span><strong>{experience.title}</strong></span>
             <span className="cond-card__body">
-              <p>{experience.description}</p>
+              <span className="cond-card__title"><span className="cond-card__icon"><Icon size={20} /></span><strong>{experience.title}</strong></span>
               <span className="cond-card__state">{experience.disabled ? <><Lock size={15} /> COMING SOON</> : complete ? <><Check size={15} /> DONE · PLAY AGAIN</> : saved && saved.count > 0 ? <>{saved.count} / {saved.total} {saved.label} · CONTINUE <ArrowRight size={15} /></> : <>LET'S TRY IT <ArrowRight size={15} /></>}</span>
             </span>
           </button>
