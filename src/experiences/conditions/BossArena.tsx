@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Check, CircleHelp, Crown, Lightbulb, LoaderCircle, Lock, RotateCcw, Skull, Swords, Trophy, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Award, Check, CircleHelp, Crown, Lightbulb, LoaderCircle, Lock, RotateCcw, Skull, Swords, Trophy, X } from 'lucide-react'
 import { memo, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
 import { bossOutputMatches, bossSprite, cleanBossOutput, conditionBosses, type ConditionBoss } from '../../data/conditionBosses'
@@ -7,7 +7,9 @@ import { runGuidedPython } from '../../lib/guidedPython'
 import { PythonRunError, pythonRunner } from '../../lib/pythonRunner'
 import { completeActivity } from '../../session/progressSession'
 import type { BossAttackEvent, BossFighter, SessionProgress } from '../../types'
+import { BadgeArt, BadgeAward, BadgeCase } from './BossBadges'
 import { BossIntro } from './BossIntro'
+import { bossBadges } from '../../data/bossBadges'
 import { defaultFighter, pixelColor } from '../../data/bossFighters'
 import { FighterSprite, MiniSprite } from './BossSprites'
 import './bossArena.css'
@@ -49,6 +51,7 @@ export function BossArena({ progress, onProgress, onBack }: Props) {
   const [index, setIndex] = useState(() => Math.max(0, firstOpen))
   const [finished, setFinished] = useState(() => firstOpen === -1)
   const [intro, setIntro] = useState(() => !progress.bossTutorialSeen)
+  const [caseOpen, setCaseOpen] = useState(false)
   const drafts = useRef<Record<number, string>>({})
   const progressRef = useRef(progress)
   useEffect(() => { progressRef.current = progress }, [progress])
@@ -72,7 +75,10 @@ export function BossArena({ progress, onProgress, onBack }: Props) {
     onProgress(updated)
   }
   const openIntro = () => setIntro(true)
-  const introScreen = intro && <BossIntro fighter={fighter} onClose={closeIntro} />
+  const introScreen = <>
+    {intro && <BossIntro fighter={fighter} onClose={closeIntro} />}
+    {caseOpen && <BadgeCase earned={defeated} onClose={() => setCaseOpen(false)} />}
+  </>
 
   const next = () => {
     const bosses = progressRef.current.conditionBosses
@@ -91,7 +97,7 @@ export function BossArena({ progress, onProgress, onBack }: Props) {
         <h1>Conditions Champion</h1>
         <p>Your decisions survived {conditionBosses.reduce((sum, boss) => sum + boss.tests.length, 0)} surprise tests, aimed right at the edges of every rule.</p>
         <div className="ba-hall__row">{conditionBosses.map((boss) => <MiniSprite key={boss.id} boss={boss} size={3} beaten />)}</div>
-        <div className="ba-hall__actions"><button className="ba-primary" onClick={() => { setIndex(0); setFinished(false) }}><RotateCcw size={17} /> REMATCH</button><button className="ba-secondary" onClick={onBack}>BACK TO CONDITIONS <ArrowRight size={17} /></button></div>
+        <div className="ba-hall__actions"><button className="ba-primary" onClick={() => setCaseOpen(true)}><Award size={17} /> BADGE CASE</button><button className="ba-secondary" onClick={() => { setIndex(0); setFinished(false) }}><RotateCcw size={17} /> REMATCH</button><button className="ba-secondary" onClick={onBack}>BACK TO CONDITIONS <ArrowRight size={17} /></button></div>
       </div>
     </section>
     {introScreen}
@@ -100,7 +106,7 @@ export function BossArena({ progress, onProgress, onBack }: Props) {
   const boss = conditionBosses[index]
   return <>
     <BossFight key={boss.id} boss={boss} fighter={fighter} index={index} defeated={defeated} accessible={accessible} drafts={drafts.current}
-      onSelect={(i) => { if (accessible(i)) setIndex(i) }} onBack={onBack} onHelp={openIntro} onRecord={record} onNext={next} />
+      onSelect={(i) => { if (accessible(i)) setIndex(i) }} onBack={onBack} onHelp={openIntro} onOpenCase={() => setCaseOpen(true)} onRecord={record} onNext={next} />
     {introScreen}
   </>
 }
@@ -129,9 +135,9 @@ function BossTrail({ index, defeated, accessible, onSelect, disabled = false }: 
   return <nav className="ba-trail" aria-label="Bosses">{conditionBosses.map((boss, i) => {
     const done = defeated.includes(boss.id)
     const open = accessible(i)
-    return <button key={boss.id} className={`${i === index ? 'is-current' : ''} ${done ? 'is-done' : ''}`} disabled={disabled || !open} aria-current={i === index ? 'step' : undefined}
-      aria-label={`Boss ${boss.id}: ${boss.name}${done ? ', defeated' : open ? '' : ', locked'}`} onClick={() => onSelect(i)}>
-      <MiniSprite boss={boss} size={2} beaten={done} locked={!open && !done} />
+    return <button key={boss.id} className={`${i === index ? 'is-current' : ''} ${done ? 'is-done' : ''} ${!open && !done ? 'is-locked' : ''}`} disabled={disabled || !open} aria-current={i === index ? 'step' : undefined}
+      aria-label={open || done ? `Boss ${boss.id}: ${boss.name}${done ? ', defeated' : ''}` : `Boss ${boss.id}: locked`} onClick={() => onSelect(i)}>
+      {open || done ? <MiniSprite boss={boss} size={2} beaten={done} /> : <MiniSprite boss={boss} size={2} shadow="#06060a" />}
       <span>{String(boss.id).padStart(2, '0')}</span>
       {done ? <Check className="ba-trail__mark" size={12} /> : !open ? <Lock className="ba-trail__mark" size={11} /> : null}
     </button>
@@ -148,11 +154,12 @@ interface FightProps {
   onSelect: (i: number) => void
   onBack: () => void
   onHelp: () => void
+  onOpenCase: () => void
   onRecord: (event: BossAttackEvent) => void
   onNext: () => void
 }
 
-function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelect, onBack, onHelp, onRecord, onNext }: FightProps) {
+function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelect, onBack, onHelp, onOpenCase, onRecord, onNext }: FightProps) {
   const alreadyBeaten = defeated.includes(boss.id)
   const [code, setCode] = useState(() => drafts[boss.id] ?? boss.starter)
   const [cards, setCards] = useState<TestCard[]>(() => freshCards(boss))
@@ -162,6 +169,9 @@ function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelec
   const [heroHp, setHeroHp] = useState(boss.tests.length)
   const [shot, setShot] = useState<{ id: number; hit: boolean } | null>(null)
   const [hints, setHints] = useState(0)
+  // A badge is awarded the first time this boss falls.
+  const [award, setAward] = useState(false)
+  const [newBadge, setNewBadge] = useState(false)
   const [note, setNote] = useState<{ tone: 'info' | 'good' | 'bad'; title: string; text: string }>(() => alreadyBeaten
     ? { tone: 'good', title: `${boss.name} was already defeated.`, text: 'Attack again to test another solution.' }
     : { tone: 'info', title: `${boss.name} appears!`, text: `It has ${boss.tests.length} HP. Every test your code passes is a hit.` })
@@ -175,6 +185,9 @@ function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelec
   useEffect(() => { drafts[boss.id] = code }, [boss.id, code, drafts])
 
   const busy = phase === 'attacking'
+  const earned = defeated
+  const earnedCount = bossBadges.filter((item) => earned.includes(item.id)).length
+  const badge = bossBadges.find((item) => item.id === boss.id)!
   const failing = cards.find((card) => card.status === 'miss')
 
   const pause = (ms: number) => new Promise<void>((resolve) => { window.setTimeout(resolve, reducedMotion() ? 0 : ms) })
@@ -227,6 +240,7 @@ function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelec
     onRecord({ boss: boss.id, hits, total: tests.length, hints, at: Date.now() })
     if (hits === tests.length) {
       setPhase('defeated')
+      if (!alreadyBeaten) window.setTimeout(() => { if (run === version.current) setAward(true) }, reducedMotion() ? 0 : 1500)
       setNote({ tone: 'good', title: `${boss.name} defeated!`, text: `All ${tests.length} tests passed, including the edge cases.` })
     } else {
       setPhase('survived')
@@ -257,7 +271,7 @@ function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelec
         <div className="ba-field">
           <div className={`ba-boss ${shot?.hit ? 'is-hit' : ''} ${shot && !shot.hit ? 'is-laughing' : ''} ${phase === 'defeated' ? 'is-defeated' : ''}`} key={phase === 'defeated' ? 'down' : 'up'} role="img" aria-label={`${boss.name}${phase === 'defeated' ? ', defeated' : ''}`}>
             <span className="ba-boss__shadow" />
-            <BossSprite boss={boss} />
+            <div className="ba-reveal"><BossSprite boss={boss} /></div>
             {shot?.hit && <span key={`dmg-${shot.id}`} className="ba-damage is-hit">-1</span>}
           </div>
           {/* The student's fighter: it strikes on a passed test and takes the hit on a failed one. */}
@@ -306,10 +320,15 @@ function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelec
     </section>
 
     <footer className={`ba-footer ba-footer--${note.tone}`}>
+      <button className={`ba-case-button ${newBadge ? 'is-new' : ''}`} onClick={onOpenCase} aria-label={`Badge case: ${earnedCount} of ${bossBadges.length} badges`}>
+        <span className="ba-case-button__stack">{(earnedCount ? bossBadges.filter((badge) => earned.includes(badge.id)).slice(-3) : [bossBadges[0]]).map((badge) => <BadgeArt key={badge.id} badge={badge} size={32} locked={!earnedCount} />)}</span>
+        <span><b>BADGES</b><small>{earnedCount} / {bossBadges.length}</small></span>
+      </button>
       <div role="status"><span className="ba-footer__icon">{note.tone === 'good' ? <Trophy size={21} /> : note.tone === 'bad' ? <Skull size={21} /> : <Swords size={21} />}</span><p><b>{note.title}</b>{note.text}</p></div>
       {phase === 'defeated'
         ? <button className="ba-primary" onClick={onNext}>{index === conditionBosses.length - 1 ? 'CLAIM THE CROWN' : 'NEXT BOSS'} <ArrowRight size={17} /></button>
         : <button className="ba-primary" onClick={() => void attack()} disabled={busy}>{busy ? <LoaderCircle size={17} className="ba-spin" /> : <Swords size={17} />} {busy ? 'ATTACKING…' : `ATTACK · ${boss.tests.length} TESTS`}</button>}
     </footer>
+    {award && <BadgeAward badge={badge} total={earnedCount} onClose={() => { setAward(false); setNewBadge(true) }} />}
   </main>
 }

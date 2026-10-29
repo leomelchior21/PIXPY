@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { createSession } from '../../session/progressSession'
@@ -64,7 +64,8 @@ describe('Conditions final bosses', { timeout: 40000 }, () => {
   it('fights with real tests, explains a boundary miss, and records each attack', async () => {
     render(<Harness />)
     expect(screen.getByRole('heading', { name: 'The club door' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Boss 2: Fan Golem, locked/ })).toBeDisabled()
+    // Locked bosses stay hidden, name and all.
+    expect(screen.getByRole('button', { name: 'Boss 2: locked' })).toBeDisabled()
     expect(screen.getAllByText('surprise')).toHaveLength(3)
 
     write('age = int(input())\nif age > 18:\n    print("Welcome in")\nelse:\n    print("Too young")')
@@ -82,6 +83,14 @@ describe('Conditions final bosses', { timeout: 40000 }, () => {
     expect(screen.getByText('DEFEATED!')).toBeInTheDocument()
     expect(latest.conditionBosses).toEqual([1])
     expect(latest.conditionBossLog.map((event) => event.hits)).toEqual([4, 5])
+    // The first win awards a badge, which then sits in the badge case.
+    expect(await screen.findByRole('dialog', { name: 'Gate Badge' }, settle)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'ADD TO BADGE CASE' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Badge case: 1 of 10 badges' }))
+    const badgeCase = screen.getByRole('dialog', { name: 'Badge case' })
+    expect(within(badgeCase).getByText('Gate Badge')).toBeInTheDocument()
+    expect(within(badgeCase).getAllByText('???')).toHaveLength(9)
+    fireEvent.click(within(badgeCase).getByRole('button', { name: 'Close the badge case' }))
     fireEvent.click(screen.getByRole('button', { name: /NEXT BOSS/ }))
     expect(screen.getByRole('heading', { name: 'The overheated lab' })).toBeInTheDocument()
   })
