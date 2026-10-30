@@ -90,7 +90,11 @@
 .ba-inputs { display: flex; gap: 5px; }
 .ba-inputs code { padding: 2px 7px; border-radius: 5px; color: #ffe066; background: #241f33; font-size: 12px; }
 .ba-mission h1 { margin: 0; font: 850 clamp(22px, 2vw, 28px)/1.05 var(--ui-font); letter-spacing: -.035em; }
-.ba-mission p { margin: 0; color: #4f4c45; font-size: 14px; line-height: 1.45; }
+.ba-mission p { margin: 0; color: #4f4c45; font-size: 14px; line-height: 1.6; }
+/* Prompt highlights: green = the exact message to print, blue = the rule, yellow = what to write now. */
+.ba-mission .ba-say { padding: 1px 6px; border: 1.5px solid #3f9d5c; border-radius: 5px; color: #17642f; background: #e4f8e9; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.ba-mission .ba-rule { padding: 1px 5px; border-radius: 5px; color: #1d4b9e; background: #e2ecff; font-weight: 700; }
+.ba-mission .ba-task { padding: 0 3px; color: var(--ba-ink); background: linear-gradient(transparent 45%, #ffe066 45%); font-weight: 800; }
 .ba-editor { display: flex; flex: 1; min-height: 170px; }
 .ba-editor .pixpy-editor { flex: 1; }
 .ba-editor .pixpy-editor .cm-editor { font-size: 15px; }

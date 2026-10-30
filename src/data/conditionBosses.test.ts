@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { runGuidedPython } from '../lib/guidedPython'
-import { bossOutputMatches, bossSprite, cleanBossOutput, conditionBosses } from './conditionBosses'
+import { bossOutputMatches, bossSprite, cleanBossOutput, conditionBosses, promptParts } from './conditionBosses'
 
 function passes(code: string, inputs: string[], expected: string): boolean {
   try {
@@ -48,6 +48,30 @@ describe('conditions final bosses', () => {
     expect(cleanBossOutput('age = int(input("Age: "))', 'Age: Welcome in')).toBe('Welcome in')
     expect(bossOutputMatches('40.0', '40')).toBe(true)
     expect(bossOutputMatches('Welcome in\nToo young', 'Welcome in')).toBe(false)
+  })
+
+  it('accepts the right message in any capitals, spacing or punctuation, but not another message', () => {
+    for (const variant of ['welcome in', 'WELCOME IN', 'Welcome  In', 'Welcome in!', 'Welcome in.']) expect(bossOutputMatches(variant, 'Welcome in'), variant).toBe(true)
+    expect(bossOutputMatches('too fast', 'Too fast!')).toBe(true)
+    expect(bossOutputMatches('Welcom in', 'Welcome in')).toBe(false)
+    expect(bossOutputMatches('fan on', 'Fan OFF')).toBe(false)
+    // Numbers stay numbers: dropping the point would turn 4.9 into 49.
+    expect(bossOutputMatches('4.9', '49')).toBe(false)
+  })
+
+  it('highlights every message the tests expect in the prompt', () => {
+    expect(promptParts('{18 or more}: print [Welcome in]. *Write it*.')).toEqual([
+      { kind: 'rule', text: '18 or more' }, { kind: 'text', text: ': print ' }, { kind: 'say', text: 'Welcome in' },
+      { kind: 'text', text: '. ' }, { kind: 'task', text: 'Write it' }, { kind: 'text', text: '.' },
+    ])
+    for (const boss of conditionBosses) {
+      const parts = promptParts(boss.prompt)
+      expect(parts.some((part) => part.kind === 'task'), boss.name).toBe(true)
+      // No stray markup left over in the plain text.
+      expect(parts.filter((part) => part.kind === 'text').some((part) => /[[\]{}*]/.test(part.text)), boss.name).toBe(false)
+      const said = parts.filter((part) => part.kind === 'say').map((part) => part.text)
+      for (const test of boss.tests) if (!Number.isFinite(Number(test.expected))) expect(said, boss.name).toContain(test.expected)
+    }
   })
 
   it('draws square, mirrored sprites', () => {

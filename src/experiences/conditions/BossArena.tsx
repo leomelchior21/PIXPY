@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight, Award, Check, CircleHelp, Crown, Lightbulb, LoaderCircle, Lock, RotateCcw, Skull, Swords, Trophy, X } from 'lucide-react'
 import { memo, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { CodeEditor } from '../../components/CodeEditor'
-import { bossOutputMatches, bossSprite, cleanBossOutput, conditionBosses, type ConditionBoss } from '../../data/conditionBosses'
+import { bossOutputMatches, bossSprite, cleanBossOutput, conditionBosses, promptParts, type ConditionBoss } from '../../data/conditionBosses'
 import { runDecisionProgram } from '../../lib/decisionTracer'
 import { runGuidedPython } from '../../lib/guidedPython'
 import { PythonRunError, pythonRunner } from '../../lib/pythonRunner'
@@ -33,6 +33,15 @@ function reducedMotion(): boolean {
 
 function freshCards(boss: ConditionBoss): TestCard[] {
   return boss.tests.map((test, i) => ({ ...test, status: i < EXAMPLES ? 'waiting' : 'hidden', got: '', path: [], error: null }))
+}
+
+/** The mission text with the messages to print, the rules, and the task picked out in color. */
+function BossPrompt({ prompt }: { prompt: string }) {
+  return <>{promptParts(prompt).map((part, i) => part.kind === 'say'
+    ? <code key={i} className="ba-say">{Number.isFinite(Number(part.text)) ? part.text : `"${part.text}"`}</code>
+    : part.kind === 'rule' ? <mark key={i} className="ba-rule">{part.text}</mark>
+    : part.kind === 'task' ? <strong key={i} className="ba-task">{part.text}</strong>
+    : part.text)}</>
 }
 
 /** The path the tracer saw, only when it agrees with the real run. */
@@ -308,7 +317,7 @@ function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelec
         <article className="ba-mission">
           <header><span className={`ba-kind ba-kind--${boss.kind}`}>ROUND {boss.id} · {boss.task}</span><span className="ba-inputs">{boss.inputNames.map((name) => <code key={name}>{name}</code>)}</span></header>
           <h1>{boss.mission}</h1>
-          <p>{boss.prompt}</p>
+          <p><BossPrompt prompt={boss.prompt} /></p>
         </article>
         <div className="ba-editor">
           <CodeEditor value={code} onChange={editCode} readOnly={busy} minHeight="150px" label={`Code to defeat ${boss.name}`} />

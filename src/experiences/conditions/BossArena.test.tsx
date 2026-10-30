@@ -61,6 +61,16 @@ describe('Conditions final bosses', { timeout: 40000 }, () => {
     expect(screen.getByRole('textbox', { name: /Code to defeat/ })).toHaveValue('# Write the print for anyone younger, under else.\nage = int(input())\nif age >= 18:\n    print("Welcome in")\nelse:\n    ')
   })
 
+  it('highlights what to print, the rule, and the task, and accepts the message in any capitals', async () => {
+    render(<Harness />)
+    expect(screen.getByText('"Too young"', { selector: '.ba-say' })).toBeInTheDocument()
+    expect(screen.getByText('18 or more', { selector: '.ba-rule' })).toBeInTheDocument()
+    expect(screen.getByText('write the print under else', { selector: '.ba-task' })).toBeInTheDocument()
+    write('age = int(input())\nif age >= 18:\n    print("WELCOME IN!")\nelse:\n    print("too young")')
+    attack()
+    expect(await screen.findByText('Gate Slime defeated!', {}, settle)).toBeInTheDocument()
+  })
+
   it('fights with real tests, explains a boundary miss, and records each attack', async () => {
     render(<Harness />)
     expect(screen.getByRole('heading', { name: 'The club door' })).toBeInTheDocument()

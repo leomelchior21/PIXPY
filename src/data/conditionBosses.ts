@@ -8,6 +8,10 @@ export interface ConditionBoss {
   mission: string
   sprite: BossSpriteId
   palette: { body: string; shade: string; light: string; accent: string }
+  /**
+   * The mission in words, with highlights: [Welcome in] is a message to print,
+   * {18 or more} is a rule, and *write the print under else* is what to write now.
+   */
   prompt: string
   inputNames: string[]
   kind: 'write' | 'fix' | 'finish'
@@ -25,7 +29,7 @@ export const conditionBosses: ConditionBoss[] = [
   {
     id: 1, name: 'Gate Slime', mission: 'The club door', sprite: 'slime', kind: 'finish', task: 'WRITE THE LAST PRINT',
     palette: { body: '#8fdc5a', shade: '#4f9c37', light: '#d4f7a8', accent: '#ffcb47' },
-    prompt: 'The club door reads an age. 18 or more: print Welcome in. Anyone younger: print Too young. The if and the else are ready: write the print under else.',
+    prompt: 'The club door reads an age. {18 or more}: print [Welcome in]. {Anyone younger}: print [Too young]. The if and the else are ready: *write the print under else*.',
     inputNames: ['age'],
     starter: '# Write the print for anyone younger, under else.\nage = int(input())\nif age >= 18:\n    print("Welcome in")\nelse:\n    ',
     solution: 'age = int(input())\nif age >= 18:\n    print("Welcome in")\nelse:\n    print("Too young")',
@@ -35,7 +39,7 @@ export const conditionBosses: ConditionBoss[] = [
   {
     id: 2, name: 'Fan Golem', mission: 'The overheated lab', sprite: 'golem', kind: 'finish', task: 'WRITE BOTH PRINTS',
     palette: { body: '#7fb0e8', shade: '#4a74b0', light: '#c9e2ff', accent: '#ff855e' },
-    prompt: 'The lab fan reads a temperature. Above 30 degrees: print Fan ON. Otherwise: print Fan OFF. The if and the else are ready: write a print in each branch.',
+    prompt: 'The lab fan reads a temperature. {Above 30 degrees}: print [Fan ON]. {Otherwise}: print [Fan OFF]. The if and the else are ready: *write a print in each branch*.',
     inputNames: ['temp'],
     starter: '# Write one print in each branch.\ntemp = int(input())\nif temp > 30:\n    \nelse:\n    ',
     solution: 'temp = int(input())\nif temp > 30:\n    print("Fan ON")\nelse:\n    print("Fan OFF")',
@@ -45,7 +49,7 @@ export const conditionBosses: ConditionBoss[] = [
   {
     id: 3, name: 'Glitch Lock', mission: 'The locked vault', sprite: 'robot', kind: 'finish', task: 'WRITE THE PRINTS AND ELSE',
     palette: { body: '#b8c0cf', shade: '#7a8396', light: '#e8edf5', accent: '#ff5f7e' },
-    prompt: 'Code 4729 must print Unlocked. Any other code: Wrong code. The if is ready: write its print, then else: and the other print.',
+    prompt: 'Code {4729} must print [Unlocked]. {Any other code}: [Wrong code]. The if is ready: *write its print, then else: and the other print*.',
     inputNames: ['code'],
     starter: '# Write the print for the right code, then add the other branch and its print.\ncode = int(input())\nif code == 4729:\n    ',
     solution: 'code = int(input())\nif code == 4729:\n    print("Unlocked")\nelse:\n    print("Wrong code")',
@@ -55,7 +59,7 @@ export const conditionBosses: ConditionBoss[] = [
   {
     id: 4, name: 'Coin Muncher', mission: 'The hungry arcade', sprite: 'slime', kind: 'write', task: 'WRITE THE WHOLE DECISION',
     palette: { body: '#ffd34e', shade: '#d39a1d', light: '#fff2b8', accent: '#ff6f94' },
-    prompt: 'Two numbers arrive: your coins, then the price. Enough coins to pay: print Play!. Otherwise: print Not enough coins.',
+    prompt: 'Two numbers arrive: your coins, then the price. {Enough coins to pay}: print [Play!]. {Otherwise}: print [Not enough coins]. *Write the whole if/else.*',
     inputNames: ['coins', 'price'],
     starter: 'coins = int(input())\nprice = int(input())\n\n',
     solution: 'coins = int(input())\nprice = int(input())\nif coins >= price:\n    print("Play!")\nelse:\n    print("Not enough coins")',
@@ -65,7 +69,7 @@ export const conditionBosses: ConditionBoss[] = [
   {
     id: 5, name: 'Odd Twin', mission: 'The number splitter', sprite: 'ghost', kind: 'write', task: 'WRITE THE WHOLE DECISION',
     palette: { body: '#c3a6ff', shade: '#8a6ad6', light: '#ebe0ff', accent: '#72dcff' },
-    prompt: 'Print Even for even numbers and Odd for odd numbers. Negative numbers too!',
+    prompt: 'Print [Even] for {even numbers} and [Odd] for {odd numbers}. {Negative numbers} too! *Write the whole if/else.*',
     inputNames: ['number'],
     starter: 'number = int(input())\n\n',
     solution: 'number = int(input())\nif number % 2 == 0:\n    print("Even")\nelse:\n    print("Odd")',
@@ -75,7 +79,7 @@ export const conditionBosses: ConditionBoss[] = [
   {
     id: 6, name: 'Password Hydra', mission: 'The secret cave', sprite: 'dragon', kind: 'write', task: 'WRITE THE WHOLE DECISION',
     palette: { body: '#5fd3a8', shade: '#2f9a74', light: '#bff3df', accent: '#ffcb47' },
-    prompt: 'The password is dragon. Print Access granted only for exactly dragon. Anything else: print Access denied.',
+    prompt: 'The password is {dragon}. Print [Access granted] only for {exactly dragon}. {Anything else}: print [Access denied]. *Write the whole if/else.*',
     inputNames: ['password'],
     starter: 'password = input()\n\n',
     solution: 'password = input()\nif password == "dragon":\n    print("Access granted")\nelse:\n    print("Access denied")',
@@ -85,7 +89,7 @@ export const conditionBosses: ConditionBoss[] = [
   {
     id: 7, name: 'Speed Wraith', mission: 'The school zone', sprite: 'ghost', kind: 'write', task: 'WRITE THE WHOLE DECISION',
     palette: { body: '#7ee3f2', shade: '#3ba5be', light: '#d3f8ff', accent: '#ff6f94' },
-    prompt: 'More than 50: print Too fast!. Less than 20: print Too slow. Everything else: print Good speed. Use an if/else inside else.',
+    prompt: '{More than 50}: print [Too fast!]. {Less than 20}: print [Too slow]. {Everything else}: print [Good speed]. *Use an if/else inside else.*',
     inputNames: ['speed'],
     starter: 'speed = int(input())\n\n',
     solution: 'speed = int(input())\nif speed > 50:\n    print("Too fast!")\nelse:\n    if speed < 20:\n        print("Too slow")\n    else:\n        print("Good speed")',
@@ -95,7 +99,7 @@ export const conditionBosses: ConditionBoss[] = [
   {
     id: 8, name: 'Medal Dragon', mission: 'The medal ceremony', sprite: 'dragon', kind: 'write', task: 'WRITE THE WHOLE DECISION',
     palette: { body: '#ffb347', shade: '#c9771b', light: '#ffe2b0', accent: '#ff5f7e' },
-    prompt: '100 points or more: Gold. 50 or more: Silver. Anything else: Bronze. Use an if/else inside else.',
+    prompt: '{100 points or more}: [Gold]. {50 or more}: [Silver]. {Anything else}: [Bronze]. *Use an if/else inside else.*',
     inputNames: ['points'],
     starter: 'points = int(input())\n\n',
     solution: 'points = int(input())\nif points >= 100:\n    print("Gold")\nelse:\n    if points >= 50:\n        print("Silver")\n    else:\n        print("Bronze")',
@@ -105,7 +109,7 @@ export const conditionBosses: ConditionBoss[] = [
   {
     id: 9, name: 'Discount Mimic', mission: 'The online shop', sprite: 'cyclops', kind: 'write', task: 'WRITE THE WHOLE DECISION',
     palette: { body: '#ff8fb8', shade: '#cf5486', light: '#ffd2e4', accent: '#b9f352' },
-    prompt: 'Orders of 50 or more get 10 off. Print the price to pay. A total of 60 prints 50. A total of 30 prints 30.',
+    prompt: '{Orders of 50 or more} get 10 off. *Print the price to pay.* A total of 60 prints [50]. A total of 30 prints [30].',
     inputNames: ['total'],
     starter: 'total = int(input())\n\n',
     solution: 'total = int(input())\nif total >= 50:\n    print(total - 10)\nelse:\n    print(total)',
@@ -115,7 +119,7 @@ export const conditionBosses: ConditionBoss[] = [
   {
     id: 10, name: 'The Grade Judge', mission: 'The final report card', sprite: 'golem', kind: 'write', task: 'WRITE THE WHOLE DECISION',
     palette: { body: '#ff7a59', shade: '#c4472c', light: '#ffc6b3', accent: '#ffe066' },
-    prompt: '9 or more: Excellent. 7 or more: Approved. 5 or more: Recovery. Below 5: Failed. Grades can have decimals.',
+    prompt: '{9 or more}: [Excellent]. {7 or more}: [Approved]. {5 or more}: [Recovery]. {Below 5}: [Failed]. Grades can have decimals. *Use if/else inside else, three times.*',
     inputNames: ['grade'],
     starter: 'grade = float(input())\n\n',
     solution: 'grade = float(input())\nif grade >= 9:\n    print("Excellent")\nelse:\n    if grade >= 7:\n        print("Approved")\n    else:\n        if grade >= 5:\n            print("Recovery")\n        else:\n            print("Failed")',
@@ -133,11 +137,31 @@ export function cleanBossOutput(code: string, stdout: string): string {
   return output.split('\n').map((line) => line.trimEnd()).join('\n').trim()
 }
 
+export type PromptPart = { kind: 'text' | 'say' | 'rule' | 'task'; text: string }
+
+/** Splits a prompt into plain text, [messages], {rules} and *the task*. */
+export function promptParts(prompt: string): PromptPart[] {
+  const kinds = { '[': 'say', '{': 'rule', '*': 'task' } as const
+  return prompt.split(/(\[[^\]]+\]|\{[^}]+\}|\*[^*]+\*)/).filter(Boolean).map((piece) => {
+    const kind = kinds[piece[0] as keyof typeof kinds]
+    return kind ? { kind, text: piece.slice(1, -1) } : { kind: 'text', text: piece }
+  })
+}
+
+/** Capitals, extra spaces and punctuation do not count: what matters is the right message. */
+function looseText(text: string): string {
+  return text.split('\n').map((line) => line.toLowerCase().replace(/[.,!?;:'"]/g, '').replace(/\s+/g, ' ').trim()).join('\n')
+}
+
 export function bossOutputMatches(actual: string, expected: string): boolean {
   if (actual === expected) return true
-  const a = Number(actual)
   const b = Number(expected)
-  return actual !== '' && !actual.includes('\n') && Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 1e-9
+  // Numbers are compared as numbers, so 40.0 is 40 but 4.9 is never 49.
+  if (expected.trim() !== '' && Number.isFinite(b)) {
+    const a = Number(actual)
+    return actual.trim() !== '' && !actual.includes('\n') && Number.isFinite(a) && Math.abs(a - b) < 1e-9
+  }
+  return looseText(actual) === looseText(expected)
 }
 
 // Pixel art: 16 rows of 8 columns, mirrored into 16×16 sprites.
