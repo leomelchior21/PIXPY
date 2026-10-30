@@ -9,7 +9,7 @@ import { backroomLevels, batteryChance, endlessUnlocked, hazardChance, hazardsFo
 import { BackroomAudio, loadAudioPreference, saveAudioPreference } from './backroomAudio'
 import { createBackroomRenderer, type BackroomEntity, type BackroomView, type GateSignal } from './backroomRenderer'
 import { advanceBackroomLighting, createBackroomLighting } from './backroomLighting'
-import { isGuestName, loadBackroomScores, playerKey, rememberBackroomScore, type BackroomScore } from './backroomScores'
+import { isGuestName, playerKey, rememberBackroomScore, type BackroomScore } from './backroomScores'
 import { BackroomMenu, Stars } from './BackroomMenu'
 import { CodePanel, CodeTokens, type CodeTruth } from './BackroomCode'
 import { BackroomChampionAward, BackroomChampionBadge } from './BackroomChampion'
@@ -260,7 +260,7 @@ export function BackroomRun({ progress, onProgress, onBack, paused = false }: Pr
   useEffect(() => { progressRef.current = progress }, [progress])
 
   useEffect(() => {
-    if (status === 'menu') loadBackroomScores(rememberBackroomScore(progressRef.current), setScores)
+    if (status === 'menu') setScores(rememberBackroomScore(progressRef.current))
   }, [status])
 
   useEffect(() => {
@@ -560,7 +560,7 @@ export function BackroomRun({ progress, onProgress, onBack, paused = false }: Pr
     })
     if (current.type === 'endless') {
       const entry = playerRef.current && !progressRef.current.isTeacher ? { username: askName ? playerKey(playerRef.current) : progressRef.current.username, name: playerRef.current, gates: r.gates, xp: r.xp } : undefined
-      loadBackroomScores(rememberBackroomScore(progressRef.current, askName ? entry : undefined), setScores)
+      setScores(rememberBackroomScore(progressRef.current, askName ? entry : undefined))
     }
     setResult({
       mode: current,

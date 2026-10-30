@@ -16,7 +16,7 @@ const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('butto
 const setValue = (value: number) => fireEvent.change(screen.getByRole('slider'), { target: { value: String(value) } })
 const teacher = { ...createSession('Leo', 'leleomaker', true) }
 
-describe('More than one choice: the sorting tower', () => {
+describe('More than one choice: the sorting tower', { timeout: 15_000 }, () => {
   it('opens the intro on the first visit and again from the help button', () => {
     render(<Harness initial={{ ...createSession('Maya'), moreChoiceTutorialSeen: false }} />)
     expect(screen.getByRole('dialog', { name: 'Drop a value, watch where it lands' })).toBeInTheDocument()
@@ -84,7 +84,7 @@ describe('More than one choice: the sorting tower', () => {
     click(/Message slot three/); click('Use message Child ticket')
     click('CHECK MACHINE')
     expect(await screen.findByRole('dialog', { name: 'Level solved!' })).toBeInTheDocument()
-  }, 15_000)
+  })
 
   it('needs four right predictions in a row', async () => {
     render(<Harness initial={teacher} />)

@@ -1,4 +1,3 @@
-import { fetchBackroomScores } from '../../../lib/classroomCloud'
 import type { BackroomProgress } from './types'
 
 export interface BackroomScore {
@@ -10,7 +9,7 @@ export interface BackroomScore {
 
 const storageKey = 'pixpy.backroom-scores.v1'
 
-// The class ranking every student sees.
+// The top runs played on this device. Backroom Run keeps its scores off the classroom cloud.
 export const boardSize = 20
 
 export function rankBackroomScores(scores: BackroomScore[], limit = boardSize): BackroomScore[] {
@@ -51,13 +50,4 @@ export function rememberBackroomScore(progress: BackroomProgress, entry?: Backro
   const scores = rankBackroomScores([...stored, score])
   try { localStorage.setItem(storageKey, JSON.stringify(scores)) } catch { /* Storage is optional. */ }
   return scores
-}
-
-// Device scores right away, then the class board merged in when it answers. Students'
-// best runs reach the class board with their saved progress, so nothing is sent from here.
-export function loadBackroomScores(local: BackroomScore[], onScores: (scores: BackroomScore[]) => void): void {
-  onScores(local)
-  void fetchBackroomScores()
-    .then((remote) => { if (remote.length) onScores(rankBackroomScores([...local, ...remote as BackroomScore[]])) })
-    .catch(() => { /* Offline: the device scores stay on screen. */ })
 }

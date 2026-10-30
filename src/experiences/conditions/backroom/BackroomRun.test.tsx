@@ -6,7 +6,6 @@ import { backroomLevels } from './backroomLevels'
 import { corridorCenterAt } from './backroomEngine'
 import { createBackroomProgress, type BackroomProgress } from './types'
 
-vi.mock('../../../lib/classroomCloud', () => ({ fetchBackroomScores: () => Promise.reject(new Error('offline')) }))
 
 const renderer = vi.hoisted(() => ({ view: null as BackroomView | null }))
 vi.mock('./backroomRenderer', () => ({ createBackroomRenderer: () => ({ render: (view: BackroomView) => { renderer.view = view }, resize: () => undefined, dispose: () => undefined }) }))

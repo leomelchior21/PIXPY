@@ -68,4 +68,27 @@ describe('progress saving', () => {
     expect(saved()).toEqual(['a', 'ab'])
     expect(listener).toHaveBeenCalledTimes(1)
   })
+
+  it('saves Backroom tape stars, keeps run stats on the device until the tab is hidden', async () => {
+    const { saveClassroomProgress, flushClassroomProgress } = await import('./classroomCloud')
+    cloud.rpc.mockImplementation(ok)
+    const sent = () => cloud.rpc.mock.calls.map(([, args]) => [args.p_progress.backroomRunGates, args.p_progress.backroomLevelStars[0]])
+    const base = createSession('Maya')
+    await Promise.all([saveClassroomProgress(base), vi.advanceTimersByTimeAsync(1500)])
+    for (let gates = 1; gates <= 30; gates++) void saveClassroomProgress({ ...base, backroomRunGates: gates, backroomRunXp: gates * 10 })
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(sent()).toEqual([[0, 0]])
+
+    void saveClassroomProgress({ ...base, backroomRunGates: 31, backroomLevelStars: [3, ...base.backroomLevelStars.slice(1)] })
+    await vi.advanceTimersByTimeAsync(1500)
+    expect(sent()).toEqual([[0, 0], [31, 3]])
+
+    void saveClassroomProgress({ ...base, backroomRunGates: 40, backroomLevelStars: [3, ...base.backroomLevelStars.slice(1)] })
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(sent()).toHaveLength(2)
+    await flushClassroomProgress()
+    expect(sent()).toEqual([[0, 0], [31, 3], [40, 3]])
+    await flushClassroomProgress()
+    expect(sent()).toHaveLength(3)
+  })
 })

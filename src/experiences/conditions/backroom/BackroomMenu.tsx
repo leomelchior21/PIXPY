@@ -115,7 +115,7 @@ export function BackroomMenu({ progress, scores, you, player, onPlayer, audioOn,
 
       {tab === 'records' && <div className="br-records">
         <h3><Trophy size={20} /> THE DEEP · TOP RUNS</h3>
-        <small>CLASS RANKING · EVERY STUDENT · BEST GATES / BEST XP</small>
+        <small>TOP RUNS ON THIS DEVICE · BEST GATES / BEST XP</small>
         {scores.length > 0 ? <ol>{scores.map((score, index) => <li key={score.username} className={score.username === you ? 'is-you' : ''}>
           <b>{index + 1}</b><span>{score.name}{score.username === you ? ' (YOU)' : ''}</span><strong>{score.gates} <small>GATES</small></strong><em>{score.xp} XP</em>
         </li>)}</ol> : <p>No runs recorded yet. Clear the tapes, then set the first record in The Deep.</p>}

@@ -3,7 +3,7 @@ import { AppHeader } from './components/AppHeader'
 import { PrintProgress } from './components/PrintProgress'
 import { activityIds, type AppRoute, type SessionProgress } from './types'
 import { clearSession, createSession, loadSession, restoreProgress, saveSession } from './session/progressSession'
-import { loginToClassroom, onProgressSaved, saveClassroomProgress } from './lib/classroomCloud'
+import { flushClassroomProgress, loginToClassroom, onProgressSaved, saveClassroomProgress } from './lib/classroomCloud'
 import { NameEntryScreen } from './screens/NameEntryScreen'
 import { PlaygroundHome } from './screens/PlaygroundHome'
 import { TeacherDashboard } from './screens/TeacherDashboard'
@@ -74,6 +74,7 @@ export default function App() {
   }
 
   const logout = () => {
+    void flushClassroomProgress().catch(() => undefined)
     clearSession()
     setProgress(null)
     setSyncState('saved')

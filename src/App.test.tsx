@@ -19,6 +19,7 @@ const cloud = vi.hoisted(() => ({
   })),
   saveClassroomProgress: vi.fn(async () => {}),
   onProgressSaved: vi.fn(() => () => {}),
+  flushClassroomProgress: vi.fn(async () => {}),
   loadClassProgress: vi.fn(async () => []),
 }))
 vi.mock('./lib/classroomCloud', () => cloud)

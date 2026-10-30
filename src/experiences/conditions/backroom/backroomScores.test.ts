@@ -1,8 +1,7 @@
-import { describe, expect, it, beforeEach, vi } from "vitest";
+import { describe, expect, it, beforeEach } from "vitest";
 import { createBackroomProgress as createSession } from './types'
 import { playerKey, rankBackroomScores, rememberBackroomScore } from './backroomScores'
 
-vi.mock('../../../lib/classroomCloud', () => ({ fetchBackroomScores: () => Promise.reject(new Error('offline')) }))
 
 describe('backroom top scores', () => {
   beforeEach(() => localStorage.clear())

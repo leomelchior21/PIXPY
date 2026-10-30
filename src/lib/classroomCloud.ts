@@ -9,14 +9,6 @@ const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 })
 
-// The Backroom Run class board: each student's best Deep run, read from saved progress.
-export async function fetchBackroomScores(): Promise<unknown[]> {
-  await flushClassroomProgress().catch(() => undefined)
-  const { data, error } = await supabase.rpc('pixpy_backroom_scores')
-  if (error || !Array.isArray(data)) throw new Error('Classroom scores could not be loaded.')
-  return data
-}
-
 export interface ClassroomLogin {
   username: string
   displayName: string
@@ -78,10 +70,23 @@ const saveDelayMs = 1500
 const saveTimeoutMs = 12_000
 const retryDelaysMs = [5_000, 15_000, 30_000, 60_000]
 
+// Backroom Run keeps its run stats on the device: only its tape stars and finished badge start a
+// save. The stats still travel with the next save, so they come back at the next login.
+const deviceOnlyFields = ['backroomRunXp', 'backroomRunBest', 'backroomRunGates', 'backroomRunOperators', 'backroomSkills', 'backroomCoachSeen'] as const satisfies ReadonlyArray<keyof SessionProgress>
+
+function cloudContent(progress: SessionProgress): string {
+  const shared: Partial<SessionProgress> = { ...progress }
+  for (const field of deviceOnlyFields) delete shared[field]
+  return JSON.stringify(shared)
+}
+
 interface Waiter { resolve: () => void; reject: (error: Error) => void }
-let pendingProgress: { progress: SessionProgress; json: string } | null = null
+interface SaveJob { progress: SessionProgress; content: string; full: string }
+let pendingProgress: SaveJob | null = null
+let latestProgress: SessionProgress | null = null
 let waiters: Waiter[] = []
-let lastSavedJson = ''
+let lastSavedContent = ''
+let lastSavedFull = ''
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 let draining: Promise<void> | null = null
 let failures = 0
@@ -111,7 +116,8 @@ function drainSaves(): Promise<void> {
       waiters = []
       try {
         await sendProgress(job.progress)
-        lastSavedJson = job.json
+        lastSavedContent = job.content
+        lastSavedFull = job.full
         failures = 0
         batch.forEach((waiter) => waiter.resolve())
         savedListeners.forEach((listener) => listener())
@@ -132,9 +138,10 @@ function drainSaves(): Promise<void> {
 
 export function saveClassroomProgress(progress: SessionProgress): Promise<void> {
   if (progress.isTeacher) return Promise.resolve()
-  const json = JSON.stringify(progress)
-  if (!pendingProgress && json === lastSavedJson) return Promise.resolve()
-  if (pendingProgress?.json !== json) pendingProgress = { progress: structuredClone(progress), json }
+  latestProgress = progress
+  const content = cloudContent(progress)
+  if (!pendingProgress && content === lastSavedContent) return Promise.resolve()
+  pendingProgress = saveJob(progress, content)
   const saved = new Promise<void>((resolve, reject) => { waiters.push({ resolve, reject }) })
   scheduleSave(saveDelayMs)
   return saved
@@ -146,8 +153,13 @@ export function onProgressSaved(listener: () => void): () => void {
   return () => { savedListeners.delete(listener) }
 }
 
-/** Sends any waiting progress now, for the class board and when the tab is hidden. */
+function saveJob(progress: SessionProgress, content = cloudContent(progress)): SaveJob {
+  return { progress: structuredClone(progress), content, full: JSON.stringify(progress) }
+}
+
+/** Sends any waiting progress now, device-only Backroom stats included: when the tab is hidden and at logout. */
 export function flushClassroomProgress(): Promise<void> {
+  if (!pendingProgress && latestProgress && JSON.stringify(latestProgress) !== lastSavedFull) pendingProgress = saveJob(latestProgress)
   return pendingProgress || draining ? drainSaves() : Promise.resolve()
 }
 
