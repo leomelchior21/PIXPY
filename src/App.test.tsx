@@ -69,7 +69,7 @@ describe('PixPy classroom session', () => {
     for (const [index, title] of ['BACKROOM RUN', 'HOW THE COMPUTER MAKES A CHOICE', 'IF/ELSE', 'REPAIR SHOP', 'MORE THAN ONE CHOICE?', 'Final Bosses'].entries()) {
       const number = String(index + 1).padStart(2, '0')
       const button = screen.getByRole('button', { name: new RegExp(`^${number} ${title.replace('?', '\\?')}:`, 'i') })
-      // A new student has four open: activity 5 waits for the Repair Shop, the Final Bosses for the teacher.
+      // A new student has four open: activity 5 waits for the Repair Shop, the Final Bosses for activity 5.
       if (index < 4) expect(button).toBeEnabled()
       else expect(button).toBeDisabled()
     }

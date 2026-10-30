@@ -21,10 +21,13 @@ export const conditionExperiences: ConditionExperience[] = [
 ]
 
 /** Closed to students until the teacher opens them. Teachers can always preview. */
-const lockedForStudents: ActivityId[] = ['conditions-final-bosses']
+const lockedForStudents: ActivityId[] = []
 
 /** Activities that open once another one is complete. */
-const unlockedBy: Partial<Record<ActivityId, ActivityId>> = { 'more-than-one-choice': 'make-it-work' }
+const unlockedBy: Partial<Record<ActivityId, ActivityId>> = {
+  'more-than-one-choice': 'make-it-work',
+  'conditions-final-bosses': 'more-than-one-choice',
+}
 
 export type ConditionLock = 'open' | 'soon' | 'locked'
 
