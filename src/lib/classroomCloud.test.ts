@@ -91,4 +91,19 @@ describe('progress saving', () => {
     await flushClassroomProgress()
     expect(sent()).toHaveLength(3)
   })
+
+  it('keeps a full pause between saves while the student keeps changing things', async () => {
+    const { saveClassroomProgress } = await import('./classroomCloud')
+    let finish = () => {}
+    cloud.rpc.mockImplementation(() => ({ abortSignal: () => new Promise((resolve) => { finish = () => resolve({ data: true, error: null }) }) }))
+    const base = createSession('Maya')
+    void saveClassroomProgress({ ...base, stopCode: 'a' })
+    await vi.advanceTimersByTimeAsync(1500)
+    void saveClassroomProgress({ ...base, stopCode: 'ab' })
+    finish()
+    await vi.advanceTimersByTimeAsync(1400)
+    expect(saved()).toEqual(['a'])
+    await vi.advanceTimersByTimeAsync(100)
+    expect(saved()).toEqual(['a', 'ab'])
+  })
 })

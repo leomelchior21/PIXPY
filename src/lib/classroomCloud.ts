@@ -107,9 +107,9 @@ function scheduleSave(delay: number) {
 function drainSaves(): Promise<void> {
   clearTimeout(saveTimer)
   saveTimer = undefined
-  // A save already in flight sends the newest snapshot when it finishes.
+  // One save at a time. A change made while it is in flight goes out a full pause later.
   draining ??= (async () => {
-    while (pendingProgress) {
+    if (pendingProgress) {
       const job = pendingProgress
       const batch = waiters
       pendingProgress = null
@@ -126,7 +126,6 @@ function drainSaves(): Promise<void> {
         batch.forEach((waiter) => waiter.reject(error))
         pendingProgress ??= job
         scheduleSave(retryDelaysMs[Math.min(failures++, retryDelaysMs.length - 1)])
-        return
       }
     }
   })().finally(() => {
@@ -158,9 +157,10 @@ function saveJob(progress: SessionProgress, content = cloudContent(progress)): S
 }
 
 /** Sends any waiting progress now, device-only Backroom stats included: when the tab is hidden and at logout. */
-export function flushClassroomProgress(): Promise<void> {
+export async function flushClassroomProgress(): Promise<void> {
   if (!pendingProgress && latestProgress && JSON.stringify(latestProgress) !== lastSavedFull) pendingProgress = saveJob(latestProgress)
-  return pendingProgress || draining ? drainSaves() : Promise.resolve()
+  if (draining) await draining
+  if (pendingProgress) await drainSaves()
 }
 
 if (typeof document !== 'undefined') {
