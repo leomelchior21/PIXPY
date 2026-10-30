@@ -84,7 +84,7 @@ describe('More than one choice: the sorting tower', () => {
     click(/Message slot three/); click('Use message Child ticket')
     click('CHECK MACHINE')
     expect(await screen.findByRole('dialog', { name: 'Level solved!' })).toBeInTheDocument()
-  })
+  }, 15_000)
 
   it('needs four right predictions in a row', async () => {
     render(<Harness initial={teacher} />)

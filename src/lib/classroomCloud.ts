@@ -8,11 +8,10 @@ const supabasePublishableKey = 'sb_publishable_jkHrLZkNR4Zh3XtHEgpTMA_JnMMpG6w'
 const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 })
-let progressSaveQueue: Promise<void> = Promise.resolve()
 
 // The Backroom Run class board: each student's best Deep run, read from saved progress.
 export async function fetchBackroomScores(): Promise<unknown[]> {
-  await progressSaveQueue.catch(() => undefined)
+  await flushClassroomProgress().catch(() => undefined)
   const { data, error } = await supabase.rpc('pixpy_backroom_scores')
   if (error || !Array.isArray(data)) throw new Error('Classroom scores could not be loaded.')
   return data
@@ -71,18 +70,91 @@ export async function loginToClassroom(value: string): Promise<ClassroomLogin> {
   }
 }
 
+// Progress saves are coalesced: typing or playing changes progress many times a second, and every
+// save writes the whole progress row. Only the newest snapshot is sent, after a short pause, one
+// request at a time, and never twice for the same content. A stuck database times out and is
+// retried with a growing wait instead of piling up requests.
+const saveDelayMs = 1500
+const saveTimeoutMs = 12_000
+const retryDelaysMs = [5_000, 15_000, 30_000, 60_000]
+
+interface Waiter { resolve: () => void; reject: (error: Error) => void }
+let pendingProgress: { progress: SessionProgress; json: string } | null = null
+let waiters: Waiter[] = []
+let lastSavedJson = ''
+let saveTimer: ReturnType<typeof setTimeout> | undefined
+let draining: Promise<void> | null = null
+let failures = 0
+const savedListeners = new Set<() => void>()
+
+async function sendProgress(progress: SessionProgress) {
+  const { data, error } = await supabase
+    .rpc('pixpy_save_progress', { p_username: progress.username, p_progress: progress })
+    .abortSignal(AbortSignal.timeout(saveTimeoutMs))
+  if (error || data !== true) throw new Error('Progress is saved on this device, but cloud sync is waiting.')
+}
+
+function scheduleSave(delay: number) {
+  if (saveTimer !== undefined) return
+  saveTimer = setTimeout(() => { saveTimer = undefined; void drainSaves() }, delay)
+}
+
+function drainSaves(): Promise<void> {
+  clearTimeout(saveTimer)
+  saveTimer = undefined
+  // A save already in flight sends the newest snapshot when it finishes.
+  draining ??= (async () => {
+    while (pendingProgress) {
+      const job = pendingProgress
+      const batch = waiters
+      pendingProgress = null
+      waiters = []
+      try {
+        await sendProgress(job.progress)
+        lastSavedJson = job.json
+        failures = 0
+        batch.forEach((waiter) => waiter.resolve())
+        savedListeners.forEach((listener) => listener())
+      } catch (cause) {
+        const error = cause instanceof Error ? cause : new Error(String(cause))
+        batch.forEach((waiter) => waiter.reject(error))
+        pendingProgress ??= job
+        scheduleSave(retryDelaysMs[Math.min(failures++, retryDelaysMs.length - 1)])
+        return
+      }
+    }
+  })().finally(() => {
+    draining = null
+    if (pendingProgress) scheduleSave(saveDelayMs)
+  })
+  return draining
+}
+
 export function saveClassroomProgress(progress: SessionProgress): Promise<void> {
   if (progress.isTeacher) return Promise.resolve()
-  const snapshot = structuredClone(progress)
-  const save = async () => {
-    const { data, error } = await supabase.rpc('pixpy_save_progress', {
-      p_username: snapshot.username,
-      p_progress: snapshot,
-    })
-    if (error || data !== true) throw new Error('Progress is saved on this device, but cloud sync is waiting.')
-  }
-  progressSaveQueue = progressSaveQueue.catch(() => undefined).then(save)
-  return progressSaveQueue
+  const json = JSON.stringify(progress)
+  if (!pendingProgress && json === lastSavedJson) return Promise.resolve()
+  if (pendingProgress?.json !== json) pendingProgress = { progress: structuredClone(progress), json }
+  const saved = new Promise<void>((resolve, reject) => { waiters.push({ resolve, reject }) })
+  scheduleSave(saveDelayMs)
+  return saved
+}
+
+/** Tells the app when a save lands, including a retry after the cloud was unreachable. */
+export function onProgressSaved(listener: () => void): () => void {
+  savedListeners.add(listener)
+  return () => { savedListeners.delete(listener) }
+}
+
+/** Sends any waiting progress now, for the class board and when the tab is hidden. */
+export function flushClassroomProgress(): Promise<void> {
+  return pendingProgress || draining ? drainSaves() : Promise.resolve()
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') void flushClassroomProgress().catch(() => undefined)
+  })
 }
 
 export async function loadClassProgress(teacherUsername: string): Promise<ClassProgressRow[]> {

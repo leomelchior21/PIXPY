@@ -3,7 +3,7 @@ import { AppHeader } from './components/AppHeader'
 import { PrintProgress } from './components/PrintProgress'
 import { activityIds, type AppRoute, type SessionProgress } from './types'
 import { clearSession, createSession, loadSession, restoreProgress, saveSession } from './session/progressSession'
-import { loginToClassroom, saveClassroomProgress } from './lib/classroomCloud'
+import { loginToClassroom, onProgressSaved, saveClassroomProgress } from './lib/classroomCloud'
 import { NameEntryScreen } from './screens/NameEntryScreen'
 import { PlaygroundHome } from './screens/PlaygroundHome'
 import { TeacherDashboard } from './screens/TeacherDashboard'
@@ -43,6 +43,9 @@ export default function App() {
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
+
+  // A retry that lands after the cloud was unreachable clears the offline badge.
+  useEffect(() => onProgressSaved(() => setSyncState('saved')), [])
 
   useEffect(() => {
     if (!progress) return
