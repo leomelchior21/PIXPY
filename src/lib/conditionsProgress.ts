@@ -24,7 +24,7 @@ function records<T>(value: unknown, valid: (item: Partial<T>) => boolean): T[] {
   return Array.isArray(value) ? value.filter((item): item is T => Boolean(item) && typeof item === 'object' && valid(item as Partial<T>)) : []
 }
 
-const repairSteps = [['stampMisses', 'Naming the bug'], ['locateMisses', 'Finding the line'], ['fixMisses', 'Choosing the fix'], ['verifyFails', 'Passing every test']] as const
+const repairSteps = [['locateMisses', 'Finding the line'], ['fixMisses', 'Rebuilding the line'], ['verifyFails', 'Passing every test']] as const
 
 /** Repair Shop: tickets fixed and the step that caused the most retries. */
 export function repairProgress(progress: SessionProgress | null) {
@@ -35,7 +35,7 @@ export function repairProgress(progress: SessionProgress | null) {
   const last = log.at(-1)
   return {
     fixed: fixed.length, total: repairTickets.length,
-    bugNamesFirstTry: log.filter((entry) => count(entry.stampMisses) === 0).length, bugNamesLogged: log.length,
+    linesFirstTry: log.filter((entry) => count(entry.locateMisses) === 0).length, repairsLogged: log.length,
     hardestStep: hardest.total > 0 ? hardest.label : null,
     runs: log.reduce((sum, entry) => sum + count(entry.runs), 0),
     hints: log.reduce((sum, entry) => sum + count(entry.hints), 0),

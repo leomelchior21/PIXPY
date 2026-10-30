@@ -87,7 +87,7 @@ describe('TeacherDashboard', () => {
     expect(screen.getByRole('button', { name: 'Conditions' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('columnheader', { name: 'Backroom gates' })).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Class summary' })).not.toBeInTheDocument()
-    expect(screen.getByLabelText('2 of 6 activities complete')).toBeInTheDocument()
+    expect(screen.getByLabelText('2 of 5 activities complete')).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Choice lab' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'IF/ELSE reasoning' })).toBeInTheDocument()
     expect(screen.getByText('3 gates')).toBeInTheDocument()
@@ -106,7 +106,7 @@ describe('TeacherDashboard', () => {
     render(<TeacherDashboard username="leleomaker" />)
     await screen.findByRole('heading', { name: '1 student in view' })
     await user.click(screen.getByRole('button', { name: 'Conditions' }))
-    expect(screen.getByLabelText('4 of 6 activities complete')).toBeInTheDocument()
+    expect(screen.getByLabelText('4 of 5 activities complete')).toBeInTheDocument()
     expect(screen.getByText('18 gates')).toBeInTheDocument()
     expect(screen.getByText('Best run: 12 · 450 XP')).toBeInTheDocument()
     expect(screen.getByText('20 / 20 quiz questions')).toBeInTheDocument()
@@ -118,7 +118,7 @@ describe('TeacherDashboard', () => {
     expect(screen.queryByText('Last check: Logic error')).not.toBeInTheDocument()
   })
 
-  it('reports the repair shop, the sorting tower, and the boss arena for each student', async () => {
+  it('reports the repair shop and the boss arena for each student', async () => {
     const progress = {
       ...createSession('Ada'),
       repairTickets: [1, 2, 3],
@@ -139,13 +139,11 @@ describe('TeacherDashboard', () => {
     render(<TeacherDashboard username="leleomaker" />)
     await screen.findByRole('heading', { name: '1 student in view' })
     await user.click(screen.getByRole('button', { name: 'Conditions' }))
-    for (const name of ['Repair shop', 'Many choices', 'Boss arena']) expect(screen.getByRole('columnheader', { name })).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Many choices' })).not.toBeInTheDocument()
+    for (const name of ['Repair shop', 'Boss arena']) expect(screen.getByRole('columnheader', { name })).toBeInTheDocument()
     expect(screen.getByText('3 / 8 tickets fixed')).toBeInTheDocument()
-    expect(screen.getByText(/Bug type named first try: 1 \/ 2/)).toBeInTheDocument()
+    expect(screen.getByText(/Broken line found first try: 1 \/ 2/)).toBeInTheDocument()
     expect(screen.getByText('Most retries: Finding the line')).toBeInTheDocument()
-    expect(screen.getByText('5 / 8 levels solved')).toBeInTheDocument()
-    expect(screen.getByText('Predictions: 1 / 2 right')).toBeInTheDocument()
-    expect(screen.getByText('1 failed build check')).toBeInTheDocument()
     expect(screen.getByText('2 / 10 bosses defeated')).toBeInTheDocument()
     expect(screen.getByText('Toughest: Fan Golem (2 attacks)')).toBeInTheDocument()
     expect(screen.getByText(/Last: Glitch Lock · 0 \/ 5 hits/)).toBeInTheDocument()
@@ -153,6 +151,5 @@ describe('TeacherDashboard', () => {
     expect(screen.getByText('2 / 10 badges')).toBeInTheDocument()
     expect(screen.getByText('Fighter: Merlin · Wizard')).toBeInTheDocument()
     expect(screen.getByText('Guide watched')).toBeInTheDocument()
-    expect(screen.getByText('Intro not watched yet')).toBeInTheDocument()
   })
 })

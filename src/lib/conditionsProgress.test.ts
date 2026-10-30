@@ -58,7 +58,7 @@ describe('new conditions activity analytics', () => {
       conditionBosses: [1],
       conditionBossLog: [{ boss: 1, hits: 6, total: 6, hints: 0, at: 1 }, { boss: 2, hits: 2, total: 6, hints: 1, at: 2 }, { boss: 2, hits: 5, total: 6, hints: 2, at: 3 }],
     } as unknown as SessionProgress
-    expect(repairProgress(progress)).toMatchObject({ fixed: 2, bugNamesFirstTry: 1, bugNamesLogged: 2, hardestStep: 'Finding the line', runs: 4, hints: 1, lastTicket: 'The safe door' })
+    expect(repairProgress(progress)).toMatchObject({ fixed: 2, linesFirstTry: 1, repairsLogged: 2, hardestStep: 'Finding the line', runs: 4, hints: 1, lastTicket: 'The safe door' })
     expect(moreChoiceProgress(progress)).toMatchObject({ solved: 3, predictions: 2, predictionsRight: 1, checks: 1, failedChecks: 1, drops: 1, lastLevel: { title: 'Ticket booth' } })
     expect(bossProgress(progress)).toMatchObject({ defeated: 1, attacks: 3, hints: 3, toughest: { name: 'Fan Golem', attacks: 2 }, lastBoss: 'Fan Golem', lastHits: '5 / 6' })
   })

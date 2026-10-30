@@ -60,7 +60,7 @@ describe('PixPy classroom session', () => {
     expect(screen.queryByRole('button', { name: /print my progress/i })).not.toBeInTheDocument()
   })
 
-  it('opens Conditions with six activities and a world-specific menu', async () => {
+  it('opens Conditions with five activities and a world-specific menu', async () => {
     const user = userEvent.setup()
     render(<App />)
     await user.type(screen.getByLabelText('Enter your PixPy login'), 'MayaStudent')
@@ -68,10 +68,10 @@ describe('PixPy classroom session', () => {
     await user.click(await screen.findByRole('button', { name: 'Open Conditions' }))
 
     expect(screen.getByRole('heading', { name: 'Conditions' })).toBeInTheDocument()
-    for (const [index, title] of ['BACKROOM RUN', 'HOW THE COMPUTER MAKES A CHOICE', 'IF/ELSE', 'REPAIR SHOP', 'MORE THAN ONE CHOICE?', 'Final Bosses'].entries()) {
+    for (const [index, title] of ['BACKROOM RUN', 'HOW THE COMPUTER MAKES A CHOICE', 'IF/ELSE', 'REPAIR SHOP', 'Final Bosses'].entries()) {
       const number = String(index + 1).padStart(2, '0')
       const button = screen.getByRole('button', { name: new RegExp(`^${number} ${title.replace('?', '\\?')}:`, 'i') })
-      // A new student has four open: activity 5 waits for the Repair Shop, the Final Bosses for activity 5.
+      // A new student has four open: the Final Bosses wait for the Repair Shop.
       if (index < 4) expect(button).toBeEnabled()
       else expect(button).toBeDisabled()
     }
@@ -79,7 +79,7 @@ describe('PixPy classroom session', () => {
     const list = screen.getByRole('complementary', { name: 'Conditions activities' })
     expect(list).toHaveTextContent('IF/ELSE')
     expect(list).not.toHaveTextContent('Dino Variables')
-    expect(within(list).getAllByRole('button').filter((button) => button.hasAttribute('disabled'))).toHaveLength(2)
+    expect(within(list).getAllByRole('button').filter((button) => button.hasAttribute('disabled'))).toHaveLength(1)
     await user.click(screen.getByRole('button', { name: /^02 HOW THE COMPUTER MAKES A CHOICE:/i }))
     expect(screen.getByText('YOUR THREE STEPS', { selector: '.cm-phase-label' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Open Conditions activity list' })).toBeInTheDocument()
@@ -104,10 +104,10 @@ describe('PixPy classroom session', () => {
     expect(screen.queryByRole('heading', { name: 'The club door' })).not.toBeInTheDocument()
   })
 
-  it('opens the repair shop, the sorting tower, and the boss arena from their URLs', { timeout: 40_000 }, async () => {
+  it('opens the repair shop and the boss arena from their URLs, and keeps the hidden sorting tower closed', { timeout: 40_000 }, async () => {
     // A teacher can open every activity, including the ones still locked for students.
     saveSession(createSession('Maya', 'maya', true))
-    for (const [route, heading] of [['make-it-work', 'The arcade cabinet'], ['more-than-one-choice', 'Two at once?'], ['conditions-final-bosses', 'The club door']]) {
+    for (const [route, heading] of [['make-it-work', 'The arcade cabinet'], ['more-than-one-choice', 'Conditions'], ['conditions-final-bosses', 'The club door']]) {
       window.history.replaceState(null, '', `#/${route}`)
       const view = render(<App />)
       // The first load of each activity chunk compiles in the test runner, which can take a few seconds.
