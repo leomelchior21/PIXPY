@@ -1,4 +1,4 @@
-import { Award, X } from 'lucide-react'
+import { Award, Crown, Lock, X } from 'lucide-react'
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { bossBadges, type BadgeShape, type BossBadge } from '../../data/bossBadges'
 import { conditionBosses } from '../../data/conditionBosses'
@@ -60,6 +60,44 @@ export function BadgeArt({ badge, size, locked = false }: { badge: BossBadge; si
   </span>
 }
 
+/**
+ * Badge 11, the Master Badge: a gold twelve-point star around a ring with one jewel per boss.
+ * Locked, it is a dark star whose sockets light up as the ten badges are earned.
+ */
+export function MasterBadgeArt({ size, earned, unlocked }: { size: number; earned: number[]; unlocked: boolean }) {
+  const uid = useId().replace(/:/g, '')
+  const Icon = unlocked ? Crown : Lock
+  return <span className={`bb-art bb-master-art ${unlocked ? 'is-unlocked' : 'is-locked'}`} style={{ width: size, height: size, '--icon': `${Math.round(size * 0.3)}px` } as CSSProperties} aria-hidden="true">
+    <svg className="bb-art__shape" viewBox="0 0 100 100">
+      <defs>
+        <linearGradient id={`mrim${uid}`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={unlocked ? '#fff6c8' : '#3a3d4e'} />
+          <stop offset=".4" stopColor={unlocked ? '#ffc93d' : '#24262f'} />
+          <stop offset=".75" stopColor={unlocked ? '#b8740f' : '#17181f'} />
+          <stop offset="1" stopColor={unlocked ? '#fff2b0' : '#2e3140'} />
+        </linearGradient>
+        <radialGradient id={`mcore${uid}`} cx=".4" cy=".35" r=".8">
+          <stop offset="0" stopColor={unlocked ? '#4a3a9a' : '#1d1f29'} />
+          <stop offset="1" stopColor={unlocked ? '#140c3a' : '#0c0d12'} />
+        </radialGradient>
+      </defs>
+      <path d={`M${star(12, 49, 40)}Z`} fill={`url(#mrim${uid})`} stroke="#14151c" strokeWidth="2.5" strokeLinejoin="round" />
+      <circle cx="50" cy="50" r="36" fill="#14151c" />
+      {conditionBosses.map((boss, i) => {
+        const has = earned.includes(boss.id)
+        const from = (i / 10) * Math.PI * 2 - Math.PI / 2, to = ((i + 1) / 10) * Math.PI * 2 - Math.PI / 2 - 0.06
+        const arc = (r: number, a: number) => `${(50 + Math.cos(a) * r).toFixed(2)} ${(50 + Math.sin(a) * r).toFixed(2)}`
+        return <path key={boss.id} className={`bb-master-art__gem ${has ? 'is-lit' : ''}`} style={{ '--i': i } as CSSProperties}
+          d={`M${arc(34, from)} A34 34 0 0 1 ${arc(34, to)} L${arc(26, to)} A26 26 0 0 0 ${arc(26, from)} Z`}
+          fill={has ? boss.palette.body : '#262833'} stroke={has ? boss.palette.light : '#30333f'} strokeWidth="1" />
+      })}
+      <circle cx="50" cy="50" r="24" fill={`url(#mcore${uid})`} stroke={unlocked ? '#ffe066' : '#3a3d4e'} strokeWidth="2" />
+      {unlocked && <ellipse cx="38" cy="26" rx="16" ry="6" fill="#fff" opacity=".35" transform="rotate(-28 38 26)" />}
+    </svg>
+    <Icon className="bb-art__icon bb-master-art__icon" strokeWidth={2.4} />
+  </span>
+}
+
 /** Every badge, earned or still waiting, in a velvet case. */
 export function BadgeCase({ earned, arriving, onClose }: { earned: number[]; arriving?: number; onClose: () => void }) {
   const grid = useRef<HTMLOListElement>(null)
@@ -77,8 +115,34 @@ export function BadgeCase({ earned, arriving, onClose }: { earned: number[]; arr
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
   const count = bossBadges.filter((badge) => earned.includes(badge.id)).length
+  const complete = count === bossBadges.length
+  // When the tenth badge lands, all ten send their light into the Master Badge and forge it.
+  const forgeNow = complete && arriving !== undefined
+  const [forge, setForge] = useState<'idle' | 'charging' | 'forged'>(forgeNow ? 'idle' : 'forged')
+  const [orbs, setOrbs] = useState<Array<{ id: number; x: number; y: number; dx: number; dy: number; color: string }>>([])
+  const caseRef = useRef<HTMLDivElement>(null)
+  const masterRef = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    if (!forgeNow) return
+    const calm = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (calm) { setForge('forged'); return }
+    const charge = window.setTimeout(() => {
+      const box = caseRef.current?.getBoundingClientRect(), target = masterRef.current?.getBoundingClientRect()
+      if (box && target && grid.current) {
+        const tx = target.left + target.width / 2 - box.left, ty = target.top + target.height / 2 - box.top
+        setOrbs([...grid.current.querySelectorAll('.bb-case__slot')].map((slot, i) => {
+          const r = slot.getBoundingClientRect(), x = r.left + r.width / 2 - box.left, y = r.top + r.height / 2 - box.top
+          return { id: i, x, y, dx: tx - x, dy: ty - y, color: conditionBosses[i].palette.body }
+        }))
+      }
+      setForge('charging')
+    }, 1800)
+    const done = window.setTimeout(() => setForge('forged'), 1800 + 10 * 90 + 700)
+    return () => { window.clearTimeout(charge); window.clearTimeout(done) }
+  }, [forgeNow])
+  const masterLit = forge === 'forged' && complete
   return <div className="bb-backdrop" onClick={onClose}>
-    <div className="bb-case" role="dialog" aria-modal="true" aria-labelledby="bb-case-title" onClick={(event) => event.stopPropagation()}>
+    <div className="bb-case" ref={caseRef} role="dialog" aria-modal="true" aria-labelledby="bb-case-title" onClick={(event) => event.stopPropagation()}>
       <button className="bb-close" onClick={onClose} aria-label="Close the badge case"><X size={18} /></button>
       <header><Award size={26} /><div><h2 id="bb-case-title">Badge case</h2><p>{count} of {bossBadges.length} badges · one for every boss you defeat</p></div>{arriving && <span className="bb-case__new" key={arriving}>+1 BADGE</span>}</header>
       <ol className="bb-case__grid" ref={grid}>{bossBadges.map((badge, i) => {
@@ -96,6 +160,21 @@ export function BadgeCase({ earned, arriving, onClose }: { earned: number[]; arr
           {has && <i>{boss.name}</i>}
         </li>
       })}</ol>
+      <section className={`bb-master ${masterLit ? 'is-complete' : ''} ${forge === 'charging' ? 'is-charging' : ''} ${forgeNow && masterLit ? 'is-forged' : ''}`} aria-label="Master badge">
+        <span className="bb-master__slot" ref={masterRef}>
+          {masterLit && <span className="bb-master__rays" aria-hidden="true" />}
+          <MasterBadgeArt key={masterLit ? 'lit' : 'dark'} size={92} earned={forge === 'idle' && forgeNow ? earned.filter((id) => id !== arriving) : earned} unlocked={masterLit} />
+          {forgeNow && masterLit && <span className="bb-master__flash" aria-hidden="true" />}
+        </span>
+        <div className="bb-master__copy">
+          <small>BADGE 11 · MASTER</small>
+          <b>{masterLit ? 'Conditions Master' : 'Master Badge'}</b>
+          <p>{masterLit ? 'All ten bosses beaten: every decision, every edge case.' : complete ? 'All ten badges are here. The Master Badge is forming…' : `Earn all ten badges to forge it. ${count} of ${bossBadges.length} so far.`}</p>
+          <div className="bb-master__pips" aria-hidden="true">{conditionBosses.map((boss, i) => <i key={boss.id} className={earned.includes(boss.id) ? 'is-lit' : ''} style={{ '--c': boss.palette.body, '--i': i } as CSSProperties} />)}</div>
+        </div>
+        {forgeNow && masterLit && <span className="bb-master__new">+ MASTER BADGE</span>}
+      </section>
+      {forge === 'charging' && orbs.map((orb) => <span key={orb.id} className="bb-orb" aria-hidden="true" style={{ left: orb.x, top: orb.y, '--dx': `${orb.dx}px`, '--dy': `${orb.dy}px`, '--c': orb.color, animationDelay: `${orb.id * 90}ms` } as CSSProperties} />)}
     </div>
   </div>
 }

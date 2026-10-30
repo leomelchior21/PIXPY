@@ -19,6 +19,19 @@ const part = (code: string) => fireEvent.click(screen.getByRole('radio', { name:
 
 // Each test plays whole tickets through the full page, which takes several seconds on slower machines.
 describe('Make it work: the repair shop', { timeout: 30000 }, () => {
+  it('invites the student to add a photo to the finished certificate and save it', () => {
+    render(<Harness initial={seen([1, 2, 3, 4, 5, 6, 7, 8])} />)
+    expect(screen.getByRole('heading', { name: 'Certified Bug Fixer' })).toBeInTheDocument()
+    expect(screen.getByText('Maya')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Add your photo!/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /SAVE CERTIFICATE/ })).toBeInTheDocument()
+    // From any ticket, the certificate button at the end of the row brings it back.
+    click(/Ticket 3: The phone dock/)
+    expect(screen.getByRole('heading', { name: 'The phone dock' })).toBeInTheDocument()
+    click('Your Certified Bug Fixer certificate')
+    expect(screen.getByRole('heading', { name: 'Certified Bug Fixer' })).toBeInTheDocument()
+  })
+
   it('opens the guide on the first visit, remembers it was read, and reopens it from the help button', () => {
     render(<Harness initial={createSession('Maya')} />)
     const guide = screen.getByRole('dialog', { name: 'Customers bring you broken machines' })

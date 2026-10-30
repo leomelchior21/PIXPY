@@ -556,3 +556,47 @@
 .rs-screen .rs-chat .rs-chat__bubble figcaption small, .rs-screen .rs-chat .rs-chat__bubble figcaption time { font-family: 'IBM Plex Mono', monospace !important; }
 @media (max-height: 820px) and (min-width: 641px) { .rs-chat__avatar { width: 34px; height: 34px; } .rs-chat__bubble { padding: 6px 10px 8px; } .rs-chat__bubble p { font-size: 13.5px; } }
 @media (max-height: 660px) and (min-width: 641px) { .rs-chat__bubble figcaption { display: flex; } .rs-chat__bubble figcaption time { display: none; } }
+
+/* Certificate with the student's photo. */
+.rs-certificate__card.has-photo { grid-template-columns: auto minmax(0, 1fr); align-items: center; justify-items: stretch; gap: 26px; width: min(900px, 100%); padding: 30px 32px; text-align: left; }
+.rs-certificate__text { display: grid; justify-items: start; gap: 10px; }
+.rs-certificate__text .rs-certificate__seal { width: 64px; height: 64px; }
+.rs-certificate__name { margin: 0; color: #5a574d; font-size: 15px; }
+.rs-certificate__name b { color: var(--rs-ink); font-size: 22px; font-weight: 900; }
+.rs-certificate__card.has-photo .rs-certificate__kinds { justify-content: flex-start; }
+.rs-photo { display: grid; justify-items: center; gap: 12px; }
+.rs-photo__invite { display: grid; justify-items: center; gap: 6px; width: 220px; padding: 22px 16px; border: 3px dashed #d6b45a; border-radius: 16px; color: var(--rs-ink); background: #fff8e0; cursor: pointer; transform: rotate(-3deg); transition: transform .2s, background .2s; animation: rs-photo-wiggle 2.6s ease-in-out infinite; }
+.rs-photo__invite:hover { transform: rotate(0) scale(1.03); background: #fff3c4; }
+.rs-photo__invite b { font: 900 18px var(--ui-font); }
+.rs-photo__invite small { color: #7c6a45; font-size: 12px; line-height: 1.3; text-align: center; }
+.rs-photo__lens { display: grid; place-items: center; width: 70px; height: 70px; border: 3px solid var(--rs-ink); border-radius: 50%; background: var(--rs-yellow); box-shadow: 3px 3px 0 var(--rs-ink); }
+.rs-photo__polaroid { margin: 0; padding: 12px 12px 10px; border: 3px solid var(--rs-ink); background: #fff; box-shadow: 6px 6px 0 #17181d33; transform: rotate(-4deg); animation: rs-photo-drop .6s cubic-bezier(.2, 1.4, .4, 1) both; }
+.rs-photo__polaroid img { display: block; width: 200px; height: 200px; object-fit: cover; border: 2px solid #17181d22; }
+.rs-photo__polaroid figcaption { margin-top: 8px; font: 900 16px var(--ui-font); text-align: center; text-transform: uppercase; }
+.rs-photo__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.rs-photo__actions .rs-primary, .rs-photo__actions .rs-secondary { min-height: 42px; padding: 8px 14px; font-size: 11px !important; }
+.rs-booth-backdrop { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 18px; background: rgba(10, 10, 14, .82); animation: rs-fade .25s ease both; }
+.rs-booth { position: relative; display: grid; justify-items: center; gap: 12px; width: min(460px, 100%); padding: 20px; border: 3px solid var(--rs-ink, #17181d); border-radius: 20px; background: #fffdf6; box-shadow: 8px 8px 0 #000; }
+.rs-booth__close { position: absolute; top: 10px; right: 10px; z-index: 3; display: grid; place-items: center; width: 40px; height: 40px; border: 2px solid #17181d; border-radius: 10px; background: #fff; cursor: pointer; }
+.rs-booth__view { position: relative; width: min(340px, 70vw); aspect-ratio: 1; overflow: hidden; border: 3px solid #17181d; border-radius: 16px; background: #1a1714; }
+.rs-booth__view video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.rs-booth__frame { position: absolute; inset: 14%; border: 4px dashed #ffffffcc; border-radius: 50%; box-shadow: 0 0 0 999px rgba(0, 0, 0, .25); }
+.rs-booth__count { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font: 900 120px var(--ui-font); text-shadow: 6px 6px 0 #000; animation: rs-photo-count .8s ease-out both; }
+.rs-booth__flash { position: absolute; inset: 0; background: #fff; animation: rs-photo-flash .5s ease-out both; }
+.rs-booth__note { position: absolute; inset: auto 12px 12px; margin: 0; padding: 8px 10px; border-radius: 8px; color: #fff; background: #000a; font-size: 13px; text-align: center; }
+.rs-booth__tip { margin: 0; color: #5a574d; font-size: 14px; font-weight: 700; }
+.rs-booth__actions { display: flex; gap: 10px; }
+@keyframes rs-photo-wiggle { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(2deg); } }
+@keyframes rs-photo-drop { from { opacity: 0; transform: translateY(-40px) rotate(-14deg) scale(1.1); } }
+@keyframes rs-photo-count { from { opacity: 0; transform: scale(1.8); } 30% { opacity: 1; transform: scale(1); } to { opacity: .3; } }
+@keyframes rs-photo-flash { from { opacity: 1; } to { opacity: 0; } }
+@media (max-width: 760px), (max-height: 600px) {
+  .rs-certificate__card.has-photo { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; padding: 20px; }
+  .rs-certificate__text { justify-items: center; }
+  .rs-photo__polaroid img { width: 140px; height: 140px; }
+}
+/* The certificate button at the end of the ticket row. */
+.rs-rail .rs-rail__cert { border-style: solid; border-color: var(--rs-ink); color: var(--rs-ink); background: linear-gradient(135deg, #ffe066, #ffcb47); box-shadow: 2px 2px 0 var(--rs-ink); }
+.rs-rail .rs-rail__cert.is-current { box-shadow: 3px 3px 0 var(--rs-ink), 0 0 14px #ffcb4799; }
+.rs-rail .rs-rail__cert::before, .rs-rail .rs-rail__cert::after { display: none; }
+@media (max-width: 860px) { .rs-rail .rs-rail__cert .rs-rail__number { display: none; } }

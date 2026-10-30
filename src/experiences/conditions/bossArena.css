@@ -576,3 +576,61 @@
 .ba-arena .ba-arena__shade { background: radial-gradient(ellipse at 55% 45%, transparent 45%, rgba(10, 8, 18, .55) 100%), linear-gradient(rgba(10, 8, 18, .35), transparent 22%, transparent 72%, rgba(10, 8, 18, .6)); }
 .ba-field .ba-boss__shadow { background: radial-gradient(ellipse, rgba(0, 0, 0, .55), transparent 70%); border-color: transparent; }
 .ba-fighter__platform { background: radial-gradient(ellipse, rgba(0, 0, 0, .55), transparent 70%); border-color: transparent; }
+/* Close buttons: always on top of their panel's header, and big enough for a finger. */
+.bb-backdrop .bb-close, .bi-backdrop .bi__close { z-index: 6; width: 40px; min-width: 40px; height: 40px; min-height: 40px; }
+
+/* Badge 11: the Master Badge, waiting under the ten slots. */
+.bb-case { position: relative; }
+.bb-master { position: relative; display: flex; align-items: center; gap: 16px; padding: 12px 16px; border: 2px dashed #c48a3a88; border-radius: 16px; background: radial-gradient(ellipse at 15% 50%, #ffffff10, transparent 60%), #2a0c1a; box-shadow: inset 0 4px 18px rgba(0, 0, 0, .55); transition: border-color .4s, box-shadow .4s; }
+.bb-master__slot { position: relative; display: grid; flex-shrink: 0; place-items: center; width: 108px; height: 108px; }
+.bb-master__copy { display: grid; gap: 4px; min-width: 0; }
+.bb-master__copy small { color: #c48a3a; font: 800 10px 'IBM Plex Mono', monospace; letter-spacing: .16em; }
+.bb-master__copy b { color: #fff3d8; font: 900 22px/1 var(--ui-font); letter-spacing: -.02em; text-transform: uppercase; }
+.bb-master__copy p { margin: 0; color: #e8c79a; font-size: 13px; line-height: 1.35; }
+.bb-master__pips { display: flex; gap: 5px; margin-top: 4px; }
+.bb-master__pips i { width: 16px; height: 8px; border-radius: 3px; background: #ffffff1a; box-shadow: inset 0 1px 2px #00000080; }
+.bb-master__pips i.is-lit { background: var(--c); box-shadow: 0 0 8px var(--c); }
+.bb-master-art.is-locked { filter: drop-shadow(0 0 10px rgba(196, 138, 58, .25)); animation: bb-master-wait 3s ease-in-out infinite; }
+.bb-master-art.is-locked .bb-art__icon { color: #c48a3a99; }
+.bb-master-art.is-unlocked { filter: drop-shadow(0 0 22px rgba(255, 201, 61, .75)) drop-shadow(0 6px 0 rgba(0, 0, 0, .5)); animation: bb-hover 3s ease-in-out infinite; }
+.bb-master-art.is-unlocked .bb-art__icon { color: #ffe066; filter: drop-shadow(0 0 8px #ffcb47); }
+.bb-master-art__gem.is-lit { filter: drop-shadow(0 0 3px #fff); }
+.bb-master.is-charging .bb-master-art__gem.is-lit { animation: bb-gem-in .35s calc(var(--i) * 90ms + .6s) ease both; }
+.bb-master.is-charging .bb-master__slot { animation: bb-charge 1.6s ease-in both; }
+.bb-master.is-complete { border-style: solid; border-color: #ffc93d; box-shadow: inset 0 4px 18px rgba(0, 0, 0, .4), 0 0 26px rgba(255, 201, 61, .35); background: radial-gradient(ellipse at 15% 50%, rgba(255, 201, 61, .22), transparent 60%), #2a0c1a; }
+.bb-master.is-complete .bb-master__copy b { color: #ffe066; text-shadow: 0 0 14px rgba(255, 201, 61, .6); }
+.bb-master__rays { position: absolute; inset: -40px; z-index: -1; border-radius: 50%; background: repeating-conic-gradient(rgba(255, 224, 102, .35) 0 10deg, transparent 10deg 24deg); -webkit-mask-image: radial-gradient(circle, #000 20%, transparent 70%); mask-image: radial-gradient(circle, #000 20%, transparent 70%); animation: bb-rays 12s linear infinite; }
+.bb-master.is-forged .bb-master__slot { animation: bb-forge .9s cubic-bezier(.2, 1.5, .4, 1) both; }
+.bb-master__flash { position: absolute; inset: -30px; border-radius: 50%; background: radial-gradient(circle, #fff, rgba(255, 224, 102, .6) 35%, transparent 65%); pointer-events: none; animation: bb-flash 1s ease-out both; }
+.bb-master__new { position: absolute; top: -12px; right: 14px; padding: 4px 12px; border: 2px solid #1a0d12; border-radius: 30px; color: #1a0d12; background: linear-gradient(90deg, #ffe066, #ffc93d); box-shadow: 0 0 18px #ffe06699; font: 900 12px 'IBM Plex Mono', monospace; letter-spacing: .06em; animation: bi-slam .6s .3s cubic-bezier(.2, 1.6, .4, 1) both; }
+.bb-orb { position: absolute; z-index: 7; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: radial-gradient(circle, #fff 20%, var(--c) 60%); box-shadow: 0 0 14px var(--c), 0 0 4px #fff; pointer-events: none; animation: bb-orb .7s cubic-bezier(.5, 0, .3, 1) both; }
+@keyframes bb-master-wait { 50% { filter: drop-shadow(0 0 18px rgba(196, 138, 58, .45)); } }
+@keyframes bb-gem-in { from { opacity: .15; transform-origin: 50px 50px; } to { opacity: 1; } }
+@keyframes bb-charge { 0% { transform: none; } 70% { transform: scale(1.06) rotate(-4deg); filter: brightness(1.4); } 85% { transform: scale(.94) rotate(3deg); } 100% { transform: scale(1.1); filter: brightness(2); } }
+@keyframes bb-forge { 0% { transform: scale(1.5); filter: brightness(3); } 60% { transform: scale(.92); filter: brightness(1.2); } 100% { transform: none; filter: none; } }
+@keyframes bb-flash { 0% { opacity: 1; transform: scale(.4); } 100% { opacity: 0; transform: scale(2.2); } }
+@keyframes bb-orb { 0% { opacity: 0; transform: translate(0, 0) scale(.4); } 15% { opacity: 1; transform: translate(0, -18px) scale(1.2); } 100% { opacity: .9; transform: translate(var(--dx), var(--dy)) scale(.5); } }
+.bb-backdrop .bb-master .bb-master__copy small, .bb-backdrop .bb-master .bb-master__new { font-family: 'IBM Plex Mono', monospace !important; }
+@media (max-height: 640px) { .bb-master { padding: 8px 12px; } .bb-master__slot { width: 84px; height: 84px; } .bb-master__slot .bb-master-art { transform: scale(.82); } .bb-master__copy p { font-size: 12px; } }
+@media (prefers-reduced-motion: reduce) { .bb-orb, .bb-master__flash, .bb-master__rays { display: none; } }
+
+/* The champion screen shows the Master Badge instead of a plain crown. */
+.ba-hall__master { position: relative; display: grid; place-items: center; width: 170px; height: 170px; margin-bottom: 4px; }
+.ba-hall__master .bb-master__rays { inset: -50px; }
+/* With the Master Badge row, the case stays on one screen: tighter spacing on shorter screens. */
+@media (max-height: 860px) {
+  .bb-case { gap: 10px; padding: 14px 18px 16px; }
+  .bb-case__grid { gap: 8px; padding: 10px 12px; }
+  .bb-case__slot { width: 78px; height: 78px; }
+  .bb-case__grid i { display: none; }
+  .bb-master__slot { width: 96px; height: 96px; }
+}
+@media (max-height: 660px) {
+  .bb-case header p, .bb-case__grid small { display: none; }
+  .bb-case__slot { width: 60px; height: 60px; }
+  .bb-case__slot .bb-art { transform: scale(.8); }
+  .bb-master { padding: 6px 12px; }
+  .bb-master__slot { width: 74px; height: 74px; }
+  .bb-master__slot .bb-master-art { transform: scale(.78); }
+}
+.bb-case .bb-master { overflow: hidden; } .bb-case .bb-master__new { top: 8px; }

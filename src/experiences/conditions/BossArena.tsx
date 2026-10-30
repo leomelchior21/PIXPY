@@ -7,7 +7,7 @@ import { runGuidedPython } from '../../lib/guidedPython'
 import { PythonRunError, pythonRunner } from '../../lib/pythonRunner'
 import { completeActivity } from '../../session/progressSession'
 import type { BossAttackEvent, BossFighter, SessionProgress } from '../../types'
-import { BadgeArt, BadgeAward, BadgeCase } from './BossBadges'
+import { BadgeArt, BadgeAward, BadgeCase, MasterBadgeArt } from './BossBadges'
 import { BossIntro } from './BossIntro'
 import { BossScene } from './BossScenes'
 import { bossBadges } from '../../data/bossBadges'
@@ -95,7 +95,7 @@ export function BossArena({ progress, onProgress, onBack }: Props) {
     <BossTrail index={-1} defeated={defeated} accessible={accessible} onSelect={(i) => { setIndex(i); setFinished(false) }} />
     <section className="ba-hall">
       <div className="ba-hall__card">
-        <div className="ba-hall__crown"><Crown size={54} /></div>
+        <div className="ba-hall__master"><span className="bb-master__rays" aria-hidden="true" /><MasterBadgeArt size={150} earned={defeated} unlocked /></div>
         <p className="ba-kicker">ALL {conditionBosses.length} BOSSES DEFEATED</p>
         <h1>Conditions Champion</h1>
         <p>Your decisions survived {conditionBosses.reduce((sum, boss) => sum + boss.tests.length, 0)} surprise tests, aimed right at the edges of every rule.</p>
@@ -330,7 +330,7 @@ function BossFight({ boss, fighter, index, defeated, accessible, drafts, onSelec
 
     <footer className={`ba-footer ba-footer--${note.tone}`}>
       <button className={`ba-case-button ${newBadge ? 'is-new' : ''}`} onClick={() => onOpenCase()} aria-label={`Badge case: ${earnedCount} of ${bossBadges.length} badges`}>
-        <span className="ba-case-button__stack">{(earnedCount ? bossBadges.filter((badge) => earned.includes(badge.id)).slice(-3) : [bossBadges[0]]).map((badge) => <BadgeArt key={badge.id} badge={badge} size={32} locked={!earnedCount} />)}</span>
+        <span className="ba-case-button__stack">{earnedCount === bossBadges.length ? <MasterBadgeArt size={34} earned={earned} unlocked /> : (earnedCount ? bossBadges.filter((badge) => earned.includes(badge.id)).slice(-3) : [bossBadges[0]]).map((badge) => <BadgeArt key={badge.id} badge={badge} size={32} locked={!earnedCount} />)}</span>
         <span><b>BADGES</b><small>{earnedCount} / {bossBadges.length}</small></span>
       </button>
       <div role="status"><span className="ba-footer__icon">{note.tone === 'good' ? <Trophy size={21} /> : note.tone === 'bad' ? <Skull size={21} /> : <Swords size={21} />}</span><p><b>{note.title}</b>{note.text}</p></div>

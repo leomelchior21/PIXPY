@@ -20,3 +20,4 @@
 @media (max-width: 640px) { .guide__stage { min-height: 150px; } }
 @media (prefers-reduced-motion: reduce) { .guide-backdrop * { animation: none !important; transition: none !important; } }
 .guide-backdrop .guide .guide__kicker, .guide-backdrop .guide .guide__back, .guide-backdrop .guide .guide__next { font-family: 'IBM Plex Mono', monospace !important; }
+.guide-backdrop .guide__close { z-index: 6; width: 40px; min-width: 40px; height: 40px; min-height: 40px; }

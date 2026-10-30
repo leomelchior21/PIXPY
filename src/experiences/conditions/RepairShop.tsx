@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, BatteryCharging, Bug, Check, CircleHelp, ClipboardCheck, Cookie, DoorClosed, Fan, FlaskConical, Gamepad2, Lamp, Lightbulb, MousePointer, Play, Power, Rotate3d, RotateCcw, Ruler, ScanSearch, Sparkles, Stamp, TriangleAlert, Trophy, UserRound, Wrench, X, Zap } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Award, BatteryCharging, Bug, Check, CircleHelp, ClipboardCheck, Cookie, DoorClosed, Fan, FlaskConical, Gamepad2, Lamp, Lightbulb, MousePointer, Play, Power, Rotate3d, RotateCcw, Ruler, ScanSearch, Sparkles, Stamp, TriangleAlert, Trophy, UserRound, Wrench, X, Zap } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { PythonCode } from '../../components/PythonCode'
 import { behavesCorrectly, bugKindLabels, bugKindMeaning, expectedOutputs, repairTickets, runSegments, segmentLines, symptomKind, ticketSegments, type BugKind, type RepairMachineId, type RepairTicket } from '../../data/repairShop'
@@ -6,6 +6,7 @@ import { flattenProgram, formatPythonError, type DecisionRun } from '../../lib/d
 import { completeActivity } from '../../session/progressSession'
 import type { RepairLogEntry, SessionProgress } from '../../types'
 import { AsciiTitle } from './repair/AsciiTitle'
+import { CertificatePhoto } from './repair/CertificatePhoto'
 import { MonkeyFix } from './repair/MonkeyFix'
 import { RepairMeter } from './repair/RepairMeter'
 import { RepairStage, type StageStyle, type StageView } from './repair/RepairStage'
@@ -46,6 +47,7 @@ const stepOrder: Array<{ id: Exclude<Step, 'done'>; label: string; hint: string;
 ]
 
 const stampOrder: BugKind[] = ['syntax', 'runtime', 'logic']
+const kindColors: Record<BugKind, string> = { syntax: '#d6455d', runtime: '#d4741c', logic: '#7b55d6' }
 const avatarColors = ['#ff7aa2', '#72dcff', '#b9f352', '#ffcb47', '#7fd8ff', '#b49cff', '#ffd96a', '#ff9b6e']
 const stampIcons: Record<BugKind, typeof Bug> = { syntax: Power, runtime: Zap, logic: CircleHelp }
 
@@ -118,16 +120,21 @@ export function RepairShop({ progress, onProgress, onBack }: Props) {
 
   if (finished) return <main className="rs-screen">
     <Toolbar onBack={onBack} onHelp={openGuide} counter={<><Trophy size={18} /> Certified</>}>
-      <TicketRail index={-1} fixed={fixed} accessible={accessible} onSelect={(i) => { setIndex(i); setFinished(false) }} />
+      <TicketRail index={-1} fixed={fixed} accessible={accessible} onSelect={(i) => { setIndex(i); setFinished(false) }} onCertificate={() => undefined} />
     </Toolbar>
     <section className="rs-certificate">
-      <div className="rs-certificate__card">
+      <div className="rs-certificate__card has-photo">
+        {/* The student can put their own photo on the certificate and save it as an image. */}
+        <CertificatePhoto certificate={{ name: progress.name || 'Bug Fixer', bugs: repairTickets.reduce((sum, ticket) => sum + ticket.bugs.length, 0), machines: repairTickets.length, kinds: stampOrder.map((kind) => ({ label: bugKindLabels[kind], count: repairTickets.flatMap((ticket) => ticket.bugs).filter((bug) => bug.kind === kind).length, color: kindColors[kind] })) }} />
+        <div className="rs-certificate__text">
         <span className="rs-certificate__seal"><Wrench size={42} /></span>
         <p className="rs-kicker">PIXPY REPAIR SHOP · OFFICIAL</p>
         <h1>Certified Bug Fixer</h1>
+        <p className="rs-certificate__name">awarded to <b>{progress.name || 'you'}</b></p>
         <p>You reproduced, diagnosed, located, fixed, and verified {repairTickets.reduce((sum, ticket) => sum + ticket.bugs.length, 0)} bugs in {repairTickets.length} machines.</p>
         <div className="rs-certificate__kinds">{stampOrder.map((kind) => <div key={kind} className={`rs-kind rs-kind--${kind}`}><b>{repairTickets.flatMap((ticket) => ticket.bugs).filter((bug) => bug.kind === kind).length}</b><span>{bugKindLabels[kind]}</span></div>)}</div>
-        <div className="rs-certificate__actions"><button className="rs-primary" onClick={() => { setIndex(0); setFinished(false) }}><RotateCcw size={17} /> REPAIR AGAIN</button><button className="rs-secondary" onClick={onBack}>BACK TO CONDITIONS <ArrowRight size={17} /></button></div>
+        <div className="rs-certificate__actions"><button className="rs-secondary" onClick={() => { setIndex(0); setFinished(false) }}><RotateCcw size={17} /> REPAIR AGAIN</button><button className="rs-secondary" onClick={onBack}>BACK TO CONDITIONS <ArrowRight size={17} /></button></div>
+        </div>
       </div>
     </section>
     {tutorial}
@@ -135,7 +142,7 @@ export function RepairShop({ progress, onProgress, onBack }: Props) {
 
   return <>
     <TicketBench key={repairTickets[index].id} ticket={repairTickets[index]} index={index} fixed={fixed} accessible={accessible}
-      onSelect={(i) => { if (accessible(i)) setIndex(i) }} onBack={onBack} onHelp={openGuide} onRecord={record} onNext={next} />
+      onSelect={(i) => { if (accessible(i)) setIndex(i) }} onBack={onBack} onHelp={openGuide} onCertificate={() => setFinished(true)} onRecord={record} onNext={next} />
     {tutorial}
   </>
 }
@@ -150,7 +157,8 @@ function Toolbar({ onBack, onHelp, counter, children }: { onBack: () => void; on
   </header>
 }
 
-function TicketRail({ index, fixed, accessible, onSelect, disabled = false }: { index: number; fixed: number[]; accessible: (i: number) => boolean; onSelect: (i: number) => void; disabled?: boolean }) {
+function TicketRail({ index, fixed, accessible, onSelect, onCertificate, disabled = false }: { index: number; fixed: number[]; accessible: (i: number) => boolean; onSelect: (i: number) => void; onCertificate?: () => void; disabled?: boolean }) {
+  const certified = fixed.length === repairTickets.length
   return <nav className="rs-rail" aria-label="Repair tickets">
     {repairTickets.map((ticket, i) => {
       const done = fixed.includes(ticket.id)
@@ -161,11 +169,16 @@ function TicketRail({ index, fixed, accessible, onSelect, disabled = false }: { 
         {done ? <Check className="rs-rail__done" size={15} strokeWidth={3} aria-hidden="true" /> : <Icon size={15} aria-hidden="true" />}
       </button>
     })}
+    {/* Once all eight are fixed, the certificate stays one tap away. */}
+    {certified && onCertificate && <button className={`rs-rail__ticket rs-rail__cert ${index === -1 ? 'is-current' : ''}`} disabled={disabled} aria-current={index === -1 ? 'page' : undefined} aria-label="Your Certified Bug Fixer certificate" onClick={onCertificate}>
+      <Award size={16} aria-hidden="true" /><span className="rs-rail__number">CERT</span>
+    </button>}
   </nav>
 }
 
 interface BenchProps {
   ticket: RepairTicket
+  onCertificate: () => void
   index: number
   fixed: number[]
   accessible: (i: number) => boolean
@@ -176,7 +189,7 @@ interface BenchProps {
   onNext: () => void
 }
 
-function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onHelp, onRecord, onNext }: BenchProps) {
+function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onHelp, onCertificate, onRecord, onNext }: BenchProps) {
   const [step, setStep] = useState<Step>('reproduce')
   const [bugIndex, setBugIndex] = useState(0)
   const [installed, setInstalled] = useState<Record<number, number>>({})
@@ -410,7 +423,7 @@ function TicketBench({ ticket, index, fixed, accessible, onSelect, onBack, onHel
 
   return <main className={`rs-screen rs-step--${step}`} style={{ '--machine': meta.color } as CSSProperties}>
     <Toolbar onBack={onBack} onHelp={onHelp} counter={<><span>TICKET</span><b>{String(ticket.id).padStart(2, '0')}</b><small>/ {String(repairTickets.length).padStart(2, '0')}</small></>}>
-      <TicketRail index={index} fixed={fixed} accessible={accessible} onSelect={onSelect} disabled={busy} />
+      <TicketRail index={index} fixed={fixed} accessible={accessible} onSelect={onSelect} onCertificate={onCertificate} disabled={busy} />
     </Toolbar>
     <section className="rs-layout" inert={showDone}>
       {/* Left: the story and the machine, one screen. */}
