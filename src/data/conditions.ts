@@ -1,5 +1,5 @@
 import { BrainCircuit, DoorOpen, GitBranch, Split, Swords, Wrench } from 'lucide-react'
-import type { ActivityId, AppRoute } from '../types'
+import type { ActivityId, AppRoute, SessionProgress } from '../types'
 
 export interface ConditionExperience {
   id: ActivityId
@@ -19,6 +19,31 @@ export const conditionExperiences: ConditionExperience[] = [
   { id: 'more-than-one-choice', order: '05', title: 'MORE THAN ONE CHOICE?', description: 'Drop values through decisions with three paths.', color: '#a994ff', icon: Split },
   { id: 'conditions-final-bosses', order: '06', title: 'Final Bosses', description: 'Write real decisions that survive every test.', color: '#ff855e', icon: Swords },
 ]
+
+/** Closed to students until the teacher opens them. Teachers can always preview. */
+const lockedForStudents: ActivityId[] = ['conditions-final-bosses']
+
+/** Activities that open once another one is complete. */
+const unlockedBy: Partial<Record<ActivityId, ActivityId>> = { 'more-than-one-choice': 'make-it-work' }
+
+export type ConditionLock = 'open' | 'soon' | 'locked'
+
+/** Whether this student can open an activity: open, coming soon, or waiting on an earlier activity. */
+export function conditionLock(id: ActivityId, progress: Pick<SessionProgress, 'isTeacher' | 'completed'> | null): ConditionLock {
+  const experience = conditionExperiences.find((item) => item.id === id)
+  if (!experience) return 'open'
+  if (experience.disabled) return 'soon'
+  if (progress?.isTeacher) return 'open'
+  if (lockedForStudents.includes(id)) return 'soon'
+  const needs = unlockedBy[id]
+  return needs && !progress?.completed.includes(needs) ? 'locked' : 'open'
+}
+
+/** The activity that has to be finished first, for the "finish … first" message. */
+export function conditionPrerequisite(id: ActivityId): ConditionExperience | null {
+  const needs = unlockedBy[id]
+  return needs ? conditionExperiences.find((item) => item.id === needs) ?? null : null
+}
 
 export function isConditionActivity(route: AppRoute): route is ActivityId {
   return conditionExperiences.some((item) => item.id === route)

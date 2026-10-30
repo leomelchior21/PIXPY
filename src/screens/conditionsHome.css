@@ -78,3 +78,14 @@
 .cond-card--conditions-final-bosses .cond-card__title strong { color: #fff; text-shadow: 0 0 12px rgba(255, 90, 40, .8); }
 .cond-card__body { align-content: space-between; }
 @media (max-height: 700px) { .cond-card .cond-card__title strong { font-size: 15px; } }
+
+/* Locked cards: the picture greys out under a padlock until the activity opens. */
+.cond-card.is-disabled { cursor: not-allowed; animation: none; }
+.cond-card.is-disabled:hover, .cond-card.is-disabled:active { transform: none; box-shadow: 6px 6px 0 var(--ink); }
+.cond-card.is-disabled:hover .cond-card__media img { transform: none; }
+.cond-card.is-disabled .cond-card__media img { filter: grayscale(1) brightness(.45); }
+.cond-card.is-disabled .cond-card__media::before { display: none; }
+.cond-card__lock { position: absolute; top: 50%; left: 50%; z-index: 2; display: grid; place-items: center; width: 64px; height: 64px; border: 3px solid var(--ink); border-radius: 50%; color: var(--ink); background: #fffdf6; box-shadow: 3px 3px 0 var(--ink); transform: translate(-50%, -50%); }
+.cond-card.is-disabled .cond-card__state { color: #8a8576; }
+.cond-card.is-disabled .cond-card__icon { filter: grayscale(.8); }
+.cond-card--conditions-final-bosses.is-disabled .cond-card__state { color: #c9a08f; }

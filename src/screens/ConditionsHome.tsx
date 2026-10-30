@@ -6,7 +6,7 @@ import ifElseImage from '../assets/cards/if-else.webp'
 import choicesImage from '../assets/cards/more-choices.webp'
 import repairImage from '../assets/cards/repair-shop.webp'
 import { conditionBosses } from '../data/conditionBosses'
-import { conditionExperiences } from '../data/conditions'
+import { conditionExperiences, conditionLock, conditionPrerequisite } from '../data/conditions'
 import { moreChoiceLevels } from '../data/moreChoices'
 import { repairTickets } from '../data/repairShop'
 import { completedIfElseLevels } from '../lib/ifElseProgress'
@@ -41,7 +41,7 @@ function savedSteps(progress: SessionProgress, id: ActivityId): { count: number;
 
 export function ConditionsHome({ progress, onNavigate }: Props) {
   const completed = conditionExperiences.filter((item) => progress.completed.includes(item.id)).length
-  const open = conditionExperiences.filter((item) => !item.disabled).length
+  const open = conditionExperiences.filter((item) => conditionLock(item.id, progress) === 'open').length
   return (
     <main className="variables-home conditions-home">
       <header className="variables-heading">
@@ -55,14 +55,16 @@ export function ConditionsHome({ progress, onNavigate }: Props) {
           const complete = progress.completed.includes(experience.id)
           const saved = savedSteps(progress, experience.id)
           const final = experience.id === 'conditions-final-bosses'
-          return <button key={experience.id} disabled={experience.disabled} aria-label={`${experience.order} ${experience.title}: ${experience.disabled ? 'Coming soon' : experience.description}`} className={`cond-card cond-card--${experience.id} ${experience.disabled ? 'is-disabled' : ''} ${complete ? 'is-complete' : ''}`} style={{ '--card-accent': experience.color } as React.CSSProperties} onClick={() => onNavigate(experience.id)}>
-            <span className="cond-card__media" aria-hidden="true"><img src={covers[experience.id]} alt="" loading="lazy" draggable={false} /></span>
+          const lock = conditionLock(experience.id, progress)
+          const needs = conditionPrerequisite(experience.id)
+          return <button key={experience.id} disabled={lock !== 'open'} aria-label={`${experience.order} ${experience.title}: ${lock === 'soon' ? 'Coming soon' : lock === 'locked' ? `Locked until you finish ${needs?.title}` : experience.description}`} className={`cond-card cond-card--${experience.id} ${lock !== 'open' ? 'is-disabled' : ''} ${lock === 'locked' ? 'is-locked' : ''} ${complete ? 'is-complete' : ''}`} style={{ '--card-accent': experience.color } as React.CSSProperties} onClick={() => onNavigate(experience.id)}>
+            <span className="cond-card__media" aria-hidden="true"><img src={covers[experience.id]} alt="" loading="lazy" draggable={false} />{lock !== 'open' && <span className="cond-card__lock"><Lock size={30} strokeWidth={2.6} /></span>}</span>
             <span className="cond-card__order" aria-hidden="true">{experience.order}</span>
             {index === 0 && !complete && <i className="cond-card__ribbon">START HERE</i>}
             {final && <i className="cond-card__ribbon is-final"><Flame size={13} /> FINAL ROUND</i>}
             <span className="cond-card__body">
               <span className="cond-card__title"><span className="cond-card__icon"><Icon size={20} /></span><strong>{experience.title}</strong></span>
-              <span className="cond-card__state">{experience.disabled ? <><Lock size={15} /> COMING SOON</> : complete ? <><Check size={15} /> DONE · PLAY AGAIN</> : saved && saved.count > 0 ? <>{saved.count} / {saved.total} {saved.label} · CONTINUE <ArrowRight size={15} /></> : <>LET'S TRY IT <ArrowRight size={15} /></>}</span>
+              <span className="cond-card__state">{lock === 'soon' ? <><Lock size={15} /> COMING SOON</> : lock === 'locked' ? <><Lock size={15} /> FINISH {needs?.title} FIRST</> : complete ? <><Check size={15} /> DONE · PLAY AGAIN</> : saved && saved.count > 0 ? <>{saved.count} / {saved.total} {saved.label} · CONTINUE <ArrowRight size={15} /></> : <>LET'S TRY IT <ArrowRight size={15} /></>}</span>
             </span>
           </button>
         })}

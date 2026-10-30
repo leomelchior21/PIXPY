@@ -12,7 +12,7 @@ import { ConditionsHome } from './screens/ConditionsHome'
 import { ExtrasHome } from './screens/ExtrasHome'
 import { IfElseBuilder } from './experiences/conditions/IfElseBuilder'
 import { ChoiceMachine } from './experiences/conditions/ChoiceMachine'
-import { conditionExperiences, isConditionActivity } from './data/conditions'
+import { isConditionActivity, conditionLock } from './data/conditions'
 
 const DinoVariables = lazy(() => import('./experiences/variables/DinoVariables').then((module) => ({ default: module.DinoVariables })))
 const PrintPlayground = lazy(() => import('./experiences/variables/PrintPlayground').then((module) => ({ default: module.PrintPlayground })))
@@ -79,7 +79,7 @@ export default function App() {
 
   if (!progress) return <NameEntryScreen onStart={start} />
   const experienceProps = { progress, onProgress: setProgress, onBack: () => navigate('variables') }
-  const visibleRoute = route === 'teacher' && !progress.isTeacher ? 'home' : isConditionActivity(route) && conditionExperiences.find((item) => item.id === route)?.disabled ? 'conditionals' : route
+  const visibleRoute = route === 'teacher' && !progress.isTeacher ? 'home' : isConditionActivity(route) && conditionLock(route, progress) !== 'open' ? 'conditionals' : route
 
   return (
     <div className={`app-shell route-${visibleRoute}`}>
